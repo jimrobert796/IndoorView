@@ -41,5 +41,8 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+    // Mapbox ver 11.21.0
     implementation("com.mapbox.maps:android-ndk27:11.21.0")
+    // Turf para validar punto dentro del polígono
+    implementation("com.mapbox.mapboxsdk:mapbox-sdk-turf:7.10.0")
 }
