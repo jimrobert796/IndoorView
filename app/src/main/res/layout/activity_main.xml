@@ -1,34 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <!-- Mapa de Mapbox -->
     <com.mapbox.maps.MapView
         android:id="@+id/mapView"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!-- Botón Habilitar (esquina inferior derecha) -->
+    <Button
+        android:id="@+id/btnHabilitar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="HABILITAR"
+        android:layout_margin="16dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true" />
+
+    <!-- Botón Edificio (esquina superior derecha) -->
     <Button
         android:id="@+id/btnEditar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Edificio"
+        android:text="Agregar Lugar"
         android:layout_margin="16dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true" />
 
+    <!-- Botón Aulas (debajo de btnEditar) -->
     <Button
-        android:id="@+id/btnAulas"
+        android:id="@+id/btnEspacios"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Aulas"
+        android:text="Agregar Espacios"
         android:visibility="gone"
         android:layout_margin="16dp"
-        app:layout_constraintTop_toBottomOf="@id/btnEditar"
-        app:layout_constraintEnd_toEndOf="parent" />
+        android:layout_below="@id/btnEditar"
+        android:layout_alignEnd="@id/btnEditar" />
 
+    <!-- Botón Cerrar (debajo de btnAulas) -->
     <Button
         android:id="@+id/btnCerrar"
         android:layout_width="wrap_content"
@@ -36,9 +48,10 @@
         android:text="Cerrar"
         android:visibility="gone"
         android:layout_margin="16dp"
-        app:layout_constraintTop_toBottomOf="@id/btnAulas"
-        app:layout_constraintEnd_toEndOf="parent" />
+        android:layout_below="@id/btnEspacios"
+        android:layout_alignEnd="@id/btnEditar" />
 
+    <!-- Botón Deshacer (debajo de btnCerrar) -->
     <Button
         android:id="@+id/btnDeshacer"
         android:layout_width="wrap_content"
@@ -46,9 +59,10 @@
         android:text="Deshacer"
         android:visibility="gone"
         android:layout_margin="16dp"
-        app:layout_constraintTop_toBottomOf="@id/btnCerrar"
-        app:layout_constraintEnd_toEndOf="parent" />
+        android:layout_below="@id/btnCerrar"
+        android:layout_alignEnd="@id/btnEditar" />
 
+    <!-- Botón Finalizar (debajo de btnDeshacer) -->
     <Button
         android:id="@+id/btnFinalizar"
         android:layout_width="wrap_content"
@@ -56,9 +70,10 @@
         android:text="Finalizar"
         android:visibility="gone"
         android:layout_margin="16dp"
-        app:layout_constraintTop_toBottomOf="@id/btnDeshacer"
-        app:layout_constraintEnd_toEndOf="parent" />
+        android:layout_below="@id/btnDeshacer"
+        android:layout_alignEnd="@id/btnEditar" />
 
+    <!-- TextView Modo (esquina inferior izquierda) -->
     <TextView
         android:id="@+id/tvModo"
         android:layout_width="wrap_content"
@@ -67,7 +82,7 @@
         android:background="#88000000"
         android:padding="8dp"
         android:layout_margin="16dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentStart="true" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+</RelativeLayout>

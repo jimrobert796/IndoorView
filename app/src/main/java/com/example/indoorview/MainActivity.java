@@ -1,10 +1,13 @@
 package com.example.indoorview;
 
+import android.app.AlertDialog;
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -37,39 +40,46 @@ public class MainActivity extends AppCompatActivity {
     private MapView mapView;
 
     // Dos managers separados:
-    // - uno para pines permanentes (edificios, aulas, UGB)
+    // - uno para pines permanentes (lugars, espacios, UGB)
     // - uno para vértices temporales mientras dibuja
-    private PointAnnotationManager managerPermanente;
+
+    private PointAnnotationManager managerPermanente;     // pruebas
     private PointAnnotationManager managerTemporal;
 
     // Modos
     private static final int MODO_NINGUNO  = 0;
-    private static final int MODO_EDIFICIO = 1;
-    private static final int MODO_AULA     = 2;
+    private static final int MODO_LUGAR = 1;
+    private static final int MODO_ESPACIO     = 2;
     private int modoActual = MODO_NINGUNO;
 
     // Datos
-    private List<Point> puntosActuales       = new ArrayList<>();
-    private List<Point> puntosEdificioActual = new ArrayList<>();
-    private int edificioActualId = 0;
-    private int aulaContador     = 0;
+    private List<Point> puntosActuales = new ArrayList<>();
+    private List<Point> puntosLugarActual = new ArrayList<>();
+    private int lugarActualId = 0;
+    private int espacioContador = 0;
 
     // UI
-    private Button btnEdificio, btnAulas, btnCerrar, btnDeshacer, btnFinalizar;
+    private Button btnLugar, btnEspacios, btnCerrar, btnDeshacer, btnFinalizar, btnHabilitar;
     private TextView tvModo;
+
+    private boolean modoEdicionActivo = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mapView      = findViewById(R.id.mapView);
-        btnEdificio  = findViewById(R.id.btnEditar);
-        btnAulas     = findViewById(R.id.btnAulas);
-        btnCerrar    = findViewById(R.id.btnCerrar);
+
+        // Inicalizaciones de variables XML
+        mapView = findViewById(R.id.mapView);
+        btnLugar  = findViewById(R.id.btnEditar);
+        btnEspacios = findViewById(R.id.btnEspacios);
+        btnCerrar = findViewById(R.id.btnCerrar);
         btnDeshacer  = findViewById(R.id.btnDeshacer);
         btnFinalizar = findViewById(R.id.btnFinalizar);
-        tvModo       = findViewById(R.id.tvModo);
+        tvModo = findViewById(R.id.tvModo);
+        btnHabilitar = findViewById(R.id.btnHabilitar);
+
 
         // ================= CARGA DE MAPA =========================
         mapView.getMapboxMap().loadStyleUri(Style.MAPBOX_STREETS, style -> {
@@ -98,15 +108,15 @@ public class MainActivity extends AppCompatActivity {
 
             // Click en el mapa
             GesturesUtils.getGestures(mapView).addOnMapClickListener(point -> {
-                if (modoActual == MODO_EDIFICIO) {
+                if (modoActual == MODO_LUGAR) {
                     agregarPunto(point, style);
                     return true;
-                } else if (modoActual == MODO_AULA) {
-                    if (puntoDentroDeEdificio(point)) {
+                } else if (modoActual == MODO_ESPACIO) {
+                    if (puntoDentroDeLugar(point)) {
                         agregarPunto(point, style);
                     } else {
                         Toast.makeText(this,
-                                "El punto está fuera del edificio",
+                                "El punto está fuera del lugar",
                                 Toast.LENGTH_SHORT).show();
                     }
                     return true;
@@ -115,47 +125,94 @@ public class MainActivity extends AppCompatActivity {
             });
         });
 
-        // ── Botón Edificio ──
-        btnEdificio.setOnClickListener(v -> {
-            if (modoActual == MODO_EDIFICIO) {
+
+        // Habilitacion
+        // Ocultar todos los botones de edición por defaul
+        ocultarEdicion();;
+
+        btnHabilitar.setOnClickListener(v -> {
+            if (modoEdicionActivo) {
+                // Desactivar modo edición - ocultar
+                modoEdicionActivo = false;
+                btnHabilitar.setText("HABILITAR");
+
+                // Ocultar todos los botones de edición
+                btnLugar.setVisibility(View.GONE);
+                btnEspacios.setVisibility(View.GONE);
+                btnCerrar.setVisibility(View.GONE);
+                btnDeshacer.setVisibility(View.GONE);
+                btnFinalizar.setVisibility(View.GONE);
+
+                // Salir de cualquier modo activo
+                if (modoActual != MODO_NINGUNO) {
+                    modoActual = MODO_NINGUNO;
+                    btnLugar.setText("Lugar");
+                    puntosActuales.clear();
+                    refrescarVertices();
+                }
+
+                tvModo.setText("");
+                Toast.makeText(this, "Modo edición desactivado", Toast.LENGTH_SHORT).show();
+
+            } else {
+                // Activar modo edición - mostrar botones
+                modoEdicionActivo = true;
+                btnHabilitar.setText("CANCELAR");
+
+                // Mostrar solo el botón Lugar inicialmente
+                btnLugar.setVisibility(View.VISIBLE);
+                btnEspacios.setVisibility(View.GONE);
+                btnCerrar.setVisibility(View.GONE);
+                btnDeshacer.setVisibility(View.GONE);
+                btnFinalizar.setVisibility(View.GONE);
+
+                tvModo.setText("Modo edición activado - Toca 'Lugar' para comenzar");
+                Toast.makeText(this, "Modo edición activado", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+
+        // ── Botón Lugar ──
+        btnLugar.setOnClickListener(v -> {
+            if (modoActual == MODO_LUGAR) {
                 modoActual = MODO_NINGUNO;
-                btnEdificio.setText("Edificio");
+                btnLugar.setText("Lugar");
                 ocultarBotonesEdicion();
                 puntosActuales.clear();
                 refrescarVertices();
                 tvModo.setText("");
             } else {
-                modoActual = MODO_EDIFICIO;
-                btnEdificio.setText("Cancelar");
-                btnAulas.setVisibility(View.GONE);
+                modoActual = MODO_LUGAR;
+                btnLugar.setText("Cancelar");
+                btnEspacios.setVisibility(View.GONE);
                 btnFinalizar.setVisibility(View.GONE);
                 btnCerrar.setVisibility(View.VISIBLE);
                 btnDeshacer.setVisibility(View.VISIBLE);
                 puntosActuales.clear();
-                tvModo.setText("Dibuja el EDIFICIO — toca el mapa punto a punto");
+                tvModo.setText("Dibuja el LUGAR — toca el mapa punto a punto");
             }
         });
 
-        // ── Botón Aulas ──
-        btnAulas.setOnClickListener(v -> {
-            if (modoActual == MODO_AULA) {
+        // ── Botón Espacios ──
+        btnEspacios.setOnClickListener(v -> {
+            if (modoActual == MODO_ESPACIO) {
                 modoActual = MODO_NINGUNO;
-                btnAulas.setText("Aulas");
+                btnEspacios.setText("Espacios");
                 btnCerrar.setVisibility(View.GONE);
                 btnDeshacer.setVisibility(View.GONE);
                 btnFinalizar.setVisibility(View.VISIBLE);
                 puntosActuales.clear();
                 refrescarVertices();
-                tvModo.setText("Modo aulas terminado");
+                tvModo.setText("Modo espacios terminado");
             } else {
-                modoActual = MODO_AULA;
-                btnAulas.setText("Salir aulas");
+                modoActual = MODO_ESPACIO;
+                btnEspacios.setText("Salir espacios");
                 btnCerrar.setVisibility(View.VISIBLE);
                 btnDeshacer.setVisibility(View.VISIBLE);
                 btnFinalizar.setVisibility(View.GONE);
-                aulaContador = 0;
+                espacioContador = 0;
                 puntosActuales.clear();
-                tvModo.setText("Dibuja AULAS dentro del Edificio " + edificioActualId);
+                tvModo.setText("Dibuja ESPACIOS dentro del Lugar " + lugarActualId);
             }
         });
 
@@ -165,8 +222,8 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "Mínimo 3 puntos", Toast.LENGTH_SHORT).show();
                 return;
             }
-            if (modoActual == MODO_EDIFICIO) cerrarEdificio();
-            else if (modoActual == MODO_AULA) cerrarAula();
+            if (modoActual == MODO_LUGAR) cerrarLugar();
+            else if (modoActual == MODO_ESPACIO) cerrarEspacio();
         });
 
         // ── Botón Deshacer ──
@@ -182,24 +239,31 @@ public class MainActivity extends AppCompatActivity {
         btnFinalizar.setOnClickListener(v -> {
             modoActual = MODO_NINGUNO;
             ocultarBotonesEdicion();
-            btnEdificio.setText("Edificio");
+            btnLugar.setText("Lugar");
             btnFinalizar.setVisibility(View.GONE);
-            btnAulas.setVisibility(View.GONE);
+            btnEspacios.setVisibility(View.GONE);
             puntosActuales.clear();
             // Solo borramos vértices temporales, los pines permanentes quedan
             managerTemporal.deleteAll();
-            tvModo.setText("¡Listo! Edificio y aulas guardados.");
+            tvModo.setText("¡Listo! Lugar y espacios guardados.");
             Toast.makeText(this, "Mapa guardado correctamente", Toast.LENGTH_LONG).show();
         });
     }
 
-    // ─────────────────────────────────────────
+    // Oculta los botones para edicion de mapa
+    private void ocultarEdicion(){
+        btnLugar.setVisibility(View.GONE);
+        btnEspacios.setVisibility(View.GONE);
+        btnCerrar.setVisibility(View.GONE);
+        btnDeshacer.setVisibility(View.GONE);
+        btnFinalizar.setVisibility(View.GONE);
+    }
+
     // Agregar punto temporal
-    // ─────────────────────────────────────────
     private void agregarPunto(Point point, Style style) {
         puntosActuales.add(point);
         // Vértice en manager temporal
-        Bitmap bmp = crearPuntoBitmap("#ff0000");
+        Bitmap bmp = crearPuntoBitmap("#ff0000"); // Naranja
         managerTemporal.create(
                 new PointAnnotationOptions()
                         .withPoint(point)
@@ -210,65 +274,79 @@ public class MainActivity extends AppCompatActivity {
         if (puntosActuales.size() >= 2) dibujarLineaPrevia(style);
     }
 
-    // ─────────────────────────────────────────
-    // Cerrar EDIFICIO
-    // ─────────────────────────────────────────
-    private void cerrarEdificio() {
-        edificioActualId++;
+    // Cerrar LUGAR
+    private void cerrarLugar() {
+        lugarActualId++;
         puntosActuales.add(puntosActuales.get(0));
-        puntosEdificioActual = new ArrayList<>(puntosActuales);
+        puntosLugarActual = new ArrayList<>(puntosActuales);
+
+        // GENERAR GEOJSON
+        String geojson = generarGeoJsonDesdePuntos(puntosActuales,
+                "Lugar " + lugarActualId, "lugar", lugarActualId);
+
+        //MOSTRAR EN PANTALLA (DEBUG)
+        mostrarGeoJsonEnDialogo("Lugar " + lugarActualId, geojson);
+        logGeoJson("Lugar " + lugarActualId, geojson);  // También en Logcat
+
 
         mapView.getMapboxMap().getStyle(style ->
                 dibujarPoligono(style, new ArrayList<>(puntosActuales),
-                        "edificio-" + edificioActualId, "#2196F3", 0.25)
+                        "lugar-" + lugarActualId, "#2196F3", 0.25)
         );
 
         // Pin permanente en el centro
         Point centro = calcularCentro(puntosActuales);
-        agregarPinPermanente(centro, "Edificio " + edificioActualId, "#1565C0");
+        agregarPinPermanente(centro, "Lugar " + lugarActualId, "#1565C0");
 
-        Toast.makeText(this, "Edificio " + edificioActualId + " guardado",
+        Toast.makeText(this, "Lugar " + lugarActualId + " guardado",
                 Toast.LENGTH_SHORT).show();
 
         puntosActuales.clear();
         managerTemporal.deleteAll(); // ← solo borra vértices temporales
         modoActual = MODO_NINGUNO;
-        btnEdificio.setText("Edificio");
+        btnLugar.setText("Lugar");
         btnCerrar.setVisibility(View.GONE);
         btnDeshacer.setVisibility(View.GONE);
-        btnAulas.setVisibility(View.VISIBLE);
+        btnEspacios.setVisibility(View.VISIBLE);
         btnFinalizar.setVisibility(View.VISIBLE);
-        tvModo.setText("Edificio guardado. Dibuja aulas o finaliza.");
+        tvModo.setText("Lugar guardado. Dibuja espacios o finaliza.");
     }
 
     // ─────────────────────────────────────────
-    // Cerrar AULA
+    // Cerrar ESPACIO
     // ─────────────────────────────────────────
-    private void cerrarAula() {
-        aulaContador++;
+    private void cerrarEspacio() {
+        espacioContador++;
         puntosActuales.add(puntosActuales.get(0));
 
-        String aulaId = "edificio-" + edificioActualId + "-aula-" + aulaContador;
+        // GENERAR GEOJSON
+        String geojson = generarGeoJsonDesdePuntos(puntosActuales,
+                "Espacio " + espacioContador, "espacio", espacioContador);
+
+        // MOSTRAR EN PANTALLA (DEBUG)
+        mostrarGeoJsonEnDialogo("Espacio " + espacioContador, geojson);
+        logGeoJson("Espacio " + espacioContador, geojson);
+
+        String espacioId = "lugar-" + lugarActualId + "-espacio-" + espacioContador;
         mapView.getMapboxMap().getStyle(style ->
                 dibujarPoligono(style, new ArrayList<>(puntosActuales),
-                        aulaId, "#FF9800", 0.4)
+                        espacioId, "#FF9800", 0.4)
         );
 
         // Pin permanente en el centro
         Point centro = calcularCentro(puntosActuales);
-        agregarPinPermanente(centro, "Aula " + aulaContador, "#E65100");
+        agregarPinPermanente(centro, "Espacio " + espacioContador, "#E65100");
 
-        Toast.makeText(this, "Aula " + aulaContador + " guardada",
+        Toast.makeText(this, "Espacio " + espacioContador + " guardada",
                 Toast.LENGTH_SHORT).show();
 
         puntosActuales.clear();
         managerTemporal.deleteAll(); // ← solo borra vértices temporales
-        tvModo.setText("Aula " + aulaContador + " guardada. Dibuja la siguiente.");
+        tvModo.setText("Espacio " + espacioContador + " guardada. Dibuja la siguiente.");
     }
 
-    //
-    // ================ Pin permanente — usa managerPermanente ===================
-    //
+
+    // ================ Pin permanente — usa managerPermanente ==================
     private void agregarPinPermanente(Point punto, String texto, String color) {
         Bitmap icono = crearPinBitmap(color);
         PointAnnotationOptions op = new PointAnnotationOptions()
@@ -291,20 +369,19 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    // ─────────────────────────────────────────
-    // Validar punto dentro del edificio
-    // ─────────────────────────────────────────
-    private boolean puntoDentroDeEdificio(Point punto) {
-        if (puntosEdificioActual.size() < 3) return false;
+
+    // Validar punto dentro del lugar
+    private boolean puntoDentroDeLugar(Point punto) {
+        if (puntosLugarActual.size() < 3) return false;
         double x = punto.longitude();
         double y = punto.latitude();
         boolean inside = false;
-        int n = puntosEdificioActual.size() - 1;
+        int n = puntosLugarActual.size() - 1;
         for (int i = 0, j = n - 1; i < n; j = i++) {
-            double xi = puntosEdificioActual.get(i).longitude();
-            double yi = puntosEdificioActual.get(i).latitude();
-            double xj = puntosEdificioActual.get(j).longitude();
-            double yj = puntosEdificioActual.get(j).latitude();
+            double xi = puntosLugarActual.get(i).longitude();
+            double yi = puntosLugarActual.get(i).latitude();
+            double xj = puntosLugarActual.get(j).longitude();
+            double yj = puntosLugarActual.get(j).latitude();
             if (((yi > y) != (yj > y)) &&
                     (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) {
                 inside = !inside;
@@ -313,9 +390,8 @@ public class MainActivity extends AppCompatActivity {
         return inside;
     }
 
-    // ─────────────────────────────────────────
-    // Calcular centro
-    // ─────────────────────────────────────────
+
+    // Calcular centro para pin
     private Point calcularCentro(List<Point> puntos) {
         double sumLng = 0, sumLat = 0;
         int total = puntos.size() - 1;
@@ -326,9 +402,7 @@ public class MainActivity extends AppCompatActivity {
         return Point.fromLngLat(sumLng / total, sumLat / total);
     }
 
-    // ─────────────────────────────────────────
     // Dibujar polígono
-    // ─────────────────────────────────────────
     private void dibujarPoligono(Style style, List<Point> puntos,
                                  String id, String color, double opacidad) {
         StringBuilder coords = new StringBuilder();
@@ -368,9 +442,7 @@ public class MainActivity extends AppCompatActivity {
         style.addStyleLayer(new Value(line), null);
     }
 
-    // ─────────────────────────────────────────
     // Línea previa mientras dibuja
-    // ─────────────────────────────────────────
     private void dibujarLineaPrevia(Style style) {
         StringBuilder coords = new StringBuilder();
         for (int i = 0; i < puntosActuales.size(); i++) {
@@ -403,9 +475,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // ─────────────────────────────────────────
     // Refrescar solo vértices temporales
-    // ─────────────────────────────────────────
     private void refrescarVertices() {
         managerTemporal.deleteAll(); // ← solo borra temporales
         for (Point p : puntosActuales) {
@@ -424,9 +494,8 @@ public class MainActivity extends AppCompatActivity {
         btnDeshacer.setVisibility(View.GONE);
     }
 
-    // ─────────────────────────────────────────
-    // Bitmaps
-    // ─────────────────────────────────────────
+
+    // Bitmaps cambiara a futuro para los iconos de wilfredo
     private Bitmap crearPinBitmap(String hexColor) {
         int size = 60;
         Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
@@ -453,6 +522,7 @@ public class MainActivity extends AppCompatActivity {
         return bitmap;
     }
 
+    // crear punto bitmap
     private Bitmap crearPuntoBitmap(String hexColor) {
         int size = 30;
         Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
@@ -471,7 +541,63 @@ public class MainActivity extends AppCompatActivity {
         return bitmap;
     }
 
+
+    // Mostrar Geo.json en Dialogo para debug
+    private void mostrarGeoJsonEnDialogo(String titulo, String geojson) {
+        // Limitar longitud para no saturar el diálogo
+        String geojsonMostrar = geojson;
+        if (geojson.length() > 800) {
+            geojsonMostrar = geojson.substring(0, 800) + "\n\n... (truncado)";
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle("📄 " + titulo)
+                .setMessage(geojsonMostrar)
+                .setPositiveButton("Copiar", (dialog, which) -> {
+                    // Copiar al portapapeles
+                    android.content.ClipboardManager clipboard = (android.content.ClipboardManager)
+                            getSystemService(Context.CLIPBOARD_SERVICE);
+                    android.content.ClipData clip = android.content.ClipData.newPlainText("GeoJSON", geojson);
+                    clipboard.setPrimaryClip(clip);
+                    Toast.makeText(this, "GeoJSON copiado", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("Cerrar", null)
+                .show();
+    }
+    // para el log
+    private void logGeoJson(String titulo, String geojson) {
+        Log.d("GEOJSON_DEBUG", "========== " + titulo + " ==========");
+        Log.d("GEOJSON_DEBUG", geojson);
+        Log.d("GEOJSON_DEBUG", "========== FIN ==========");
+    }
+    // para el log desde puntos
+    private String generarGeoJsonDesdePuntos(List<Point> puntos, String nombre, String tipo, int id) {
+        StringBuilder coords = new StringBuilder();
+        for (int i = 0; i < puntos.size(); i++) {
+            Point p = puntos.get(i);
+            coords.append("[").append(p.longitude())
+                    .append(",").append(p.latitude()).append("]");
+            if (i < puntos.size() - 1) coords.append(",");
+        }
+
+        return "{\n" +
+                "  \"type\": \"Feature\",\n" +
+                "  \"properties\": {\n" +
+                "    \"nombre\": \"" + nombre + "\",\n" +
+                "    \"tipo\": \"" + tipo + "\",\n" +
+                "    \"id\": " + id + ",\n" +
+                "    \"timestamp\": " + System.currentTimeMillis() + "\n" +
+                "  },\n" +
+                "  \"geometry\": {\n" +
+                "    \"type\": \"Polygon\",\n" +
+                "    \"coordinates\": [[" + coords + "]]\n" +
+                "  }\n" +
+                "}";
+    }
+
+    /*
     @Override protected void onStart() { super.onStart(); mapView.onStart(); }
     @Override protected void onStop() { super.onStop(); mapView.onStop(); }
     @Override protected void onDestroy() { super.onDestroy(); mapView.onDestroy(); }
+     */
 }
