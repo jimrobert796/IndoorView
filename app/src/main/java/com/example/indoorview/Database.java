@@ -7,502 +7,298 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
-import androidx.annotation.Nullable;
-
-
-import com.example.indoorview.models.Lugar;
-import com.example.indoorview.models.Pisos;
 import com.example.indoorview.models.Espacio;
 import com.example.indoorview.models.Geometria;
-import com.example.indoorview.models.Usuarios;
-//import com.example.indoorview.models.Evento;
+import com.example.indoorview.models.Lugar;
+import com.example.indoorview.models.Pisos;
 
-
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-// Lo mejorare despues ahorita es concepto
 
-public class Database {
-    // extends SQLiteOpenHelper
-    // NI EN PEDO ME PONGO A RECONTRA INVESTIGAR
-    /*
-    
+public class Database extends SQLiteOpenHelper {
 
-    // ==========================================
-    // NOMBRE Y VERSIÓN DE LA BASE DE DATOS
-    // ==========================================
-    private static final String DATABASE_NAME = "db_indoorView.db";
-    private static final int DATABASE_VERSION = 1;
+    private static final String DB_NAME = "db_indoorView_pruebas.db";
+    private static final int DB_VERSION = 1;
+    private static Database instancia;
+    private final Context context;
 
-    // ==========================================
-    // TABLA: lugar (edificios)
-    // ==========================================
-    public static final String TABLE_LUGAR = "lugar";
-    public static final String COL_LUGAR_ID = "id_lugar";
-    public static final String COL_LUGAR_NOMBRE = "nombre";
-    public static final String COL_LUGAR_DESCRIPCION = "descripcion";
-    public static final String COL_LUGAR_URL_IMAGENES = "url_imagenes";
-    public static final String COL_LUGAR_LATITUD = "latitud";
-    public static final String COL_LUGAR_LONGITUD = "longitud";
-    public static final String COL_LUGAR_GEOJSON = "geojson";
-    public static final String COL_LUGAR_ESTADO = "estado";
+    public static Database getInstance(Context context) {
+        if (instancia == null) {
+            instancia = new Database(context.getApplicationContext());
+        }
+        return instancia;
+    }
 
-    // ==========================================
-    // TABLA: pisos
-    // ==========================================
-    public static final String TABLE_PISOS = "pisos";
-    public static final String COL_PISO_ID = "id_piso";
-    public static final String COL_PISO_ID_LUGAR = "id_lugar";
-    public static final String COL_PISO_NUMERO = "numero";
-    public static final String COL_PISO_NOMBRE = "nombre";
-    public static final String COL_PISO_ACTIVO = "activo";
-
-    // ==========================================
-    // TABLA: espacio (aulas, baños, etc)
-    // ==========================================
-    public static final String TABLE_ESPACIO = "espacio";
-    public static final String COL_ESPACIO_ID = "id_espacio";
-    public static final String COL_ESPACIO_ID_LUGAR = "id_lugar";
-    public static final String COL_ESPACIO_ID_PISO = "id_piso";
-    public static final String COL_ESPACIO_NOMBRE = "nombre";
-    public static final String COL_ESPACIO_DESCRIPCION = "descripcion";
-    public static final String COL_ESPACIO_URL_IMAGENES = "url_imagenes";
-    public static final String COL_ESPACIO_LATITUD = "latitud";
-    public static final String COL_ESPACIO_LONGITUD = "longitud";
-    public static final String COL_ESPACIO_ESTADO = "estado";
-
-    // ==========================================
-    // TABLA: geometria (polígonos)
-    // ==========================================
-    public static final String TABLE_GEOMETRIA = "geometria";
-    public static final String COL_GEOMETRIA_ID = "id_geometria";
-    public static final String COL_GEOMETRIA_ID_ESPACIO = "id_espacio";
-    public static final String COL_GEOMETRIA_ID_PISO = "id_piso";
-    public static final String COL_GEOMETRIA_TIPO = "tipo";
-    public static final String COL_GEOMETRIA_VERTICES = "vertices";
-    public static final String COL_GEOMETRIA_COLOR = "color";
-
-    // ==========================================
-    // TABLA: usuarios
-    // ==========================================
-    public static final String TABLE_USUARIOS = "usuarios";
-    public static final String COL_USUARIO_ID = "id_usuario";
-    public static final String COL_USUARIO_ID_ESTADO = "id_estado";
-    public static final String COL_USUARIO_ID_TIPO = "id_tipo";
-    public static final String COL_USUARIO_NOMBRES = "nombres";
-    public static final String COL_USUARIO_APELLIDOS = "apellidos";
-    public static final String COL_USUARIO_CARNET = "carnet";
-    public static final String COL_USUARIO_CONTRASENA = "contraseña";
-
-    // ==========================================
-    // TABLA: tipo_usuario
-    // ==========================================
-    public static final String TABLE_TIPO_USUARIO = "tipo_usuario";
-    public static final String COL_TIPO_ID = "id_tipo";
-    public static final String COL_TIPO_NOMBRE = "nombre";
-
-    // ==========================================
-    // TABLA: estado
-    // ==========================================
-    public static final String TABLE_ESTADO = "estado";
-    public static final String COL_ESTADO_ID = "id_estado";
-    public static final String COL_ESTADO_ESTADO = "estado";
-    
-    /*
-    
-     
-
-    // ==========================================
-    // TABLA: eventos
-    // ==========================================
-    public static final String TABLE_EVENTOS = "eventos";
-    public static final String COL_EVENTO_ID = "id_evento";
-    public static final String COL_EVENTO_ID_LUGAR = "id_lugar";
-    public static final String COL_EVENTO_ID_ESPACIO = "id_espacio";
-    public static final String COL_EVENTO_NOMBRE = "nombre";
-    public static final String COL_EVENTO_DESCRIPCION = "descripcion";
-    public static final String COL_EVENTO_LATITUD = "latitud";
-    public static final String COL_EVENTO_LONGITUD = "longitud";
-    public static final String COL_EVENTO_FECHA_INICIO = "fecha_inicio";
-    public static final String COL_EVENTO_FECHA_FIN = "fecha_fin";
-    public static final String COL_EVENTO_ACTIVO = "activo";
-
-    // ==========================================
-    // TABLA: acciones
-    // ==========================================
-    public static final String TABLE_ACCIONES = "acciones";
-    public static final String COL_ACCION_ID = "id_accion";
-    public static final String COL_ACCION_NOMBRE = "nombre";
-
-    // ==========================================
-    // TABLA: registro_acciones
-    // ==========================================
-    public static final String TABLE_REGISTRO_ACCIONES = "registro_acciones";
-    public static final String COL_REGISTRO_ID = "id_registro";
-    public static final String COL_REGISTRO_ID_USUARIO = "id_usuario";
-    public static final String COL_REGISTRO_ID_EVENTO = "id_evento";
-    public static final String COL_REGISTRO_ID_ACCION = "id_accion";
-    public static final String COL_REGISTRO_DESCRIPCION = "descripcion";
-    public static final String COL_REGISTRO_FECHA_HORA = "fecha_hora";
-
-    // ==========================================
-    // TABLA: sync_queue
-    // ==========================================
-    public static final String TABLE_SYNC_QUEUE = "sync_queue";
-    public static final String COL_SYNC_ID = "id_sinc";
-    public static final String COL_SYNC_TABLA = "tabla";
-    public static final String COL_SYNC_OPERACION = "operacion";
-    public static final String COL_SYNC_ID_REGISTRO = "id_registro";
-    public static final String COL_SYNC_DATOS_JSON = "datos_json";
-    public static final String COL_SYNC_TIMESTAMP = "tinestamp";
-    public static final String COL_SYNC_INTENTOS = "intentos";
-    public static final String COL_SYNC_SINCRONIZADO = "sincronizado";
-    
-
-
-    private Context context;
-
-    // Constructor
-    public Database(@Nullable Context context) {
-        super(context, DATABASE_NAME, null, DATABASE_VERSION);
+    private Database(Context context) {
+        super(context, DB_NAME, null, DB_VERSION);
         this.context = context;
     }
 
+    // IMPORTANTE: onCreate NO crea la BD, solo la copia desde assets
     @Override
     public void onCreate(SQLiteDatabase db) {
-        // La base de datos ya está creada y se copia desde assets
-        // Este metodo se deja vacío porque usamos una BD preexistente
-        Log.d("Database", "onCreate llamado - BD preexistente");
+        // No crear tablas, solo copiar BD existente
+        Log.d("Database", "onCreate: copiando BD desde assets");
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         // Para futuras migraciones
-        Log.d("Database", "onUpgrade llamado - Versión " + oldVersion + " a " + newVersion);
+        Log.d("Database", "onUpgrade: actualizando BD");
     }
 
-    // ==========================================
-    // CRUD para LUGAR (Edificios)
-    // ==========================================
+    //  Mtodo para copiar la BD desde assets (se llama al abrir la BD)
+    private void copyDatabaseFromAssets() {
+        File dbFile = context.getDatabasePath(DB_NAME);
 
-    public int insertarLugar(Lugar lugar) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(COL_LUGAR_NOMBRE, lugar.getNombre());
-        values.put(COL_LUGAR_DESCRIPCION, lugar.getDescripcion());
-        values.put(COL_LUGAR_URL_IMAGENES, lugar.getUrl_imagenes());
-        values.put(COL_LUGAR_LATITUD, lugar.getLatitud());
-        values.put(COL_LUGAR_LONGITUD, lugar.getLongitud());
-        values.put(COL_LUGAR_GEOJSON, lugar.getGeojson());
-        values.put(COL_LUGAR_ESTADO, lugar.isEstado() ? 1 : 0);
-
-        int id = db.insert(TABLE_LUGAR, null, values);
-        db.close();
-        return id;
-    }
-
-    public List<Lugar> obtenerTodosLosLugares() {
-        List<Lugar> lugares = new ArrayList<>();
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_LUGAR + " WHERE " + COL_LUGAR_ESTADO + " = 1", null);
-
-        if (cursor.moveToFirst()) {
-            do {
-                Lugar lugar = new Lugar();
-                lugar.setId_lugar(cursor.getInt(cursor.getColumnIndexOrThrow(COL_LUGAR_ID)));
-                lugar.setNombre(cursor.getString(cursor.getColumnIndexOrThrow(COL_LUGAR_NOMBRE)));
-                lugar.setDescripcion(cursor.getString(cursor.getColumnIndexOrThrow(COL_LUGAR_DESCRIPCION)));
-                lugar.setUrl_imagenes(cursor.getString(cursor.getColumnIndexOrThrow(COL_LUGAR_URL_IMAGENES)));
-                lugar.setLatitud(cursor.getString(cursor.getColumnIndexOrThrow(COL_LUGAR_LATITUD)));
-                lugar.setLongitud(cursor.getString(cursor.getColumnIndexOrThrow(COL_LUGAR_LONGITUD)));
-                lugar.setGeojson(cursor.getString(cursor.getColumnIndexOrThrow(COL_LUGAR_GEOJSON)));
-                lugar.setEstado(cursor.getInt(cursor.getColumnIndexOrThrow(COL_LUGAR_ESTADO)) == 1);
-                lugares.add(lugar);
-            } while (cursor.moveToNext());
+        // Si la BD ya existe, no copiar
+        if (dbFile.exists()) {
+            Log.d("Database", "BD ya existe en: " + dbFile.getAbsolutePath());
+            return;
         }
-        cursor.close();
-        db.close();
-        return lugares;
-    }
 
-    public Lugar obtenerLugarPorId(int id) {
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_LUGAR + " WHERE " + COL_LUGAR_ID + " = ? AND " + COL_LUGAR_ESTADO + " = 1", new String[]{String.valueOf(id)});
+        try {
+            // Crear carpeta si no existe
+            dbFile.getParentFile().mkdirs();
 
-        Lugar lugar = null;
-        if (cursor.moveToFirst()) {
-            lugar = new Lugar();
-            lugar.setId_lugar(cursor.getInt(cursor.getColumnIndexOrThrow(COL_LUGAR_ID)));
-            lugar.setNombre(cursor.getString(cursor.getColumnIndexOrThrow(COL_LUGAR_NOMBRE)));
-            lugar.setDescripcion(cursor.getString(cursor.getColumnIndexOrThrow(COL_LUGAR_DESCRIPCION)));
-            lugar.setUrl_imagenes(cursor.getString(cursor.getColumnIndexOrThrow(COL_LUGAR_URL_IMAGENES)));
-            lugar.setLatitud(cursor.getString(cursor.getColumnIndexOrThrow(COL_LUGAR_LATITUD)));
-            lugar.setLongitud(cursor.getString(cursor.getColumnIndexOrThrow(COL_LUGAR_LONGITUD)));
-            lugar.setGeojson(cursor.getString(cursor.getColumnIndexOrThrow(COL_LUGAR_GEOJSON)));
-            lugar.setEstado(cursor.getInt(cursor.getColumnIndexOrThrow(COL_LUGAR_ESTADO)) == 1);
+            // Copiar desde assets
+            InputStream is = context.getAssets().open("databases/" + DB_NAME);
+            FileOutputStream os = new FileOutputStream(dbFile);
+
+            byte[] buffer = new byte[1024];
+            int length;
+            while ((length = is.read(buffer)) > 0) {
+                os.write(buffer, 0, length);
+            }
+
+            os.flush();
+            os.close();
+            is.close();
+
+            Log.d("Database", "BD copiada exitosamente desde assets");
+
+        } catch (IOException e) {
+            Log.e("Database", "Error al copiar BD: " + e.getMessage());
+            e.printStackTrace();
         }
-        cursor.close();
-        db.close();
-        return lugar;
     }
 
-    public int actualizarLugar(Lugar lugar) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(COL_LUGAR_NOMBRE, lugar.getNombre());
-        values.put(COL_LUGAR_DESCRIPCION, lugar.getDescripcion());
-        values.put(COL_LUGAR_URL_IMAGENES, lugar.getUrl_imagenes());
-        values.put(COL_LUGAR_LATITUD, lugar.getLatitud());
-        values.put(COL_LUGAR_LONGITUD, lugar.getLongitud());
-        values.put(COL_LUGAR_GEOJSON, lugar.getGeojson());
-        values.put(COL_LUGAR_ESTADO, lugar.isEstado() ? 1 : 0);
-
-        int rows = db.update(TABLE_LUGAR, values, COL_LUGAR_ID + " = ?", new String[]{String.valueOf(lugar.getIdLugar())});
-        db.close();
-        return rows;
+    //  Sobrescribir getWritableDatabase para copiar BD antes de abrir
+    @Override
+    public SQLiteDatabase getWritableDatabase() {
+        copyDatabaseFromAssets();
+        return super.getWritableDatabase();
     }
 
-    public void eliminarLugar(int id) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        // Soft delete
-        ContentValues values = new ContentValues();
-        values.put(COL_LUGAR_ESTADO, 0);
-        db.update(TABLE_LUGAR, values, COL_LUGAR_ID + " = ?", new String[]{String.valueOf(id)});
-        db.close();
+    //  Sobrescribir getReadableDatabase para copiar BD antes de abrir
+    @Override
+    public SQLiteDatabase getReadableDatabase() {
+        copyDatabaseFromAssets();
+        return super.getReadableDatabase();
     }
 
-    // ==========================================
-    // CRUD para PISOS
-    // ==========================================
-
-    public int insertarPisos(Pisos piso) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(COL_PISO_ID_LUGAR, piso.getId_lugar());
-        values.put(COL_PISO_NUMERO, piso.getNumero());
-        values.put(COL_PISO_NOMBRE, piso.getNombre());
-        values.put(COL_PISO_ACTIVO, piso.isActivo() ? 1 : 0);
-
-        int id = db.insert(TABLE_PISOS, null, values);
-        db.close();
-        return id;
+    // CRUD - Lugar
+    public long insertLugar(Lugar lugar) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put("nombre", lugar.getNombre());
+        cv.put("descripcion", lugar.getDescripcion());
+        cv.put("url_imagenes", lugar.getUrl_imagenes());
+        cv.put("latitud", lugar.getLatitud());
+        cv.put("longitud", lugar.getLongitud());
+        cv.put("geojson", lugar.getGeojson());
+        cv.put("estado", 1);
+        return db.insert("lugar", null, cv);
     }
 
-    public List<Pisos> obtenerPisossPorLugar(int idLugar) {
-        List<Pisos> pisos = new ArrayList<>();
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_PISOS + " WHERE " + COL_PISO_ID_LUGAR + " = ? AND " + COL_PISO_ACTIVO + " = 1 ORDER BY " + COL_PISO_NUMERO, new String[]{String.valueOf(idLugar)});
-
-        if (cursor.moveToFirst()) {
-            do {
-                Pisos piso = new Pisos();
-                piso.setId_piso(cursor.getInt(cursor.getColumnIndexOrThrow(COL_PISO_ID)));
-                piso.setId_lugar(cursor.getInt(cursor.getColumnIndexOrThrow(COL_PISO_ID_LUGAR)));
-                piso.setNumero(cursor.getInt(cursor.getColumnIndexOrThrow(COL_PISO_NUMERO)));
-                piso.setNombre(cursor.getString(cursor.getColumnIndexOrThrow(COL_PISO_NOMBRE)));
-                piso.setActivo(cursor.getInt(cursor.getColumnIndexOrThrow(COL_PISO_ACTIVO)) == 1);
-                pisos.add(piso);
-            } while (cursor.moveToNext());
+    public List<Lugar> getLugares() {
+        List<Lugar> lista = new ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor c = db.rawQuery("SELECT * FROM lugar WHERE estado = 1", null);
+        while (c.moveToNext()) {
+            Lugar l = new Lugar(
+                    c.getInt(c.getColumnIndexOrThrow("id_lugar")),
+                    c.getString(c.getColumnIndexOrThrow("nombre")),
+                    c.getString(c.getColumnIndexOrThrow("descripcion")),
+                    c.getString(c.getColumnIndexOrThrow("url_imagenes")),
+                    c.getString(c.getColumnIndexOrThrow("latitud")),
+                    c.getString(c.getColumnIndexOrThrow("longitud")),
+                    c.getString(c.getColumnIndexOrThrow("geojson")),
+                    c.getInt(c.getColumnIndexOrThrow("estado"))
+            );
+            lista.add(l);
         }
-        cursor.close();
-        db.close();
-        return pisos;
+        c.close();
+        return lista;
     }
 
-    // ==========================================
-    // CRUD para ESPACIO (Aulas, baños, etc)
-    // ==========================================
 
-    public int insertarEspacio(Espacio espacio) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(COL_ESPACIO_ID_LUGAR, espacio.getId_lugar());
-        values.put(COL_ESPACIO_ID_PISO, espacio.getId_piso());
-        values.put(COL_ESPACIO_NOMBRE, espacio.getNombre());
-        values.put(COL_ESPACIO_DESCRIPCION, espacio.getDescripcion());
-        values.put(COL_ESPACIO_URL_IMAGENES, espacio.getUrl_imagenes());
-        values.put(COL_ESPACIO_LATITUD, espacio.getLatitud());
-        values.put(COL_ESPACIO_LONGITUD, espacio.getLongitud());
-        values.put(COL_ESPACIO_ESTADO, espacio.isEstado() ? 1 : 0);
 
-        int id = db.insert(TABLE_ESPACIO, null, values);
-        db.close();
-        return id;
-    }
-
-    public List<Espacio> obtenerEspaciosPorPisos(int idPisos) {
-        List<Espacio> espacios = new ArrayList<>();
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_ESPACIO + " WHERE " + COL_ESPACIO_ID_PISO + " = ? AND " + COL_ESPACIO_ESTADO + " = 1", new String[]{String.valueOf(idPisos)});
-
-        if (cursor.moveToFirst()) {
-            do {
-                Espacio espacio = new Espacio();
-                espacio.setEstado(cursor.getInt(cursor.getColumnIndexOrThrow(COL_ESPACIO_ID)));
-                espacio.setId_lugar(cursor.getInt(cursor.getColumnIndexOrThrow(COL_ESPACIO_ID_LUGAR)));
-                espacio.setId_piso(cursor.getInt(cursor.getColumnIndexOrThrow(COL_ESPACIO_ID_PISO)));
-                espacio.setNombre(cursor.getString(cursor.getColumnIndexOrThrow(COL_ESPACIO_NOMBRE)));
-                espacio.setDescripcion(cursor.getString(cursor.getColumnIndexOrThrow(COL_ESPACIO_DESCRIPCION)));
-                espacio.setUrl_imagenes(cursor.getString(cursor.getColumnIndexOrThrow(COL_ESPACIO_URL_IMAGENES)));
-                espacio.setLatitud(cursor.getString(cursor.getColumnIndexOrThrow(COL_ESPACIO_LATITUD)));
-                espacio.setLongitud(cursor.getString(cursor.getColumnIndexOrThrow(COL_ESPACIO_LONGITUD)));
-                espacio.setEstado(cursor.getInt(cursor.getColumnIndexOrThrow(COL_ESPACIO_ESTADO)) == 1);
-                espacios.add(espacio);
-            } while (cursor.moveToNext());
+    // ─────────────────────────────────────────
+    // CRUD - Pisos
+    // ─────────────────────────────────────────
+    public List<Pisos> getPisosByLugar(int idLugar) {
+        List<Pisos> lista = new ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor c = db.rawQuery(
+                "SELECT * FROM pisos WHERE id_lugar = ? AND activo = 1 ORDER BY numero",
+                new String[]{String.valueOf(idLugar)}
+        );
+        while (c.moveToNext()) {
+            Pisos p = new Pisos(
+                    c.getInt(c.getColumnIndexOrThrow("id_piso")),
+                    c.getInt(c.getColumnIndexOrThrow("id_lugar")),
+                    c.getInt(c.getColumnIndexOrThrow("numero")),
+                    c.getString(c.getColumnIndexOrThrow("nombre")),
+                    c.getInt(c.getColumnIndexOrThrow("activo"))
+            );
+            lista.add(p);
         }
-        cursor.close();
-        db.close();
-        return espacios;
+        c.close();
+        return lista;
     }
 
-    public Espacio obtenerEspacioPorId(int id) {
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_ESPACIO + " WHERE " + COL_ESPACIO_ID + " = ? AND " + COL_ESPACIO_ESTADO + " = 1", new String[]{String.valueOf(id)});
+    // ─────────────────────────────────────────
+    // CRUD - Espacio
+    // ─────────────────────────────────────────
+    public long insertEspacio(Espacio espacio) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put("id_lugar", espacio.getId_lugar());
+        cv.put("id_piso", espacio.getId_piso());
+        cv.put("nombre", espacio.getNombre());
+        cv.put("descripcion", espacio.getDescripcion());
+        cv.put("url_imagenes", espacio.getUrl_imagenes());
+        cv.put("latitud", espacio.getLatitud());
+        cv.put("longitud", espacio.getLongitud());
+        cv.put("estado", 1);
+        return db.insert("espacio", null, cv);
+    }
+
+
+    public Espacio getEspacioById(int idEspacio) {
+        SQLiteDatabase db = getReadableDatabase();
+
+        Cursor c = db.rawQuery(
+                "SELECT * FROM espacio WHERE id_espacio = ? AND estado = 1",
+                new String[]{String.valueOf(idEspacio)}
+        );
 
         Espacio espacio = null;
-        if (cursor.moveToFirst()) {
-            espacio = new Espacio();
-            espacio.setId_espacio(cursor.getInt(cursor.getColumnIndexOrThrow(COL_ESPACIO_ID)));
-            espacio.setId_lugar(cursor.getInt(cursor.getColumnIndexOrThrow(COL_ESPACIO_ID_LUGAR)));
-            espacio.setId_piso(cursor.getInt(cursor.getColumnIndexOrThrow(COL_ESPACIO_ID_PISO)));
-            espacio.setNombre(cursor.getString(cursor.getColumnIndexOrThrow(COL_ESPACIO_NOMBRE)));
-            espacio.setDescripcion(cursor.getString(cursor.getColumnIndexOrThrow(COL_ESPACIO_DESCRIPCION)));
-            espacio.setUrl_imagenes(cursor.getString(cursor.getColumnIndexOrThrow(COL_ESPACIO_URL_IMAGENES)));
-            espacio.setLatitud(cursor.getString(cursor.getColumnIndexOrThrow(COL_ESPACIO_LATITUD)));
-            espacio.setLongitud(cursor.getString(cursor.getColumnIndexOrThrow(COL_ESPACIO_LONGITUD)));
-            espacio.setEstado(cursor.getInt(cursor.getColumnIndexOrThrow(COL_ESPACIO_ESTADO)) == 1);
+
+        if (c.moveToFirst()) {
+            espacio = cursorToEspacio(c);
         }
-        cursor.close();
-        db.close();
+
+        c.close();
+
         return espacio;
     }
 
-    // ==========================================
-    // CRUD para GEOMETRIA (Polígonos)
-    // ==========================================
-
-    public int insertarGeometria(Geometria geometria) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(COL_GEOMETRIA_ID_ESPACIO, geometria.getId_espacio());
-        values.put(COL_GEOMETRIA_ID_PISO, geometria.getId_piso());
-        values.put(COL_GEOMETRIA_TIPO, geometria.getTipo());
-        values.put(COL_GEOMETRIA_VERTICES, geometria.getVertices());
-        values.put(COL_GEOMETRIA_COLOR, geometria.getColor());
-
-        int id = db.insert(TABLE_GEOMETRIA, null, values);
-        db.close();
-        return id;
-    }
-
-    public Geometria obtenerGeometriaPorEspacio(int idEspacio) {
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_GEOMETRIA + " WHERE " + COL_GEOMETRIA_ID_ESPACIO + " = ?", new String[]{String.valueOf(idEspacio)});
-
-        Geometria geometria = null;
-        if (cursor.moveToFirst()) {
-            geometria = new Geometria();
-            geometria.setId_geometria(cursor.getInt(cursor.getColumnIndexOrThrow(COL_GEOMETRIA_ID)));
-            geometria.setId_espacio(cursor.getInt(cursor.getColumnIndexOrThrow(COL_GEOMETRIA_ID_ESPACIO)));
-            geometria.setId_piso(cursor.getInt(cursor.getColumnIndexOrThrow(COL_GEOMETRIA_ID_PISO)));
-            geometria.setTipo(cursor.getString(cursor.getColumnIndexOrThrow(COL_GEOMETRIA_TIPO)));
-            geometria.setVertices(cursor.getString(cursor.getColumnIndexOrThrow(COL_GEOMETRIA_VERTICES)));
-            geometria.setColor(cursor.getString(cursor.getColumnIndexOrThrow(COL_GEOMETRIA_COLOR)));
+    public List<Espacio> getEspaciosByLugar(int idLugar) {
+        List<Espacio> lista = new ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor c = db.rawQuery(
+                "SELECT * FROM espacio WHERE id_lugar = ? AND estado = 1",
+                new String[]{String.valueOf(idLugar)}
+        );
+        while (c.moveToNext()) {
+            lista.add(cursorToEspacio(c));
         }
-        cursor.close();
-        db.close();
-        return geometria;
+        c.close();
+        return lista;
     }
 
-    // ==========================================
-    // CRUD para USUARIOS
-    // ==========================================
 
-    public int insertarUsuario(Usuarios usuario) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(COL_USUARIO_ID_ESTADO, usuario.getId_estado());
-        values.put(COL_USUARIO_ID_TIPO, usuario.getId_tipo());
-        values.put(COL_USUARIO_NOMBRES, usuario.getNombres());
-        values.put(COL_USUARIO_APELLIDOS, usuario.getApellidos());
-        values.put(COL_USUARIO_CARNET, usuario.getCarnet());
-        values.put(COL_USUARIO_CONTRASENA, usuario.getContraseña());
-
-        int id = db.insert(TABLE_USUARIOS, null, values);
-        db.close();
-        return id;
-    }
-
-    public Usuarios obtenerUsuarioPorCarnet(String carnet) {
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_USUARIOS + " WHERE " + COL_USUARIO_CARNET + " = ?", new String[]{carnet});
-
-        Usuarios usuario = null;
-        if (cursor.moveToFirst()) {
-            usuario = new Usuarios();
-            usuario.setId_usuario(cursor.getInt(cursor.getColumnIndexOrThrow(COL_USUARIO_ID)));
-            usuario.setId_estado(cursor.getInt(cursor.getColumnIndexOrThrow(COL_USUARIO_ID_ESTADO)));
-            usuario.setId_tipo(cursor.getInt(cursor.getColumnIndexOrThrow(COL_USUARIO_ID_TIPO)));
-            usuario.setNombres(cursor.getString(cursor.getColumnIndexOrThrow(COL_USUARIO_NOMBRES)));
-            usuario.setApellidos(cursor.getString(cursor.getColumnIndexOrThrow(COL_USUARIO_APELLIDOS)));
-            usuario.setCarnet(cursor.getString(cursor.getColumnIndexOrThrow(COL_USUARIO_CARNET)));
-            usuario.setContraseña(cursor.getString(cursor.getColumnIndexOrThrow(COL_USUARIO_CONTRASENA)));
+    public List<Espacio> getEspaciosByPiso(int idLugar, int idPiso) {
+        List<Espacio> lista = new ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor c = db.rawQuery(
+                "SELECT * FROM espacio WHERE id_lugar = ? AND id_piso = ? AND estado = 1",
+                new String[]{String.valueOf(idLugar), String.valueOf(idPiso)}
+        );
+        while (c.moveToNext()) {
+            lista.add(cursorToEspacio(c));
         }
-        cursor.close();
-        db.close();
-        return usuario;
+        c.close();
+        return lista;
     }
 
-    // ==========================================
-    // CRUD para EVENTOS
-    // ==========================================
-    
-    /*
-    public int insertarEvento(Evento evento) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(COL_EVENTO_ID_LUGAR, evento.getIdLugar());
-        values.put(COL_EVENTO_ID_ESPACIO, evento.getIdEspacio());
-        values.put(COL_EVENTO_NOMBRE, evento.getNombre());
-        values.put(COL_EVENTO_DESCRIPCION, evento.getDescripcion());
-        values.put(COL_EVENTO_LATITUD, evento.getLatitud());
-        values.put(COL_EVENTO_LONGITUD, evento.getLongitud());
-        values.put(COL_EVENTO_FECHA_INICIO, evento.getFechaInicio());
-        values.put(COL_EVENTO_FECHA_FIN, evento.getFechaFin());
-        values.put(COL_EVENTO_ACTIVO, evento.isActivo() ? 1 : 0);
-
-        int id = db.insert(TABLE_EVENTOS, null, values);
-        db.close();
-        return id;
+    private Espacio cursorToEspacio(Cursor c) {
+        Espacio e = new Espacio(
+                c.getInt(c.getColumnIndexOrThrow("id_espacio")),
+                c.getInt(c.getColumnIndexOrThrow("id_lugar")),
+                c.getInt(c.getColumnIndexOrThrow("id_piso")),
+                c.getString(c.getColumnIndexOrThrow("nombre")),
+                c.getString(c.getColumnIndexOrThrow("descripcion")),
+                c.getString(c.getColumnIndexOrThrow("url_imagenes")),
+                c.getString(c.getColumnIndexOrThrow("latitud")),
+                c.getString(c.getColumnIndexOrThrow("longitud")),
+                c.getInt(c.getColumnIndexOrThrow("estado"))
+        );
+        return e;
     }
 
-    public List<Evento> obtenerEventosActivos() {
-        List<Evento> eventos = new ArrayList<>();
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_EVENTOS + " WHERE " + COL_EVENTO_ACTIVO + " = 1 ORDER BY " + COL_EVENTO_FECHA_INICIO, null);
-
-        if (cursor.moveToFirst()) {
-            do {
-                Evento evento = new Evento();
-                evento.setIdEvento(cursor.getInt(cursor.getColumnIndexOrThrow(COL_EVENTO_ID)));
-                int idLugar = cursor.getInt(cursor.getColumnIndexOrThrow(COL_EVENTO_ID_LUGAR));
-                int idEspacio = cursor.getInt(cursor.getColumnIndexOrThrow(COL_EVENTO_ID_ESPACIO));
-                evento.setIdLugar(cursor.isNull(cursor.getColumnIndexOrThrow(COL_EVENTO_ID_LUGAR)) ? null : idLugar);
-                evento.setIdEspacio(cursor.isNull(cursor.getColumnIndexOrThrow(COL_EVENTO_ID_ESPACIO)) ? null : idEspacio);
-                evento.setNombre(cursor.getString(cursor.getColumnIndexOrThrow(COL_EVENTO_NOMBRE)));
-                evento.setDescripcion(cursor.getString(cursor.getColumnIndexOrThrow(COL_EVENTO_DESCRIPCION)));
-                evento.setLatitud(cursor.getString(cursor.getColumnIndexOrThrow(COL_EVENTO_LATITUD)));
-                evento.setLongitud(cursor.getString(cursor.getColumnIndexOrThrow(COL_EVENTO_LONGITUD)));
-                evento.setFechaInicio(cursor.getInt(cursor.getColumnIndexOrThrow(COL_EVENTO_FECHA_INICIO)));
-                evento.setFechaFin(cursor.getInt(cursor.getColumnIndexOrThrow(COL_EVENTO_FECHA_FIN)));
-                evento.setActivo(cursor.getInt(cursor.getColumnIndexOrThrow(COL_EVENTO_ACTIVO)) == 1);
-                eventos.add(evento);
-            } while (cursor.moveToNext());
-        }
-        cursor.close();
-        db.close();
-        return eventos;
+    // ─────────────────────────────────────────
+    // CRUD - Geometria
+    // ─────────────────────────────────────────
+    public long insertGeometria(Geometria geo) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put("id_espacio", geo.getId_espacio());
+        cv.put("id_lugar", geo.getId_lugar());
+        cv.put("id_piso", geo.getId_piso());
+        cv.put("tipo", geo.getTipo());
+        cv.put("vertices", geo.getVertices());
+        cv.put("color", geo.getColor());
+        return db.insert("geometria", null, cv);
     }
-  */
+
+    public Geometria getGeometriaByLugar(int idLugar) {
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor c = db.rawQuery(
+                "SELECT * FROM geometria WHERE id_lugar = ? AND id_espacio IS NULL",
+                new String[]{String.valueOf(idLugar)}
+        );
+        Geometria geo = null;
+        if (c.moveToFirst()) geo = cursorToGeometria(c);
+        c.close();
+        return geo;
+    }
+
+    public Geometria getGeometriaByEspacio(int idEspacio) {
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor c = db.rawQuery(
+                "SELECT * FROM geometria WHERE id_espacio = ?",
+                new String[]{String.valueOf(idEspacio)}
+        );
+        Geometria geo = null;
+        if (c.moveToFirst()) geo = cursorToGeometria(c);
+        c.close();
+        return geo;
+    }
+
+    private Geometria cursorToGeometria(Cursor c) {
+        Geometria g = new Geometria(
+            c.getInt(c.getColumnIndexOrThrow("id_geometria")),
+            c.getInt(c.getColumnIndexOrThrow("id_espacio")),
+                c.getInt(c.getColumnIndexOrThrow("id_lugar")),
+            c.getInt(c.getColumnIndexOrThrow("id_piso")),
+            c.getString(c.getColumnIndexOrThrow("tipo")),
+            c.getString(c.getColumnIndexOrThrow("vertices")),
+            c.getString(c.getColumnIndexOrThrow("color"))
+        );
+        return g;
+    }
+
+
+
+
+
+
 }

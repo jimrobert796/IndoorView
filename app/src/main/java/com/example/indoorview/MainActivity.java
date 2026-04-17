@@ -2,6 +2,7 @@ package com.example.indoorview;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -10,17 +11,27 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.indoorview.models.Espacio;
+import com.example.indoorview.models.Geometria;
+import com.example.indoorview.models.Lugar;
+import com.example.indoorview.models.Pisos;
 import com.mapbox.bindgen.Value;
 import com.mapbox.geojson.Point;
 import com.mapbox.geojson.Polygon;
+import com.mapbox.maps.CameraBoundsOptions;
 import com.mapbox.maps.CameraOptions;
+import com.mapbox.maps.CoordinateBounds;
 import com.mapbox.maps.MapView;
 import com.mapbox.maps.Style;
+import com.mapbox.maps.extension.style.layers.generated.FillLayer;
+import com.mapbox.maps.extension.style.layers.generated.LineLayer;
+import com.mapbox.maps.extension.style.sources.generated.GeoJsonSource;
 import com.mapbox.maps.plugin.Plugin;
 import com.mapbox.maps.plugin.annotation.AnnotationPlugin;
 import com.mapbox.maps.plugin.annotation.AnnotationType;
@@ -42,14 +53,13 @@ public class MainActivity extends AppCompatActivity {
     // Dos managers separados:
     // - uno para pines permanentes (lugars, espacios, UGB)
     // - uno para vértices temporales mientras dibuja
-
     private PointAnnotationManager managerPermanente;     // pruebas
     private PointAnnotationManager managerTemporal;
 
     // Modos
-    private static final int MODO_NINGUNO  = 0;
+    private static final int MODO_NINGUNO = 0;
     private static final int MODO_LUGAR = 1;
-    private static final int MODO_ESPACIO     = 2;
+    private static final int MODO_ESPACIO = 2;
     private int modoActual = MODO_NINGUNO;
 
     // Datos
@@ -64,6 +74,15 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean modoEdicionActivo = false;
 
+    // Database
+    private Database db;
+
+    private MapManager mapManager;
+
+    // Selecion de edificios
+    private int lugarSeleccionadoId = -1;
+    private boolean espaciosVisibles = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -72,13 +91,23 @@ public class MainActivity extends AppCompatActivity {
 
         // Inicalizaciones de variables XML
         mapView = findViewById(R.id.mapView);
-        btnLugar  = findViewById(R.id.btnEditar);
+        btnLugar = findViewById(R.id.btnEditar);
         btnEspacios = findViewById(R.id.btnEspacios);
         btnCerrar = findViewById(R.id.btnCerrar);
-        btnDeshacer  = findViewById(R.id.btnDeshacer);
+        btnDeshacer = findViewById(R.id.btnDeshacer);
         btnFinalizar = findViewById(R.id.btnFinalizar);
         tvModo = findViewById(R.id.tvModo);
         btnHabilitar = findViewById(R.id.btnHabilitar);
+
+
+        // Inicializar base de datos
+        db = Database.getInstance(this);
+
+        // Inicializar MapManager
+        mapManager = new MapManager(mapView, db, this);
+
+        // Verificar conexión a la BD (opcional)
+        mapManager.verificarConexionBD();
 
 
         // ================= CARGA DE MAPA =========================
@@ -90,6 +119,41 @@ public class MainActivity extends AppCompatActivity {
                             .zoom(17.0)
                             .build()
             );
+            // ============ CONFIGURACIONES DE MAPA ==========
+
+            // zoom min o max
+            mapView.getMapboxMap().setBounds(
+                    new CameraBoundsOptions.Builder()
+                            .minZoom(16.0)
+                            .maxZoom(20.0)
+                            .build()
+            );
+
+            // Limitar área del mapa (bounding box)
+            CoordinateBounds bounds = new CoordinateBounds(
+                    Point.fromLngLat(-88.4195, 13.3435), // noreste (arriba derecha)
+                    Point.fromLngLat(-88.4165, 13.3410));  // suroeste (abajo izquierda)
+
+                    // Desactivar los edificios brindados por OpenStreetMap
+            style.setStyleLayerProperty(
+                    "building",
+                    "visibility",
+                    Value.valueOf("none")
+            );
+
+            style.setStyleLayerProperty(
+                    "building-extrusion",
+                    "visibility",
+                    Value.valueOf("none")
+            );
+
+
+            //  Cargar los polígonos de los edificios
+            mapManager.cargarPoligonosLugar();
+
+            // Cargar los polígonos de los espacios (aulas)
+            // mapManager.dibujarTodosLosEspacios();
+
 
             // Crear dos managers separados
             AnnotationPlugin annotationPlugin = mapView.getPlugin(Plugin.Mapbox.MAPBOX_ANNOTATION_PLUGIN_ID);
@@ -99,6 +163,7 @@ public class MainActivity extends AppCompatActivity {
 
             managerTemporal = (PointAnnotationManager) annotationPlugin
                     .createAnnotationManager(AnnotationType.PointAnnotation, null);
+
 
             // Pin UGB permanente
             agregarPinPermanente(
@@ -128,7 +193,8 @@ public class MainActivity extends AppCompatActivity {
 
         // Habilitacion
         // Ocultar todos los botones de edición por defaul
-        ocultarEdicion();;
+        ocultarEdicion();
+        ;
 
         btnHabilitar.setOnClickListener(v -> {
             if (modoEdicionActivo) {

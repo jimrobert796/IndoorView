@@ -10,15 +10,16 @@ public class Lugar {
     private String geojson;
     private int estado;
 
-    public Lugar(int estado, String geojson, String longitud, String latitud, String url_imagenes, String descripcion, String nombre, int id_lugar) {
-        this.estado = estado;
-        this.geojson = geojson;
-        this.longitud = longitud;
-        this.latitud = latitud;
-        this.url_imagenes = url_imagenes;
-        this.descripcion = descripcion;
-        this.nombre = nombre;
+    public Lugar(int id_lugar, String nombre, String descripcion,String url_imagenes, String latitud, String longitud, String geojson, int estado) {
+
         this.id_lugar = id_lugar;
+        this.nombre = nombre;
+        this.descripcion = descripcion;
+        this.url_imagenes = url_imagenes;
+        this.latitud = latitud;
+        this.longitud = longitud;
+        this.geojson = geojson;
+        this.estado = estado;
     }
 
     public int getId_lugar() {
