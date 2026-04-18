@@ -45,4 +45,7 @@ dependencies {
     implementation("com.mapbox.maps:android-ndk27:11.21.0")
     // Turf para validar punto dentro del polígono
     implementation("com.mapbox.mapboxsdk:mapbox-sdk-turf:7.10.0")
+
+    //cardview:1.0.0 uso en el login
+    implementation("androidx.cardview:cardview:1.0.0")
 }
