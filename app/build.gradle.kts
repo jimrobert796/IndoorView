@@ -48,4 +48,8 @@ dependencies {
 
     //cardview:1.0.0 uso en el login
     implementation("androidx.cardview:cardview:1.0.0")
+    //Barra de navegacion inferior
+    implementation("com.google.android.material:material:1.12.0")
+    implementation("androidx.navigation:navigation-fragment-ktx:2.7.7")
+    implementation("androidx.navigation:navigation-ui-ktx:2.7.7")
 }
