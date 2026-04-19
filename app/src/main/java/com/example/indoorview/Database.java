@@ -8,9 +8,11 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
 import com.example.indoorview.models.Espacio;
+import com.example.indoorview.models.Eventos;
 import com.example.indoorview.models.Geometria;
 import com.example.indoorview.models.Lugar;
 import com.example.indoorview.models.Pisos;
+import com.example.indoorview.models.Usuarios;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -288,6 +290,427 @@ public class Database extends SQLiteOpenHelper {
         return g;
     }
 
+    // ==========================================
+// CRUD - EVENTOS
+// ==========================================
+
+    // 1. INSERTAR evento
+    public long insertarEvento(Eventos evento) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put("id_lugar", evento.getId_lugar());
+        cv.put("id_espacio", evento.getId_espacio());
+        cv.put("nombre", evento.getNombre());
+        cv.put("descripcion", evento.getDescripcion());
+        cv.put("latitud", evento.getLatitud());
+        cv.put("longitud", evento.getLongitud());
+        cv.put("fecha_inicio", evento.getFecha_inicio());
+        cv.put("fecha_fin", evento.getFecha_fin());
+        cv.put("estado", evento.getEstado());
+
+        long id = db.insert("eventos", null, cv);
+        db.close();
+        return id;
+    }
+
+    // 2. OBTENER todos los eventos activos
+    public List<Eventos> getEventos() {
+        List<Eventos> lista = new ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor c = db.rawQuery("SELECT * FROM eventos WHERE estado = 1", null);
+
+        while (c.moveToNext()) {
+            Eventos e = new Eventos(
+                    c.getInt(c.getColumnIndexOrThrow("id_evento")),
+                    c.getInt(c.getColumnIndexOrThrow("id_lugar")),
+                    c.getInt(c.getColumnIndexOrThrow("id_espacio")),
+                    c.getString(c.getColumnIndexOrThrow("nombre")),
+                    c.getString(c.getColumnIndexOrThrow("descripcion")),
+                    c.getString(c.getColumnIndexOrThrow("latitud")),
+                    c.getString(c.getColumnIndexOrThrow("longitud")),
+                    c.getString(c.getColumnIndexOrThrow("fecha_inicio")),
+                    c.getString(c.getColumnIndexOrThrow("fecha_fin")),
+                    c.getInt(c.getColumnIndexOrThrow("estado"))
+            );
+            lista.add(e);
+        }
+        c.close();
+        db.close();
+        return lista;
+    }
+
+    // 3. OBTENER evento por ID
+    public Eventos getEventoById(int id) {
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor c = db.rawQuery("SELECT * FROM eventos WHERE id_evento = ?",
+                new String[]{String.valueOf(id)});
+
+        Eventos evento = null;
+        if (c.moveToFirst()) {
+            evento = new Eventos(
+                    c.getInt(c.getColumnIndexOrThrow("id_evento")),
+                    c.getInt(c.getColumnIndexOrThrow("id_lugar")),
+                    c.getInt(c.getColumnIndexOrThrow("id_espacio")),
+                    c.getString(c.getColumnIndexOrThrow("nombre")),
+                    c.getString(c.getColumnIndexOrThrow("descripcion")),
+                    c.getString(c.getColumnIndexOrThrow("latitud")),
+                    c.getString(c.getColumnIndexOrThrow("longitud")),
+                    c.getString(c.getColumnIndexOrThrow("fecha_inicio")),
+                    c.getString(c.getColumnIndexOrThrow("fecha_fin")),
+                    c.getInt(c.getColumnIndexOrThrow("estado"))
+            );
+        }
+        c.close();
+        db.close();
+        return evento;
+    }
+
+    // 4. OBTENER eventos por lugar (edificio)
+    public List<Eventos> getEventosByLugar(int idLugar) {
+        List<Eventos> lista = new ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor c = db.rawQuery("SELECT * FROM eventos WHERE id_lugar = ? AND estado = 1",
+                new String[]{String.valueOf(idLugar)});
+
+        while (c.moveToNext()) {
+            Eventos e = new Eventos(
+                    c.getInt(c.getColumnIndexOrThrow("id_evento")),
+                    c.getInt(c.getColumnIndexOrThrow("id_lugar")),
+                    c.getInt(c.getColumnIndexOrThrow("id_espacio")),
+                    c.getString(c.getColumnIndexOrThrow("nombre")),
+                    c.getString(c.getColumnIndexOrThrow("descripcion")),
+                    c.getString(c.getColumnIndexOrThrow("latitud")),
+                    c.getString(c.getColumnIndexOrThrow("longitud")),
+                    c.getString(c.getColumnIndexOrThrow("fecha_inicio")),
+                    c.getString(c.getColumnIndexOrThrow("fecha_fin")),
+                    c.getInt(c.getColumnIndexOrThrow("estado"))
+            );
+            lista.add(e);
+        }
+        c.close();
+        db.close();
+        return lista;
+    }
+
+    // 5. OBTENER eventos por espacio (aula)
+    public List<Eventos> getEventosByEspacio(int idEspacio) {
+        List<Eventos> lista = new ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor c = db.rawQuery("SELECT * FROM eventos WHERE id_espacio = ? AND estado = 1",
+                new String[]{String.valueOf(idEspacio)});
+
+        while (c.moveToNext()) {
+            Eventos e = new Eventos(
+                    c.getInt(c.getColumnIndexOrThrow("id_evento")),
+                    c.getInt(c.getColumnIndexOrThrow("id_lugar")),
+                    c.getInt(c.getColumnIndexOrThrow("id_espacio")),
+                    c.getString(c.getColumnIndexOrThrow("nombre")),
+                    c.getString(c.getColumnIndexOrThrow("descripcion")),
+                    c.getString(c.getColumnIndexOrThrow("latitud")),
+                    c.getString(c.getColumnIndexOrThrow("longitud")),
+                    c.getString(c.getColumnIndexOrThrow("fecha_inicio")),
+                    c.getString(c.getColumnIndexOrThrow("fecha_fin")),
+                    c.getInt(c.getColumnIndexOrThrow("estado"))
+            );
+            lista.add(e);
+        }
+        c.close();
+        db.close();
+        return lista;
+    }
+
+    // 6. OBTENER eventos actuales (fecha_inicio <= hoy <= fecha_fin)
+    public List<Eventos> getEventosActuales() {
+        List<Eventos> lista = new ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
+        long hoy = System.currentTimeMillis();
+
+        Cursor c = db.rawQuery("SELECT * FROM eventos WHERE estado = 1 AND fecha_inicio <= ? AND fecha_fin >= ?",
+                new String[]{String.valueOf(hoy), String.valueOf(hoy)});
+
+        while (c.moveToNext()) {
+            Eventos e = new Eventos(
+                    c.getInt(c.getColumnIndexOrThrow("id_evento")),
+                    c.getInt(c.getColumnIndexOrThrow("id_lugar")),
+                    c.getInt(c.getColumnIndexOrThrow("id_espacio")),
+                    c.getString(c.getColumnIndexOrThrow("nombre")),
+                    c.getString(c.getColumnIndexOrThrow("descripcion")),
+                    c.getString(c.getColumnIndexOrThrow("latitud")),
+                    c.getString(c.getColumnIndexOrThrow("longitud")),
+                    c.getString(c.getColumnIndexOrThrow("fecha_inicio")),
+                    c.getString(c.getColumnIndexOrThrow("fecha_fin")),
+                    c.getInt(c.getColumnIndexOrThrow("estado"))
+            );
+            lista.add(e);
+        }
+        c.close();
+        db.close();
+        return lista;
+    }
+
+    // 7. ACTUALIZAR evento
+    public int actualizarEvento(Eventos evento) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put("id_lugar", evento.getId_lugar());
+        cv.put("id_espacio", evento.getId_espacio());
+        cv.put("nombre", evento.getNombre());
+        cv.put("descripcion", evento.getDescripcion());
+        cv.put("latitud", evento.getLatitud());
+        cv.put("longitud", evento.getLongitud());
+        cv.put("fecha_inicio", evento.getFecha_inicio());
+        cv.put("fecha_fin", evento.getFecha_fin());
+        cv.put("estado", evento.getEstado());
+
+        int rows = db.update("eventos", cv, "id_evento = ?",
+                new String[]{String.valueOf(evento.getId_evento())});
+        db.close();
+        return rows;
+    }
+
+    // 8. ELIMINAR evento (soft delete - cambiar estado a 0)
+    public void eliminarEvento(int id) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put("estado", 0);
+        db.update("eventos", cv, "id_evento = ?", new String[]{String.valueOf(id)});
+        db.close();
+    }
+
+    // 9. RESTAURAR evento (cambiar estado a 1)
+    public void restaurarEvento(int id) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put("estado", 1);
+        db.update("eventos", cv, "id_evento = ?", new String[]{String.valueOf(id)});
+        db.close();
+    }
+
+    // ==========================================
+    // CRUD - USUARIOS
+    // ==========================================
+
+    // 1. INSERTAR usuario
+    public long insertarUsuario(Usuarios usuario) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put("id_tipo", usuario.getId_tipo());
+        cv.put("nombres", usuario.getNombres());
+        cv.put("apellidos", usuario.getApellidos());
+        cv.put("correo", usuario.getCorreo());
+        cv.put("carnet", usuario.getCarnet());
+        cv.put("contraseña", usuario.getContraseña());
+        cv.put("estado", usuario.getEstado());
+
+        long id = db.insert("usuarios", null, cv);
+        db.close();
+        return id;
+    }
+
+    // 2. OBTENER todos los usuarios activos (estado = 1)
+    public List<Usuarios> getUsuarios() {
+        List<Usuarios> lista = new ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor c = db.rawQuery("SELECT * FROM usuarios WHERE estado = 1", null);
+
+        while (c.moveToNext()) {
+            Usuarios u = new Usuarios(
+                    c.getInt(c.getColumnIndexOrThrow("id_usuario")),
+                    c.getInt(c.getColumnIndexOrThrow("id_tipo")),
+                    c.getString(c.getColumnIndexOrThrow("nombres")),
+                    c.getString(c.getColumnIndexOrThrow("apellidos")),
+                    c.getString(c.getColumnIndexOrThrow("correo")),
+                    c.getString(c.getColumnIndexOrThrow("carnet")),
+                    c.getString(c.getColumnIndexOrThrow("contraseña")),
+                    c.getInt(c.getColumnIndexOrThrow("estado"))
+            );
+            lista.add(u);
+        }
+        c.close();
+        db.close();
+        return lista;
+    }
+
+    // 3. OBTENER todos los usuarios (incluyendo inactivos)
+    public List<Usuarios> getUsuariosTodos() {
+        List<Usuarios> lista = new ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor c = db.rawQuery("SELECT * FROM usuarios", null);
+
+        while (c.moveToNext()) {
+            Usuarios u = new Usuarios(
+                    c.getInt(c.getColumnIndexOrThrow("id_usuario")),
+                    c.getInt(c.getColumnIndexOrThrow("id_tipo")),
+                    c.getString(c.getColumnIndexOrThrow("nombres")),
+                    c.getString(c.getColumnIndexOrThrow("apellidos")),
+                    c.getString(c.getColumnIndexOrThrow("correo")),
+                    c.getString(c.getColumnIndexOrThrow("carnet")),
+                    c.getString(c.getColumnIndexOrThrow("contraseña")),
+                    c.getInt(c.getColumnIndexOrThrow("estado"))
+            );
+            lista.add(u);
+        }
+        c.close();
+        db.close();
+        return lista;
+    }
+
+    // 4. OBTENER usuario por ID
+    public Usuarios getUsuarioById(int id) {
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor c = db.rawQuery("SELECT * FROM usuarios WHERE id_usuario = ?",
+                new String[]{String.valueOf(id)});
+
+        Usuarios usuario = null;
+        if (c.moveToFirst()) {
+            usuario = new Usuarios(
+                    c.getInt(c.getColumnIndexOrThrow("id_usuario")),
+                    c.getInt(c.getColumnIndexOrThrow("id_tipo")),
+                    c.getString(c.getColumnIndexOrThrow("nombres")),
+                    c.getString(c.getColumnIndexOrThrow("apellidos")),
+                    c.getString(c.getColumnIndexOrThrow("correo")),
+                    c.getString(c.getColumnIndexOrThrow("carnet")),
+                    c.getString(c.getColumnIndexOrThrow("contraseña")),
+                    c.getInt(c.getColumnIndexOrThrow("estado"))
+            );
+        }
+        c.close();
+        db.close();
+        return usuario;
+    }
+
+    // 5. OBTENER usuario por email (para login)
+    public Usuarios getUsuarioByEmail(String email) {
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor c = db.rawQuery("SELECT * FROM usuarios WHERE correo = ? AND estado = 1",
+                new String[]{email});
+
+        Usuarios usuario = null;
+        if (c.moveToFirst()) {
+            usuario = new Usuarios(
+                    c.getInt(c.getColumnIndexOrThrow("id_usuario")),
+                    c.getInt(c.getColumnIndexOrThrow("id_tipo")),
+                    c.getString(c.getColumnIndexOrThrow("nombres")),
+                    c.getString(c.getColumnIndexOrThrow("apellidos")),
+                    c.getString(c.getColumnIndexOrThrow("correo")),
+                    c.getString(c.getColumnIndexOrThrow("carnet")),
+                    c.getString(c.getColumnIndexOrThrow("contraseña")),
+                    c.getInt(c.getColumnIndexOrThrow("estado"))
+            );
+        }
+        c.close();
+        db.close();
+        return usuario;
+    }
+
+    // 6. OBTENER usuario por carnet
+    public Usuarios getUsuarioByCarnet(String carnet) {
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor c = db.rawQuery("SELECT * FROM usuarios WHERE carnet = ? AND estado = 1",
+                new String[]{carnet});
+
+        Usuarios usuario = null;
+        if (c.moveToFirst()) {
+            usuario = new Usuarios(
+                    c.getInt(c.getColumnIndexOrThrow("id_usuario")),
+                    c.getInt(c.getColumnIndexOrThrow("id_tipo")),
+                    c.getString(c.getColumnIndexOrThrow("nombres")),
+                    c.getString(c.getColumnIndexOrThrow("apellidos")),
+                    c.getString(c.getColumnIndexOrThrow("correo")),
+                    c.getString(c.getColumnIndexOrThrow("carnet")),
+                    c.getString(c.getColumnIndexOrThrow("contraseña")),
+                    c.getInt(c.getColumnIndexOrThrow("estado"))
+            );
+        }
+        c.close();
+        db.close();
+        return usuario;
+    }
+
+    // 7. OBTENER usuarios por tipo (admin, estudiante, etc.)
+    public List<Usuarios> getUsuariosByTipo(int idTipo) {
+        List<Usuarios> lista = new ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor c = db.rawQuery("SELECT * FROM usuarios WHERE id_tipo = ? AND estado = 1",
+                new String[]{String.valueOf(idTipo)});
+
+        while (c.moveToNext()) {
+            Usuarios u = new Usuarios(
+                    c.getInt(c.getColumnIndexOrThrow("id_usuario")),
+                    c.getInt(c.getColumnIndexOrThrow("id_tipo")),
+                    c.getString(c.getColumnIndexOrThrow("nombres")),
+                    c.getString(c.getColumnIndexOrThrow("apellidos")),
+                    c.getString(c.getColumnIndexOrThrow("correo")),
+                    c.getString(c.getColumnIndexOrThrow("carnet")),
+                    c.getString(c.getColumnIndexOrThrow("contraseña")),
+                    c.getInt(c.getColumnIndexOrThrow("estado"))
+            );
+            lista.add(u);
+        }
+        c.close();
+        db.close();
+        return lista;
+    }
+
+    // 8. ACTUALIZAR usuario
+    public int actualizarUsuario(Usuarios usuario) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put("id_tipo", usuario.getId_tipo());
+        cv.put("nombres", usuario.getNombres());
+        cv.put("apellidos", usuario.getApellidos());
+        cv.put("correo", usuario.getCorreo());
+        cv.put("carnet", usuario.getCarnet());
+        cv.put("contraseña", usuario.getContraseña());
+        cv.put("estado", usuario.getEstado());
+
+        int rows = db.update("usuarios", cv, "id_usuario = ?",
+                new String[]{String.valueOf(usuario.getId_usuario())});
+        db.close();
+        return rows;
+    }
+
+    // 9. ELIMINAR usuario (soft delete - cambiar estado a 0)
+    public void eliminarUsuario(int id) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put("estado", 0);
+        db.update("usuarios", cv, "id_usuario = ?", new String[]{String.valueOf(id)});
+        db.close();
+    }
+
+    // 10. RESTAURAR usuario (cambiar estado a 1)
+    public void restaurarUsuario(int id) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put("estado", 1);
+        db.update("usuarios", cv, "id_usuario = ?", new String[]{String.valueOf(id)});
+        db.close();
+    }
+
+    // 11. VERIFICAR login (email + contraseña) CONCEPTO NO FINAL
+    public Usuarios login(String email, String contraseña) {
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor c = db.rawQuery("SELECT * FROM usuarios WHERE correo = ? AND contraseña = ? AND estado = 1",
+                new String[]{email, contraseña});
+
+        Usuarios usuario = null;
+        if (c.moveToFirst()) {
+            usuario = new Usuarios(
+                    c.getInt(c.getColumnIndexOrThrow("id_usuario")),
+                    c.getInt(c.getColumnIndexOrThrow("id_tipo")),
+                    c.getString(c.getColumnIndexOrThrow("nombres")),
+                    c.getString(c.getColumnIndexOrThrow("apellidos")),
+                    c.getString(c.getColumnIndexOrThrow("correo")),
+                    c.getString(c.getColumnIndexOrThrow("carnet")),
+                    c.getString(c.getColumnIndexOrThrow("contraseña")),
+                    c.getInt(c.getColumnIndexOrThrow("estado"))
+            );
+        }
+        c.close();
+        db.close();
+        return usuario;
+    }
 
 
 
