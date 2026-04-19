@@ -109,8 +109,6 @@ public class Database extends SQLiteOpenHelper {
         cv.put("nombre", lugar.getNombre());
         cv.put("descripcion", lugar.getDescripcion());
         cv.put("url_imagenes", lugar.getUrl_imagenes());
-        cv.put("latitud", lugar.getLatitud());
-        cv.put("longitud", lugar.getLongitud());
         cv.put("geojson", lugar.getGeojson());
         cv.put("estado", 1);
         return db.insert("lugar", null, cv);
@@ -126,8 +124,6 @@ public class Database extends SQLiteOpenHelper {
                     c.getString(c.getColumnIndexOrThrow("nombre")),
                     c.getString(c.getColumnIndexOrThrow("descripcion")),
                     c.getString(c.getColumnIndexOrThrow("url_imagenes")),
-                    c.getString(c.getColumnIndexOrThrow("latitud")),
-                    c.getString(c.getColumnIndexOrThrow("longitud")),
                     c.getString(c.getColumnIndexOrThrow("geojson")),
                     c.getInt(c.getColumnIndexOrThrow("estado"))
             );
@@ -174,8 +170,6 @@ public class Database extends SQLiteOpenHelper {
         cv.put("nombre", espacio.getNombre());
         cv.put("descripcion", espacio.getDescripcion());
         cv.put("url_imagenes", espacio.getUrl_imagenes());
-        cv.put("latitud", espacio.getLatitud());
-        cv.put("longitud", espacio.getLongitud());
         cv.put("estado", 1);
         return db.insert("espacio", null, cv);
     }
@@ -237,8 +231,6 @@ public class Database extends SQLiteOpenHelper {
                 c.getString(c.getColumnIndexOrThrow("nombre")),
                 c.getString(c.getColumnIndexOrThrow("descripcion")),
                 c.getString(c.getColumnIndexOrThrow("url_imagenes")),
-                c.getString(c.getColumnIndexOrThrow("latitud")),
-                c.getString(c.getColumnIndexOrThrow("longitud")),
                 c.getInt(c.getColumnIndexOrThrow("estado"))
         );
         return e;

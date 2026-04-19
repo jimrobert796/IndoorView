@@ -197,9 +197,12 @@ public class MainActivity extends AppCompatActivity {
         ;
 
         btnHabilitar.setOnClickListener(v -> {
-            if (modoEdicionActivo) {
+            if (modoEdicionActivo &&  mapManager.isModoEdicion()) {
+
                 // Desactivar modo edición - ocultar
                 modoEdicionActivo = false;
+                mapManager.setModoEdicion(false);
+
                 btnHabilitar.setText("HABILITAR");
 
                 // Ocultar todos los botones de edición
@@ -224,6 +227,9 @@ public class MainActivity extends AppCompatActivity {
                 // Activar modo edición - mostrar botones
                 modoEdicionActivo = true;
                 btnHabilitar.setText("CANCELAR");
+
+                // Habilitarlo para modificacion interna Crud
+                mapManager.setModoEdicion(true);
 
                 // Mostrar solo el botón Lugar inicialmente
                 btnLugar.setVisibility(View.VISIBLE);

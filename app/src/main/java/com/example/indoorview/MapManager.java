@@ -8,25 +8,33 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.util.Log;
+import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.example.indoorview.models.Espacio;
 import com.example.indoorview.models.Geometria;
 import com.example.indoorview.models.Lugar;
+import com.example.indoorview.models.Pisos;
 import com.google.gson.JsonObject;
 import com.mapbox.bindgen.Value;
 import com.mapbox.geojson.Point;
+import com.mapbox.maps.CameraOptions;
 import com.mapbox.maps.MapView;
 import com.mapbox.maps.Style;
 import com.mapbox.maps.extension.style.layers.properties.generated.IconAnchor;
 import com.mapbox.maps.extension.style.sources.generated.GeoJsonSource;
 import com.mapbox.maps.plugin.Plugin;
+import com.mapbox.maps.plugin.animation.CameraAnimationsPlugin;
+import com.mapbox.maps.plugin.animation.MapAnimationOptions;
 import com.mapbox.maps.plugin.annotation.AnnotationPlugin;
 import com.mapbox.maps.plugin.annotation.AnnotationType;
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotation;
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotationManager;
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotationOptions;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -42,8 +50,28 @@ public class MapManager {
 
     private int lugarSeleccionado = -1;
 
-    private int id_lugar;
-    private int id_espacio;
+    // Para saber si esta en modoEdicion
+    public boolean modoEdicion = false;
+
+
+    // Lista para registrar todas las fuentes/capas de espacios
+    private List<String> capasEspaciosRegistradas = new ArrayList<>();
+
+    // Lista para registrar todas las fuentes/capas de lugares
+    private List<String> capasLugaresRegistradas = new ArrayList<>();
+
+    // Para poder ocultar el Pin sin perder informacion
+    List<PointAnnotation> pinesOcultos = new ArrayList<>();
+
+    // Solucionador de bug
+    private PointAnnotation pinOcultoActual = null;
+
+
+    // Para manejo de pisos
+    private int pisoActual = 1;
+    private int lugarActual = -1;
+
+    Spinner spinnerPisos;
 
 
 
@@ -62,71 +90,175 @@ public class MapManager {
         managerEspacios = (PointAnnotationManager)
                 plugin.createAnnotationManager(AnnotationType.PointAnnotation, null);
 
-        // =============== EVENTOS DE MAPA ==========================
+        // ================== EVENTOS DE MAPA ==========================
 
         managerLugares.addClickListener(annotation -> {
+            // Obtenemos el punto de referencia
+            Point punto = annotation.getPoint();
+
+            // Llamamos la redirecion al punto
+            redireccionPin(punto);
+
+            // Usaremos jsonObject para solo pasar los datos necesarios
+            JsonObject data = (JsonObject) annotation.getData();
+
+            // Restauramos pines ocultos a la hora de buscar
+            restaurarPinesOcultos();
 
 
-            // Se me olvida que esto es en forma de lista
-            // No confundir Objeto con ID de tabla
-            Lugar lugar = db.getLugares().get(id_lugar -1);
+            // Condicional para Crud
+            if (modoEdicion) {
 
-            mostrarInfoLugar(lugar);
+                // Aqui se hara inicio al crud
+                Toast.makeText(context, "Listo para modificar CRUD", Toast.LENGTH_SHORT).show();
 
-            // SIEMPRE limpiar
-            limpiarEspacios();
-            limpiarEspaciosDeLugar(id_lugar);
+            } else {
 
+                // Aqui se abre el .XML para mostrar la informacion
+                mostrarInfoLugar(data);
 
-            lugarSeleccionado = -1;
+                limpiarEspacios(); // Limpia el estilo
+                lugarSeleccionado = -1;  // Variable Global para saber el lugar selecionado
 
-            Toast.makeText(context, "Espacios ocultos", Toast.LENGTH_SHORT).show();
-
+                Toast.makeText(context, "Espacios ocultos", Toast.LENGTH_SHORT).show();
+            }
             return true;
         });
 
         // mantener presionado muestra los espacios
         managerLugares.addLongClickListener(annotation -> {
+            // Obtenemos el punto de referencia
+            Point punto = annotation.getPoint();
 
-            // Si es OTRO lugar → cargar
-            if (lugarSeleccionado != id_lugar) {
+            // Llamamos la redirecion al punto
+            redireccionPin(punto);
 
-                // para eliminar no se usara aun pero estara ahi
-                // managerLugares.delete(annotation);
-                limpiarEspacios();
-                limpiarEspaciosDeLugar(lugarSeleccionado);
-                mostrarEspacios(id_lugar);
+            // Usaremos jsonObject para solo pasar los datos necesarios
+            JsonObject data = (JsonObject) annotation.getData();
 
-                lugarSeleccionado = id_lugar;
+            if (data != null) {
+                // Obteher el id_lugar del data.json
+                int idLugar = data.get("id_lugar").getAsInt();
 
-                Toast.makeText(context, "Mostrando espacios de: " + id_lugar, Toast.LENGTH_SHORT).show();
+                // Si el pin ocultado anteriormente tiene informacion se muestra
+                if (pinOcultoActual != null) {
+                    pinOcultoActual.setIconSize(0.9);
+                    pinOcultoActual.setTextOpacity(1.0);
+                    managerLugares.update(pinOcultoActual);
+                    pinOcultoActual = null;
+                }
 
+                // Verificar si ya está seleccionado usando una variable local
+                if (lugarSeleccionado != idLugar) {
+
+                    // Agregar a pines ocultos
+                    pinesOcultos.add(annotation);
+
+                    //ocultar el pin
+                    annotation.setIconSize(0.0);
+                    annotation.setTextOpacity(0.0);
+                    managerLugares.update(annotation);
+
+                    // Pin oculto actual sera ahora este
+                    pinOcultoActual = annotation;
+
+                    // Limpiar espacios anteriores
+                    limpiarEspacios();
+                    limpiarEspaciosDeLugar(lugarSeleccionado);
+
+                    // Mostrar espacios del lugar
+                    mostrarEspacios(idLugar);
+
+                    lugarSeleccionado = idLugar;
+
+                    Toast.makeText(context, "Mostrando espacios del lugar", Toast.LENGTH_SHORT).show();
+                } else {
+
+                    // Ocultar espacios
+                    limpiarEspacios();
+                    // limpiarEspaciosDeLugar(idLugar);
+
+                    lugarSeleccionado = -1;
+
+                    Toast.makeText(context, "Ocultando espacios", Toast.LENGTH_SHORT).show();
+                }
             } else {
-                // Si es el mismo → ocultar
-                limpiarEspacios();
-                limpiarEspaciosDeLugar(id_lugar);
-
-                lugarSeleccionado = -1;
-
-                Toast.makeText(context, "Ocultando espacios", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, "Error: Datos no disponibles", Toast.LENGTH_SHORT).show();
             }
 
             return true;
         });
 
-        // PARA ESPACIOS
+        // ============= Evento Click en Espacio ===============
         managerEspacios.addClickListener(annotation -> {
+            // Obtenemos el punto de referencia
+            Point punto = annotation.getPoint();
 
-            Espacio espacio = db.getEspacioById(id_espacio);
-            Geometria geometria = db.getGeometriaByEspacio(id_espacio);
+            // Llamamos la redirecion al punto
+            redireccionPin(punto);
 
-            mostrarInfoEspacio(espacio, geometria);
+            // Usaremos jsonObject para solo pasar los datos necesarios
+            JsonObject data = (JsonObject) annotation.getData();
 
-            Toast.makeText(context, "Espacio: " + annotation.getTextField(), Toast.LENGTH_SHORT).show();
+            // Obtener el id_espacin
+            int idEspacio = data.get("id_espacio").getAsInt();
+
+            // Condicional para Crud
+            if (modoEdicion) {
+
+                // Aqui se iniciara el crud de edicion de espacio
+                Toast.makeText(context, "Listo para modificar CRUD", Toast.LENGTH_SHORT).show();
+
+
+            } else {
+                Toast.makeText(context, "MOSTRANDO", Toast.LENGTH_SHORT).show();
+                // Aqui se muestra el .XML con la info nececesaria
+                mostrarInfoEspacio(data);
+            }
             return true;
         });
 
 
+    }
+
+    // Cambiar el estilo normal a los pines
+    private void restaurarPinesOcultos() {
+        for (PointAnnotation pin : pinesOcultos) {
+            pin.setIconSize(0.9);
+            pin.setTextOpacity(1.0);
+            managerLugares.update(pin);
+        }
+        pinesOcultos.clear();
+    }
+
+    // Para poder modificar el modo de edicion
+    public void setModoEdicion(boolean activar) {
+        this.modoEdicion = activar;
+    }
+
+    public boolean isModoEdicion() {
+        return modoEdicion;
+    }
+
+
+
+
+    // =====  redirecionar el punto o pin selecionado =======
+    private void redireccionPin(Point punto){
+
+        CameraAnimationsPlugin animationPlugin =
+                mapView.getPlugin(com.mapbox.maps.plugin.Plugin.MAPBOX_CAMERA_PLUGIN_ID);
+
+        animationPlugin.easeTo(
+                new CameraOptions.Builder()
+                        .center(punto)
+                        .zoom(19.8)
+                        .build(),
+                new MapAnimationOptions.Builder()
+                        .duration(1200L) // TIEMPO DE ANIMACION
+                        .build(),
+                null
+        );
     }
 
     // Verificar conexión (corregido) log: BD_CONEXION
@@ -159,14 +291,10 @@ public class MapManager {
 
         for (Lugar lugar : lugares) {
             mensaje.append(" ").append(lugar.getNombre()).append("\n");
-            mensaje.append("    Coordenadas: ").append(lugar.getLatitud())
-                    .append(", ").append(lugar.getLongitud()).append("\n");
 
             List<Espacio> espacios = db.getEspaciosByLugar(lugar.getId_lugar());
             for (Espacio espacio : espacios) {
                 mensaje.append("    ").append(espacio.getNombre()).append("\n");
-                mensaje.append("       Coordenadas: ").append(espacio.getLatitud())
-                        .append(", ").append(espacio.getLongitud()).append("\n");
             }
             mensaje.append("\n");
         }
@@ -212,6 +340,11 @@ public class MapManager {
 
         Log.d("POLIGONOS", " Dibujado: " + lugar.getGeojson());
 
+        // Registrar la capa
+        if (!capasLugaresRegistradas.contains(sourceId)) {
+            capasLugaresRegistradas.add(sourceId);
+        }
+
 
 
         try {
@@ -253,7 +386,7 @@ public class MapManager {
                         centro,
                         lugar.getNombre(),
                         "#0080ff",
-                        lugar.getId_lugar()
+                        lugar
                 );
             }
 
@@ -338,6 +471,10 @@ public class MapManager {
         String sourceId = "espacio-" + espacio.getId_espacio();
         String color = geometria.getColor();
 
+        if (!capasEspaciosRegistradas.contains(sourceId)) {
+            capasEspaciosRegistradas.add(sourceId);
+        }
+
 
 
         final String finalColor = color;
@@ -382,7 +519,8 @@ public class MapManager {
                             centro,
                             espacio.getNombre(),
                             "#0080ff",
-                            espacio.getId_espacio()
+                            espacio,
+                            vertices
                     );
                 }
 
@@ -445,8 +583,18 @@ public class MapManager {
 
     // Este contendra informacion para saber cual hacer display
 
-    private void agregarPinLugar(Point punto, String texto, String color, int idLugar) {
+    private void agregarPinLugar(Point punto, String texto, String color, Lugar lugar) {
         Bitmap icono = crearPinBitmap(color);
+
+        JsonObject data = new JsonObject();
+        data.addProperty("id_lugar", lugar.getId_lugar());
+        data.addProperty("nombre", lugar.getNombre());
+        data.addProperty("descripcion", lugar.getDescripcion());
+        data.addProperty("url_imagenes", lugar.getUrl_imagenes());
+        data.addProperty("estado", lugar.getEstado());
+        data.addProperty("geojson", lugar.getGeojson());
+
+
         PointAnnotationOptions op = new PointAnnotationOptions()
                 .withPoint(punto)
                 .withIconImage(icono)
@@ -457,13 +605,24 @@ public class MapManager {
                 .withTextColor("#000000")
                 .withTextHaloColor("#ffffff")
                 .withTextHaloWidth(2.0)
-                .withTextOffset(Arrays.asList(0.0, 1.5));
-        id_lugar = idLugar;
+                .withTextOffset(Arrays.asList(0.0, 1.5))
+                .withData(data);
         managerLugares.create(op);
 
     }
 
-    private void agregarPinEspacio(Point punto, String texto, String color, int idEspacio) {
+    private void agregarPinEspacio(Point punto, String texto, String color, Espacio espacio, String vertices) {
+
+        JsonObject data = new JsonObject();
+        data.addProperty("id_espacio", espacio.getId_espacio());
+        data.addProperty("id_lugar", espacio.getId_lugar());
+        data.addProperty("id_piso", espacio.getId_piso());
+        data.addProperty("nombre", espacio.getNombre());
+        data.addProperty("descripcion", espacio.getDescripcion());
+        data.addProperty("url_imagenes", espacio.getUrl_imagenes());
+        data.addProperty("estado", espacio.getEstado());
+        data.addProperty("vertices", vertices);
+
         Bitmap icono = crearPinBitmap(color);
         PointAnnotationOptions op = new PointAnnotationOptions()
                 .withPoint(punto)
@@ -475,16 +634,58 @@ public class MapManager {
                 .withTextColor("#000000")
                 .withTextHaloColor("#ffffff")
                 .withTextHaloWidth(2.0)
-                .withTextOffset(Arrays.asList(0.0, 1.5));
-        id_espacio = idEspacio;
+                .withTextOffset(Arrays.asList(0.0, 1.5))
+                .withData(data);
         managerEspacios.create(op);
     }
+
+    // Funcion que llama el array de espacios en Array para limpieza
     public void limpiarEspacios() {
         managerEspacios.deleteAll();
+
+        // 2. Limpiar capas registradas
+        mapView.getMapboxMap().getStyle(style -> {
+            for (String sourceId : capasEspaciosRegistradas) {
+                if (style.styleLayerExists(sourceId + "-fill")) {
+                    style.removeStyleLayer(sourceId + "-fill");
+                }
+                if (style.styleLayerExists(sourceId + "-line")) {
+                    style.removeStyleLayer(sourceId + "-line");
+                }
+                if (style.styleSourceExists(sourceId)) {
+                    style.removeStyleSource(sourceId);
+                }
+            }
+            capasEspaciosRegistradas.clear();
+        });
     }
 
-    public void limpiarLugares(){
+
+
+
+    // Quita los vertices y pines del mapa temporal en Array
+    public void limpiarLugares() {
+        // 1. Limpiar pines de lugares
         managerLugares.deleteAll();
+
+        // 2. Limpiar todas las capas de polígonos de lugares
+        mapView.getMapboxMap().getStyle(style -> {
+            for (String sourceId : capasLugaresRegistradas) {
+                // Eliminar capa de relleno
+                if (style.styleLayerExists(sourceId + "-fill")) {
+                    style.removeStyleLayer(sourceId + "-fill");
+                }
+                // Eliminar capa de línea
+                if (style.styleLayerExists(sourceId + "-line")) {
+                    style.removeStyleLayer(sourceId + "-line");
+                }
+                // Eliminar fuente
+                if (style.styleSourceExists(sourceId)) {
+                    style.removeStyleSource(sourceId);
+                }
+            }
+            capasLugaresRegistradas.clear();
+        });
     }
 
     public void limpiarTodo() {
@@ -513,6 +714,34 @@ public class MapManager {
             }
         });
     }
+
+    private void mostrarLugares() {
+        List<Lugar> lugares = db.getLugares(); // Ya filtra por estado = 1
+
+        if (lugares.isEmpty()) {
+            Toast.makeText(context, "No hay lugares activos", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        int contador = 0;
+        for (Lugar lugar : lugares) {
+            if (lugar.getEstado() == 1) {
+                mapView.getMapboxMap().getStyle(style -> {
+                    dibujarPoligonoLugar(style, lugar);
+                });
+                contador++;
+            }
+        }
+
+        Toast.makeText(context, "Mostrados " + contador + " lugares activos", Toast.LENGTH_SHORT).show();
+    }
+
+
+
+
+
+
+    // Busca los esapcios para luego encontrar la geometria
     private void mostrarEspacios(int idLugar) {
 
         List<Espacio> espacios = db.getEspaciosByLugar(idLugar);
@@ -583,70 +812,88 @@ public class MapManager {
     ///  ========= CUADROS DE DIALOGO PARA INFORMACION =======
 
 
-    private void mostrarInfoLugar(Lugar lugar) {
-        StringBuilder mensaje = new StringBuilder();
-        mensaje.append("INFORMACION DEL EDIFICIO\n\n");
-        mensaje.append("Nombre: ").append(lugar.getNombre()).append("\n");
-        mensaje.append("ID: ").append(lugar.getId_lugar()).append("\n");
-        mensaje.append("Descripcion: ").append(lugar.getDescripcion()).append("\n");
-        mensaje.append("Latitud: ").append(lugar.getLatitud()).append("\n");
-        mensaje.append("Longitud: ").append(lugar.getLongitud()).append("\n");
-        mensaje.append("geojson: ").append(lugar.getGeojson()).append("\n");
-        mensaje.append("estado: ").append(lugar.getEstado()).append("\n");
+    private void mostrarInfoLugar(JsonObject data) {
+        // Extraer datos del JSON
+        int idLugar = data.get("id_lugar").getAsInt();
 
-        if (lugar.getGeojson() != null && !lugar.getGeojson().isEmpty()) {
-            String geojson = lugar.getGeojson();
-            if (geojson.length() > 200) {
-                geojson = geojson.substring(0, 200) + "...";
-            }
-            mensaje.append("GeoJSON: ").append(geojson);
-        } else {
-            mensaje.append("GeoJSON: No disponible");
-        }
+        String nombre = data.get("nombre").getAsString();
+        String descripcion = data.get("descripcion").getAsString();
+        String url_imagenes = data.get("url_imagenes").getAsString();
+        int estado = data.get("estado").getAsInt();
+        String geojson = data.get("geojson").getAsString();
+
+        // Construir mensaje
+        StringBuilder mensaje = new StringBuilder();
+        mensaje.append("INFORMACION DEL LUGAR\n\n");
+        mensaje.append("Nombre: ").append(nombre).append("\n");
+        mensaje.append("Descripcion: ").append(descripcion).append("\n");
+        mensaje.append("Imagenes: ").append(url_imagenes).append("\n");
+        mensaje.append("ID Lugar: ").append(idLugar).append("\n");
+        mensaje.append("Estado: ").append(estado).append("\n");
+        mensaje.append("geojson ").append(geojson).append("\n");
 
         new AlertDialog.Builder(context)
-                .setTitle("Informacion: " + lugar.getNombre())
+                .setTitle("Informacion: " + nombre)
                 .setMessage(mensaje.toString())
-                .setNegativeButton("Cerrar", null)
+                .setPositiveButton("Cerrar", null)
                 .show();
     }
 
 
 // DIALOGO PARA MOSTRAR INFORMACION DE UN ESPACIO (AULA)
 
-    private void mostrarInfoEspacio(Espacio espacio, Geometria geometria) {
+    private void mostrarInfoEspacio(JsonObject data) {
+        // Extraer datos del JSON
+        int idEspacio = data.get("id_espacio").getAsInt();
+        int idLugar = data.get("id_lugar").getAsInt();
+        int idPiso = data.get("id_piso").getAsInt();
+
+        String nombre = data.get("nombre").getAsString();
+        String descripcion = data.get("descripcion").getAsString();
+        String url_imagenes = data.get("url_imagenes").getAsString();
+        int estado = data.get("estado").getAsInt();
+        String vertices = data.get("vertices").getAsString();
+
+        // Construir mensaje
         StringBuilder mensaje = new StringBuilder();
         mensaje.append("INFORMACION DEL ESPACIO\n\n");
-        mensaje.append("Nombre: ").append(espacio.getNombre()).append("\n");
-        mensaje.append("ID: ").append(espacio.getId_espacio()).append("\n");
-        mensaje.append("Descripcion: ").append(espacio.getDescripcion()).append("\n");
-        mensaje.append("Latitud: ").append(espacio.getLatitud()).append("\n");
-        mensaje.append("Longitud: ").append(espacio.getLongitud()).append("\n");
-        mensaje.append("Estado: ").append(espacio.getEstado()).append("\n");
-
-        if (geometria != null) {
-            mensaje.append("Color geometria: ").append(geometria.getColor()).append("\n");
-
-            String vertices = geometria.getVertices();
-            if (vertices != null && !vertices.isEmpty()) {
-                if (vertices.length() > 200) {
-                    vertices = vertices.substring(0, 200) + "...";
-                }
-                mensaje.append("Vertices: ").append(vertices);
-            } else {
-                mensaje.append("Vertices: No disponibles");
-            }
-        } else {
-            mensaje.append("Sin informacion de geometria");
-        }
+        mensaje.append("Nombre: ").append(nombre).append("\n");
+        mensaje.append("Descripcion: ").append(descripcion).append("\n");
+        mensaje.append("Imagenes: ").append(url_imagenes).append("\n");
+        mensaje.append("ID: ").append(idEspacio).append("\n");
+        mensaje.append("ID Lugar: ").append(idLugar).append("\n");
+        mensaje.append("ID Piso: ").append(idPiso).append("\n");
+        mensaje.append("Estado: ").append(estado).append("\n");
+        mensaje.append("Vertices ").append(vertices).append("\n");
 
         new AlertDialog.Builder(context)
-                .setTitle("Informacion: " + espacio.getNombre())
+                .setTitle("Informacion: " + nombre)
                 .setMessage(mensaje.toString())
                 .setPositiveButton("Cerrar", null)
                 .show();
     }
 
+    private void cargarPisos(int idLugar) {
+
+        List<Pisos> pisos = db.getPisosByLugar(idLugar);
+
+        List<Integer> listaPisos = new ArrayList<>();
+
+        for (Pisos p : pisos) {
+            listaPisos.add(p.getNumero());
+        }
+
+        ArrayAdapter<Integer> adapter = new ArrayAdapter<>(
+                context,
+                android.R.layout.simple_spinner_item,
+                listaPisos
+        );
+
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+        spinnerPisos.setAdapter(adapter);
+        spinnerPisos.setVisibility(View.VISIBLE);
+    }
 
 
 
