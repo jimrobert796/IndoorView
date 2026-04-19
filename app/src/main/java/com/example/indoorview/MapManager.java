@@ -886,47 +886,45 @@ public class MapManager {
 
     public void cargarPisos(int idLugar) {
         List<Pisos> pisos = db.getPisosByLugar(idLugar);
-        List<Integer> listaPisos = new ArrayList<>();
         List<Integer> listaPisosId = new ArrayList<>();
+        List<String> nombresPisos = new ArrayList<>();
 
         Log.d("DEBUG_PISO", "=== CARGANDO PISOS ===");
         Log.d("DEBUG_PISO", "ID Lugar: " + idLugar);
 
         for (Pisos p : pisos) {
-            Log.d("DEBUG_PISO", "Piso: ID=" + p.getId_piso() + " | Número=" + p.getNumero());
-            listaPisos.add(p.getNumero());
+            Log.d("DEBUG_PISO", "Piso: ID=" + p.getId_piso() + " | Número=" + p.getNumero() + " | Nombre=" + p.getNombre());
             listaPisosId.add(p.getId_piso());
+            nombresPisos.add(p.getNombre());  // "Planta Baja", "Primer Piso", etc.
         }
 
-        Log.d("DEBUG_PISO", "Números en spinner: " + listaPisos.toString());
+        Log.d("DEBUG_PISO", "Nombres en spinner: " + nombresPisos.toString());
         Log.d("DEBUG_PISO", "IDs reales: " + listaPisosId.toString());
 
         // MOSTRAR SPINNER SOLO SI HAY MAS DE 1 PISO
-        if (listaPisos.size() > 1) {
-            ArrayAdapter<Integer> adapter = new ArrayAdapter<>(
+        if (nombresPisos.size() > 1) {
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(
                     context,
                     android.R.layout.simple_spinner_item,
-                    listaPisos
+                    nombresPisos  // ← Usar nombres, no números
             );
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             spinnerPisos.setAdapter(adapter);
-
-            spinnerPisos.setTag(listaPisosId);
-
-            spinnerPisos.setVisibility(View.VISIBLE);  // ← MOSTRAR
+            spinnerPisos.setTag(listaPisosId);  // Guardar IDs reales
+            spinnerPisos.setVisibility(View.VISIBLE);
 
             Toast.makeText(context, "Selecciona un piso", Toast.LENGTH_SHORT).show();
 
-        } else if (listaPisos.size() == 1) {
+        } else if (nombresPisos.size() == 1) {
             // Si hay solo 1 piso, ocultar spinner y mostrar espacios del único piso
-            spinnerPisos.setVisibility(View.GONE);  // ← OCULTAR AQUÍ
+            spinnerPisos.setVisibility(View.GONE);
             mostrarEspaciosPorPiso(idLugar, listaPisosId.get(0));
 
             Toast.makeText(context, "Mostrando espacios (1 piso)", Toast.LENGTH_SHORT).show();
 
         } else {
             // Si no hay pisos
-            spinnerPisos.setVisibility(View.GONE);  // ← OCULTAR AQUÍ TAMBIÉN
+            spinnerPisos.setVisibility(View.GONE);
             Toast.makeText(context, "No hay pisos registrados", Toast.LENGTH_SHORT).show();
         }
     }
