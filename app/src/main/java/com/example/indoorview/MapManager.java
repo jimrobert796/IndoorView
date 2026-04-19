@@ -48,7 +48,7 @@ public class MapManager {
     private PointAnnotationManager managerLugares;
     private PointAnnotationManager managerEspacios;
 
-    private int lugarSeleccionado = -1;
+    public int lugarSeleccionado = -1;
 
     // Para saber si esta en modoEdicion
     public boolean modoEdicion = false;
@@ -68,18 +68,26 @@ public class MapManager {
 
 
     // Para manejo de pisos
-    private int pisoActual = 1;
-    private int lugarActual = -1;
-
     Spinner spinnerPisos;
 
 
 
     // Constructor que necesita el MapView, la instancia bd y el contexto en donde
-    public MapManager(MapView mapView, Database db, Context context) {
+    public MapManager(MapView mapView, Database db, Context context, Spinner spinner) {
         this.mapView = mapView;
         this.db = db;
         this.context = context;
+        this.spinnerPisos = spinner;
+
+        // DEBUG
+        if (spinnerPisos == null) {
+            Log.e("SPINNER_ERROR", "¡El spinner es NULL en MapManager!");
+        } else {
+            Log.d("SPINNER_DEBUG", "✓ Spinner inicializado correctamente");
+            Log.d("SPINNER_DEBUG", "Visibility: " + spinnerPisos.getVisibility());
+            Log.d("SPINNER_DEBUG", "Width: " + spinnerPisos.getWidth());
+            Log.d("SPINNER_DEBUG", "Height: " + spinnerPisos.getHeight());
+        }
 
         // Crear dos managers separados
         AnnotationPlugin plugin = mapView.getPlugin(Plugin.Mapbox.MAPBOX_ANNOTATION_PLUGIN_ID);
@@ -166,8 +174,11 @@ public class MapManager {
                     limpiarEspacios();
                     limpiarEspaciosDeLugar(lugarSeleccionado);
 
+                    // Cargar los pisos por el lugar selecionado
+                    cargarPisos(idLugar);
+
                     // Mostrar espacios del lugar
-                    mostrarEspacios(idLugar);
+                    // mostrarEspacios(idLugar);
 
                     lugarSeleccionado = idLugar;
 
@@ -873,26 +884,99 @@ public class MapManager {
                 .show();
     }
 
-    private void cargarPisos(int idLugar) {
-
+    public void cargarPisos(int idLugar) {
         List<Pisos> pisos = db.getPisosByLugar(idLugar);
-
         List<Integer> listaPisos = new ArrayList<>();
+        List<Integer> listaPisosId = new ArrayList<>();
+
+        Log.d("DEBUG_PISO", "=== CARGANDO PISOS ===");
+        Log.d("DEBUG_PISO", "ID Lugar: " + idLugar);
 
         for (Pisos p : pisos) {
+            Log.d("DEBUG_PISO", "Piso: ID=" + p.getId_piso() + " | Número=" + p.getNumero());
             listaPisos.add(p.getNumero());
+            listaPisosId.add(p.getId_piso());
         }
 
-        ArrayAdapter<Integer> adapter = new ArrayAdapter<>(
-                context,
-                android.R.layout.simple_spinner_item,
-                listaPisos
-        );
+        Log.d("DEBUG_PISO", "Números en spinner: " + listaPisos.toString());
+        Log.d("DEBUG_PISO", "IDs reales: " + listaPisosId.toString());
 
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        // MOSTRAR SPINNER SOLO SI HAY MAS DE 1 PISO
+        if (listaPisos.size() > 1) {
+            ArrayAdapter<Integer> adapter = new ArrayAdapter<>(
+                    context,
+                    android.R.layout.simple_spinner_item,
+                    listaPisos
+            );
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            spinnerPisos.setAdapter(adapter);
 
-        spinnerPisos.setAdapter(adapter);
-        spinnerPisos.setVisibility(View.VISIBLE);
+            spinnerPisos.setTag(listaPisosId);
+
+            spinnerPisos.setVisibility(View.VISIBLE);  // ← MOSTRAR
+
+            Toast.makeText(context, "Selecciona un piso", Toast.LENGTH_SHORT).show();
+
+        } else if (listaPisos.size() == 1) {
+            // Si hay solo 1 piso, ocultar spinner y mostrar espacios del único piso
+            spinnerPisos.setVisibility(View.GONE);  // ← OCULTAR AQUÍ
+            mostrarEspaciosPorPiso(idLugar, listaPisosId.get(0));
+
+            Toast.makeText(context, "Mostrando espacios (1 piso)", Toast.LENGTH_SHORT).show();
+
+        } else {
+            // Si no hay pisos
+            spinnerPisos.setVisibility(View.GONE);  // ← OCULTAR AQUÍ TAMBIÉN
+            Toast.makeText(context, "No hay pisos registrados", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // Mostrar espacios filtrados por piso - CON DEBUGGING
+    public void mostrarEspaciosPorPiso(int idLugar, int numeroPiso) {
+        List<Espacio> espacios = db.getEspaciosByLugar(idLugar);
+
+        Log.d("DEBUG_PISO", "=== DEBUGGING mostrarEspaciosPorPiso ===");
+        Log.d("DEBUG_PISO", "ID Lugar: " + idLugar);
+        Log.d("DEBUG_PISO", "Piso a buscar: " + numeroPiso);
+        Log.d("DEBUG_PISO", "Total espacios en lugar: " + espacios.size());
+
+        if (espacios.isEmpty()) {
+            Toast.makeText(context, "No hay espacios", Toast.LENGTH_SHORT).show();
+            Log.d("DEBUG_PISO", "Lista vacía");
+            return;
+        }
+
+        int espaciosMostrados = 0;
+
+        for (Espacio espacio : espacios) {
+            // ← LOG DE CADA ESPACIO
+            Log.d("DEBUG_PISO",
+                    "Espacio: " + espacio.getNombre() +
+                            " | ID: " + espacio.getId_espacio() +
+                            " | Piso: " + espacio.getId_piso());
+
+            // Filtrar por piso
+            if (espacio.getId_piso() == numeroPiso) {
+                Log.d("DEBUG_PISO", "✓ COINCIDE - Mostrando espacio");
+
+                Geometria geo = db.getGeometriaByEspacio(espacio.getId_espacio());
+
+                if (geo != null) {
+                    dibujarPoligonoEspacio(geo, espacio);
+                    espaciosMostrados++;
+                }
+            } else {
+                Log.d("DEBUG_PISO", "✗ No coincide - Piso " + espacio.getId_piso() +
+                        " != " + numeroPiso);
+            }
+        }
+
+        Log.d("DEBUG_PISO", "Total mostrados: " + espaciosMostrados);
+
+        if (espaciosMostrados == 0) {
+            Toast.makeText(context, "No hay espacios en piso " + numeroPiso, Toast.LENGTH_SHORT).show();
+            Log.d("DEBUG_PISO", "⚠️ NINGÚN ESPACIO COINCIDE CON EL PISO");
+        }
     }
 
 

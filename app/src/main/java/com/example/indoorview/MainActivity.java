@@ -10,8 +10,10 @@ import android.graphics.Paint;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ScrollView;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -82,6 +84,7 @@ public class MainActivity extends AppCompatActivity {
     // Selecion de edificios
     private int lugarSeleccionadoId = -1;
     private boolean espaciosVisibles = false;
+    private Spinner spinnerPisos;  // ← AGREGAR ESTA LÍNEA
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -98,17 +101,46 @@ public class MainActivity extends AppCompatActivity {
         btnFinalizar = findViewById(R.id.btnFinalizar);
         tvModo = findViewById(R.id.tvModo);
         btnHabilitar = findViewById(R.id.btnHabilitar);
+        spinnerPisos = findViewById(R.id.spnPisos);
 
 
         // Inicializar base de datos
         db = Database.getInstance(this);
 
         // Inicializar MapManager
-        mapManager = new MapManager(mapView, db, this);
+        mapManager = new MapManager(mapView, db, this, spinnerPisos);
 
         // Verificar conexión a la BD (opcional)
         mapManager.verificarConexionBD();
 
+
+
+        spinnerPisos.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                // Obtener el ID real del piso (4, 5, etc.)
+                @SuppressWarnings("unchecked")
+                List<Integer> pisosId = (List<Integer>) spinnerPisos.getTag();
+
+                if (pisosId != null && position < pisosId.size()) {
+                    int pisoIdReal = pisosId.get(position);  // ← USAR EL ID REAL
+
+                    Log.d("DEBUG_PISO", "Position: " + position +
+                            " | Número mostrado: " + parent.getItemAtPosition(position) +
+                            " | ID real: " + pisoIdReal);
+
+                    if (mapManager.lugarSeleccionado != -1) {
+                        mapManager.limpiarEspacios();
+                        mapManager.mostrarEspaciosPorPiso(mapManager.lugarSeleccionado, pisoIdReal);
+                        Toast.makeText(MainActivity.this, "Mostrando piso " +
+                                parent.getItemAtPosition(position), Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
 
         // ================= CARGA DE MAPA =========================
         mapView.getMapboxMap().loadStyleUri(Style.MAPBOX_STREETS, style -> {
@@ -191,10 +223,13 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
+
+
+
         // Habilitacion
         // Ocultar todos los botones de edición por defaul
         ocultarEdicion();
-        ;
+        spinnerPisos.setVisibility(View.GONE);
 
         btnHabilitar.setOnClickListener(v -> {
             if (modoEdicionActivo &&  mapManager.isModoEdicion()) {
