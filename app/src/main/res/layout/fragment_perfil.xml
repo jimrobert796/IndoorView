@@ -1,16 +1,182 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#80000000">
+    android:background="@drawable/fond">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        android:text="PANTALLA DE PERFIL"
-        android:textColor="@android:color/white"
-        android:textSize="24sp"
-        android:textStyle="bold" />
+    <!-- ScrollView para permitir desplazamiento en pantallas pequeñas -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="30dp">
+
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/card_perfil"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="8dp"
+                app:cardBackgroundColor="">
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="24dp">
+
+                    <!-- Avatar / Icono de perfil -->
+                    <ImageView
+                        android:id="@+id/iv_avatar"
+                        android:layout_width="85dp"
+                        android:layout_height="85dp"
+                        android:layout_centerHorizontal="true"
+                        android:layout_marginTop="20dp"
+                        android:src="@drawable/imagen_perfil"
+                        android:contentDescription="Avatar"
+                        app:circleCrop="true" />
+
+                    <!-- Título -->
+                    <TextView
+                        android:id="@+id/tv_titulo_perfil"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_below="@id/iv_avatar"
+                        android:layout_centerHorizontal="true"
+                        android:layout_marginTop="12dp"
+                        android:text="Mi Perfil"
+                        android:textColor="@android:color/white"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
+
+                    <!-- Contenedor de datos del usuario -->
+                    <LinearLayout
+                        android:id="@+id/layout_datos"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_below="@id/tv_titulo_perfil"
+                        android:layout_marginTop="24dp"
+                        android:orientation="vertical">
+
+                        <!-- Campo: Carnet -->
+                        <TextView
+                            android:id="@+id/label_carnet"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Carnet"
+                            android:textColor="#B3FFFFFF"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/tv_carnet"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="16dp"
+                            android:background="@drawable/bg_campo_perfil"
+                            android:padding="12dp"
+                            android:text=""
+                            android:textColor="@android:color/white"
+                            android:textSize="14sp" />
+
+                        <!-- Campo: Nombres -->
+                        <TextView
+                            android:id="@+id/label_nombres"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Nombres"
+                            android:textColor="#B3FFFFFF"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/tv_nombres"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="16dp"
+                            android:background="@drawable/bg_campo_perfil"
+                            android:padding="12dp"
+                            android:text=""
+                            android:textColor="@android:color/white"
+                            android:textSize="14sp" />
+
+                        <!-- Campo: Apellidos -->
+                        <TextView
+                            android:id="@+id/label_apellidos"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Apellidos"
+                            android:textColor="#B3FFFFFF"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/tv_apellidos"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="16dp"
+                            android:background="@drawable/bg_campo_perfil"
+                            android:padding="12dp"
+                            android:text=""
+                            android:textColor="@android:color/white"
+                            android:textSize="14sp" />
+
+                        <!-- Campo: Correo -->
+                        <TextView
+                            android:id="@+id/label_correo"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Correo"
+                            android:textColor="#B3FFFFFF"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/tv_correo"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="16dp"
+                            android:background="@drawable/bg_campo_perfil"
+                            android:padding="12dp"
+                            android:text=""
+                            android:textColor="@android:color/white"
+                            android:textSize="14sp" />
+
+                    </LinearLayout>
+
+                    <!-- Botón Cerrar Sesión -->
+                    <Button
+                        android:id="@+id/btn_cerrar_sesion"
+                        android:layout_width="match_parent"
+                        android:layout_height="56dp"
+                        android:layout_below="@id/layout_datos"
+                        android:layout_marginTop="16dp"
+                        android:backgroundTint="#D32F2F"
+                        android:text="CERRAR SESIÓN"
+                        android:textColor="@android:color/white"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <!-- Botón Usuarios (solo para admin) -->
+                    <Button
+                        android:id="@+id/btn_usuarios"
+                        android:layout_width="match_parent"
+                        android:layout_height="56dp"
+                        android:layout_below="@id/btn_cerrar_sesion"
+                        android:layout_marginTop="12dp"
+                        android:layout_marginBottom="20dp"
+                        android:backgroundTint="#2196F3"
+                        android:text="USUARIOS"
+                        android:textColor="@android:color/white"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                </RelativeLayout>
+            </androidx.cardview.widget.CardView>
+
+        </RelativeLayout>
+    </ScrollView>
 
 </RelativeLayout>
