@@ -684,6 +684,255 @@ public class MapManager {
                 .show();
     }
 
+    /**
+     * NUEVO METODO - Mostrar diálogo para guardar un nuevo lugar
+     */
+    public void mostrarDialogoGuardarLugar(String geojson) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setTitle("💾 Guardar Nuevo LUGAR");
+
+        // Crear vista personalizada con campos de entrada
+        android.widget.LinearLayout layout = new android.widget.LinearLayout(context);
+        layout.setOrientation(android.widget.LinearLayout.VERTICAL);
+        layout.setPadding(20, 20, 20, 20);
+
+        // Campo: Nombre
+        android.widget.TextView tvNombre = new android.widget.TextView(context);
+        tvNombre.setText("Nombre del Lugar:");
+        tvNombre.setTextSize(12);
+        tvNombre.setTypeface(null, android.graphics.Typeface.BOLD);
+        layout.addView(tvNombre);
+
+        android.widget.EditText etNombre = new android.widget.EditText(context);
+        etNombre.setHint("Ej: Edificio A");
+        etNombre.setText("Lugar " + (lugarActualId));
+        layout.addView(etNombre);
+
+        // Campo: Descripción
+        android.widget.TextView tvDescripcion = new android.widget.TextView(context);
+        tvDescripcion.setText("Descripción:");
+        tvDescripcion.setTextSize(12);
+        tvDescripcion.setTypeface(null, android.graphics.Typeface.BOLD);
+        tvDescripcion.setPadding(0, 15, 0, 0);
+        layout.addView(tvDescripcion);
+
+        android.widget.EditText etDescripcion = new android.widget.EditText(context);
+        etDescripcion.setHint("Describe este lugar");
+        etDescripcion.setLines(3);
+        layout.addView(etDescripcion);
+
+        // Campo: URL Imágenes
+        android.widget.TextView tvImagenes = new android.widget.TextView(context);
+        tvImagenes.setText("URL de Imágenes:");
+        tvImagenes.setTextSize(12);
+        tvImagenes.setTypeface(null, android.graphics.Typeface.BOLD);
+        tvImagenes.setPadding(0, 15, 0, 0);
+        layout.addView(tvImagenes);
+
+        android.widget.EditText etImagenes = new android.widget.EditText(context);
+        etImagenes.setHint("https://ejemplo.com/imagen.jpg");
+        layout.addView(etImagenes);
+
+        // Campo: Color
+        android.widget.TextView tvColor = new android.widget.TextView(context);
+        tvColor.setText("Color (Hex):");
+        tvColor.setTextSize(12);
+        tvColor.setTypeface(null, android.graphics.Typeface.BOLD);
+        tvColor.setPadding(0, 15, 0, 0);
+        layout.addView(tvColor);
+
+        android.widget.EditText etColor = new android.widget.EditText(context);
+        etColor.setHint("#2196F3");
+        etColor.setText("#2196F3");
+        layout.addView(etColor);
+
+        // Información del GeoJSON
+        android.widget.TextView tvGeoJSON = new android.widget.TextView(context);
+        tvGeoJSON.setText("GeoJSON (Automático):");
+        tvGeoJSON.setTextSize(12);
+        tvGeoJSON.setTypeface(null, android.graphics.Typeface.BOLD);
+        tvGeoJSON.setPadding(0, 15, 0, 0);
+        layout.addView(tvGeoJSON);
+
+        android.widget.TextView tvGeoJSONValue = new android.widget.TextView(context);
+        String geoJsonPreview = geojson.length() > 100
+                ? geojson.substring(0, 100) + "..."
+                : geojson;
+        tvGeoJSONValue.setText(geoJsonPreview);
+        tvGeoJSONValue.setTextSize(10);
+        tvGeoJSONValue.setTextColor(Color.GRAY);
+        layout.addView(tvGeoJSONValue);
+
+        // Agregar scroll si es necesario
+        android.widget.ScrollView scrollView = new android.widget.ScrollView(context);
+        scrollView.addView(layout);
+
+        builder.setView(scrollView);
+
+        // Botones
+        builder.setPositiveButton("💾 Guardar", (dialog, which) -> {
+            String nombre = etNombre.getText().toString().trim();
+            String descripcion = etDescripcion.getText().toString().trim();
+            String imagenes = etImagenes.getText().toString().trim();
+            String color = etColor.getText().toString().trim();
+
+            // Validar que el nombre no esté vacío
+            if (nombre.isEmpty()) {
+                Toast.makeText(context, "El nombre es requerido", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // Log de datos a guardar
+            Log.d("GUARDAR_LUGAR", "========== DATOS A GUARDAR ==========");
+            Log.d("GUARDAR_LUGAR", "Nombre: " + nombre);
+            Log.d("GUARDAR_LUGAR", "Descripción: " + descripcion);
+            Log.d("GUARDAR_LUGAR", "Imágenes: " + imagenes);
+            Log.d("GUARDAR_LUGAR", "Color: " + color);
+            Log.d("GUARDAR_LUGAR", "GeoJSON: " + geojson);
+            Log.d("GUARDAR_LUGAR", "=====================================");
+
+            Toast.makeText(context, "✓ Lugar guardado: " + nombre, Toast.LENGTH_LONG).show();
+
+            // TODO: Implementar guardado real en BD
+            // db.insertLugar(nombre, descripcion, imagenes, color, geojson, 1);
+        });
+
+        builder.setNegativeButton("Cancelar", (dialog, which) -> {
+            Toast.makeText(context, "Guardado cancelado", Toast.LENGTH_SHORT).show();
+        });
+
+        builder.show();
+    }
+
+    /**
+     * NUEVO METODO CONCEPTO NO FINAL ES PARA DARSE LA IDEA DE COMO SE GAURDARIA EN BD AUNQUE NECESITP MANEJAR LOS PISOS
+     */
+    public void mostrarDialogoGuardarEspacio(String geojson) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setTitle("💾 Guardar Nuevo ESPACIO");
+
+        // Crear vista personalizada con campos de entrada
+        android.widget.LinearLayout layout = new android.widget.LinearLayout(context);
+        layout.setOrientation(android.widget.LinearLayout.VERTICAL);
+        layout.setPadding(20, 20, 20, 20);
+
+        // Campo: Nombre
+        android.widget.TextView tvNombre = new android.widget.TextView(context);
+        tvNombre.setText("Nombre del Espacio:");
+        tvNombre.setTextSize(12);
+        tvNombre.setTypeface(null, android.graphics.Typeface.BOLD);
+        layout.addView(tvNombre);
+
+        android.widget.EditText etNombre = new android.widget.EditText(context);
+        etNombre.setHint("Ej: Aula 101");
+        etNombre.setText("Espacio " + (espacioContador));
+        layout.addView(etNombre);
+
+        // Campo: Descripción
+        android.widget.TextView tvDescripcion = new android.widget.TextView(context);
+        tvDescripcion.setText("Descripción:");
+        tvDescripcion.setTextSize(12);
+        tvDescripcion.setTypeface(null, android.graphics.Typeface.BOLD);
+        tvDescripcion.setPadding(0, 15, 0, 0);
+        layout.addView(tvDescripcion);
+
+        android.widget.EditText etDescripcion = new android.widget.EditText(context);
+        etDescripcion.setHint("Describe este espacio");
+        etDescripcion.setLines(3);
+        layout.addView(etDescripcion);
+
+        // Campo: URL Imágenes
+        android.widget.TextView tvImagenes = new android.widget.TextView(context);
+        tvImagenes.setText("URL de Imágenes:");
+        tvImagenes.setTextSize(12);
+        tvImagenes.setTypeface(null, android.graphics.Typeface.BOLD);
+        tvImagenes.setPadding(0, 15, 0, 0);
+        layout.addView(tvImagenes);
+
+        android.widget.EditText etImagenes = new android.widget.EditText(context);
+        etImagenes.setHint("https://ejemplo.com/imagen.jpg");
+        layout.addView(etImagenes);
+
+        // Campo: ID Piso
+        android.widget.TextView tvPiso = new android.widget.TextView(context);
+        tvPiso.setText("ID del Piso:");
+        tvPiso.setTextSize(12);
+        tvPiso.setTypeface(null, android.graphics.Typeface.BOLD);
+        tvPiso.setPadding(0, 15, 0, 0);
+        layout.addView(tvPiso);
+
+        android.widget.EditText etPiso = new android.widget.EditText(context);
+        etPiso.setHint("1");
+        etPiso.setText("1");
+        etPiso.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        layout.addView(etPiso);
+
+        // Información del GeoJSON
+        android.widget.TextView tvGeoJSON = new android.widget.TextView(context);
+        tvGeoJSON.setText("GeoJSON (Automático):");
+        tvGeoJSON.setTextSize(12);
+        tvGeoJSON.setTypeface(null, android.graphics.Typeface.BOLD);
+        tvGeoJSON.setPadding(0, 15, 0, 0);
+        layout.addView(tvGeoJSON);
+
+        android.widget.TextView tvGeoJSONValue = new android.widget.TextView(context);
+        String geoJsonPreview = geojson.length() > 100
+                ? geojson.substring(0, 100) + "..."
+                : geojson;
+        tvGeoJSONValue.setText(geoJsonPreview);
+        tvGeoJSONValue.setTextSize(10);
+        tvGeoJSONValue.setTextColor(Color.GRAY);
+        layout.addView(tvGeoJSONValue);
+
+        // Agregar scroll si es necesario
+        android.widget.ScrollView scrollView = new android.widget.ScrollView(context);
+        scrollView.addView(layout);
+
+        builder.setView(scrollView);
+
+        // Botones
+        builder.setPositiveButton("💾 Guardar", (dialog, which) -> {
+            String nombre = etNombre.getText().toString().trim();
+            String descripcion = etDescripcion.getText().toString().trim();
+            String imagenes = etImagenes.getText().toString().trim();
+            String pisoPeek = etPiso.getText().toString().trim();
+
+            // Validar que el nombre no esté vacío
+            if (nombre.isEmpty()) {
+                Toast.makeText(context, "El nombre es requerido", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            int idPiso = 1;
+            try {
+                idPiso = Integer.parseInt(pisoPeek);
+            } catch (NumberFormatException e) {
+                Toast.makeText(context, "ID Piso inválido", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // Log de datos a guardar
+            Log.d("GUARDAR_ESPACIO", "========== DATOS A GUARDAR ==========");
+            Log.d("GUARDAR_ESPACIO", "Nombre: " + nombre);
+            Log.d("GUARDAR_ESPACIO", "Descripción: " + descripcion);
+            Log.d("GUARDAR_ESPACIO", "Imágenes: " + imagenes);
+            Log.d("GUARDAR_ESPACIO", "ID Piso: " + idPiso);
+            Log.d("GUARDAR_ESPACIO", "GeoJSON: " + geojson);
+            Log.d("GUARDAR_ESPACIO", "=====================================");
+
+            Toast.makeText(context, "✓ Espacio guardado: " + nombre, Toast.LENGTH_LONG).show();
+
+            // SE IMPLEMENTARA EN LA BASE DE DATOS
+            // db.insertEspacio(lugarSeleccionado, idPiso, nombre, descripcion, url_imaganes, 1, color);
+        });
+
+        builder.setNegativeButton("Cancelar", (dialog, which) -> {
+            Toast.makeText(context, "Guardado cancelado", Toast.LENGTH_SHORT).show();
+        });
+
+        builder.show();
+    }
+
     private void mostrarInfoEspacio(JsonObject data) {
         int idEspacio = data.get("id_espacio").getAsInt();
         int idLugar = data.get("id_lugar").getAsInt();
@@ -841,17 +1090,17 @@ public class MapManager {
         String geojson = generarGeoJsonDesdePuntos(puntosActuales,
                 "Lugar " + lugarActualId, "lugar", lugarActualId);
 
-        mostrarGeoJsonEnDialogo("Lugar " + lugarActualId, geojson);
+        // Log GeoJSON en Logcat
         logGeoJson("Lugar " + lugarActualId, geojson);
+
+        // MOSTRAR DIÁLOGO PARA GUARDAR EN ESPERA PARA LA PLANTILLA WILFREDO
+        mostrarDialogoGuardarLugar(geojson);
 
         dibujarPoligono(style, new ArrayList<>(puntosActuales),
                 "lugar-" + lugarActualId, "#2196F3", 0.25);
 
         Point centro = calcularCentro(puntosActuales);
         agregarPinPermanente(centro, "Lugar " + lugarActualId, "#1565C0");
-
-        Toast.makeText(context, "Lugar " + lugarActualId + " guardado",
-                Toast.LENGTH_SHORT).show();
 
         puntosActuales.clear();
         managerTemporal.deleteAll();
@@ -872,8 +1121,11 @@ public class MapManager {
         String geojson = generarGeoJsonDesdePuntos(puntosActuales,
                 "Espacio " + espacioContador, "espacio", espacioContador);
 
-        mostrarGeoJsonEnDialogo("Espacio " + espacioContador, geojson);
+        // Log GeoJSON en Logcat
         logGeoJson("Espacio " + espacioContador, geojson);
+
+        // MOSTRAR DIÁLOGO PARA GUARDAR
+        mostrarDialogoGuardarEspacio(geojson);
 
         String espacioId = "lugar-" + lugarActualId + "-espacio-" + espacioContador;
         dibujarPoligono(style, new ArrayList<>(puntosActuales),
@@ -881,9 +1133,6 @@ public class MapManager {
 
         Point centro = calcularCentro(puntosActuales);
         agregarPinPermanente(centro, "Espacio " + espacioContador, "#E65100");
-
-        Toast.makeText(context, "Espacio " + espacioContador + " guardada",
-                Toast.LENGTH_SHORT).show();
 
         puntosActuales.clear();
         managerTemporal.deleteAll();
@@ -1065,31 +1314,6 @@ public class MapManager {
                 "    \"coordinates\": [[" + coords + "]]\n" +
                 "  }\n" +
                 "}";
-    }
-
-    /**
-     * Mostrar GeoJSON en diálogo
-     */
-    private void mostrarGeoJsonEnDialogo(String titulo, String geojson) {
-        String geojsonMostrar = geojson;
-        if (geojson.length() > 800) {
-            geojsonMostrar = geojson.substring(0, 800) + "\n\n... (truncado)";
-        }
-
-        new AlertDialog.Builder(context)
-                .setTitle("📄 " + titulo)
-                .setMessage(geojsonMostrar)
-                .setPositiveButton("Copiar", (dialog, which) -> {
-                    android.content.ClipboardManager clipboard =
-                            (android.content.ClipboardManager)
-                                    context.getSystemService(Context.CLIPBOARD_SERVICE);
-                    android.content.ClipData clip =
-                            android.content.ClipData.newPlainText("GeoJSON", geojson);
-                    clipboard.setPrimaryClip(clip);
-                    Toast.makeText(context, "GeoJSON copiado", Toast.LENGTH_SHORT).show();
-                })
-                .setNegativeButton("Cerrar", null)
-                .show();
     }
 
     /**
