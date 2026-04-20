@@ -8,19 +8,16 @@ public class Espacio {
     private String nombre;
     private String descripcion;
     private String url_imagenes;
-    private String latitud;
-    private String longitud;
+
     private int estado;
 
-    public Espacio(int id_espacio, int id_lugar, int id_piso, String nombre, String descripcion, String url_imagenes, String latitud, String longitud, int estado) {
+    public Espacio(int id_espacio, int id_lugar, int id_piso, String nombre, String descripcion, String url_imagenes, int estado) {
         this.id_espacio = id_espacio;
         this.id_lugar = id_lugar;
         this.id_piso = id_piso;
         this.nombre = nombre;
         this.descripcion = descripcion;
         this.url_imagenes = url_imagenes;
-        this.latitud = latitud;
-        this.longitud = longitud;
         this.estado = estado;
     }
 
@@ -72,21 +69,7 @@ public class Espacio {
         this.url_imagenes = url_imagenes;
     }
 
-    public String getLatitud() {
-        return latitud;
-    }
 
-    public void setLatitud(String latitud) {
-        this.latitud = latitud;
-    }
-
-    public String getLongitud() {
-        return longitud;
-    }
-
-    public void setLongitud(String longitud) {
-        this.longitud = longitud;
-    }
 
     public int getEstado() {
         return estado;
