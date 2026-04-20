@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_bottom_sheet"
+    app:behavior_peekHeight="120dp"
+    app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
+
+    <!-- Barra de arrastre (indicador visual) -->
+    <View
+        android:id="@+id/drag_handle"
+        android:layout_width="40dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="8dp"
+        android:background="#CCCCCC"
+        android:alpha="0.6" />
+
+    <!-- Título (alineado a la derecha) -->
+    <TextView
+        android:id="@+id/tv_titulo_lugar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="8dp"
+        android:text="Edificio tal"
+        android:textColor="@android:color/white"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:gravity="start" />
+
+    <!-- Carrusel de fotos -->
+    <HorizontalScrollView
+        android:id="@+id/hsv_fotos"
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:layout_marginTop="8dp"
+        android:scrollbars="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="1dp">
+
+        <LinearLayout
+            android:id="@+id/ll_fotos"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <!-- Espacio para 3 imágenes (maximo sugerido por el equipo y mi emperador chino) -->
+            <ImageView
+                android:id="@+id/iv_foto1"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_marginEnd="8dp"
+                android:scaleType="centerCrop"
+                android:background="#33FFFFFF"
+                android:src="@drawable/ic_placeholder" />
+
+            <ImageView
+                android:id="@+id/iv_foto2"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_marginEnd="8dp"
+                android:scaleType="centerCrop"
+                android:background="#33FFFFFF"
+                android:src="@drawable/ic_placeholder" />
+
+            <ImageView
+                android:id="@+id/iv_foto3"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:scaleType="centerCrop"
+                android:background="#33FFFFFF"
+                android:src="@drawable/ic_placeholder" />
+
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <!-- Contenedor de descripción con icono de edición -->
+    <LinearLayout
+        android:id="@+id/ll_descripcion_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="80dp"
+        android:orientation="horizontal">
+
+        <!-- icono de edición (lapiz) -->
+        <ImageView
+            android:id="@+id/iv_editar_descripcion"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginEnd="12dp"
+            android:src="@drawable/ic_edit"
+            android:contentDescription="Editar descripción"
+            android:visibility="gone" />  <!-- Solo visible para admin (quitale el gone y se ve xd)(solo es un vector no un boton asi que puedes usarlo si quieres si no quitalo y deja que el usuario edite de un solo tu sabras que conviene mas bro) -->
+
+        <!-- descripción -->
+        <TextView
+            android:id="@+id/tv_descripcion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+            android:textColor="#E0E0E0"
+            android:textSize="14sp"
+            android:lineSpacingExtra="4dp" />
+
+    </LinearLayout>
+
+</LinearLayout>
