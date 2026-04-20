@@ -2,23 +2,23 @@ package com.example.indoorview.models;
 
 public class Usuarios {
     private int id_usuario;
-    private int id_estado;
     private int id_tipo;
     private String nombres;
     private String apellidos;
     private String correo;
     private String carnet;
     private String contraseña;
+    private int estado;
 
-    public Usuarios(int id_usuario, int id_estado, int id_tipo, String nombres, String apellidos, String correo, String carnet, String contraseña) {
+    public Usuarios(int id_usuario, int id_tipo, String nombres, String apellidos, String correo, String carnet, String contraseña, int estado) {
         this.id_usuario = id_usuario;
-        this.id_estado = id_estado;
         this.id_tipo = id_tipo;
         this.nombres = nombres;
         this.apellidos = apellidos;
         this.correo = correo;
         this.carnet = carnet;
         this.contraseña = contraseña;
+        this.estado = estado;
     }
 
     public int getId_usuario() {
@@ -27,14 +27,6 @@ public class Usuarios {
 
     public void setId_usuario(int id_usuario) {
         this.id_usuario = id_usuario;
-    }
-
-    public int getId_estado() {
-        return id_estado;
-    }
-
-    public void setId_estado(int id_estado) {
-        this.id_estado = id_estado;
     }
 
     public int getId_tipo() {
@@ -83,5 +75,13 @@ public class Usuarios {
 
     public void setContraseña(String contraseña) {
         this.contraseña = contraseña;
+    }
+
+    public int getEstado() {
+        return estado;
+    }
+
+    public void setEstado(int estado) {
+        this.estado = estado;
     }
 }

@@ -5,20 +5,19 @@ public class Lugar {
     private String nombre;
     private String descripcion;
     private String url_imagenes;
-    private String latitud;
-    private String longitud;
+
     private String geojson;
+    private String color;
     private int estado;
 
-    public Lugar(int id_lugar, String nombre, String descripcion,String url_imagenes, String latitud, String longitud, String geojson, int estado) {
+    public Lugar(int id_lugar, String nombre, String descripcion,String url_imagenes, String geojson,String color, int estado) {
 
         this.id_lugar = id_lugar;
         this.nombre = nombre;
         this.descripcion = descripcion;
         this.url_imagenes = url_imagenes;
-        this.latitud = latitud;
-        this.longitud = longitud;
         this.geojson = geojson;
+        this.color = color;
         this.estado = estado;
     }
 
@@ -54,21 +53,6 @@ public class Lugar {
         this.url_imagenes = url_imagenes;
     }
 
-    public String getLatitud() {
-        return latitud;
-    }
-
-    public void setLatitud(String latitud) {
-        this.latitud = latitud;
-    }
-
-    public String getLongitud() {
-        return longitud;
-    }
-
-    public void setLongitud(String longitud) {
-        this.longitud = longitud;
-    }
 
     public String getGeojson() {
         return geojson;
@@ -86,7 +70,11 @@ public class Lugar {
         this.estado = estado;
     }
 
+    public String getColor() {
+        return color;
+    }
 
-
-
+    public void setColor(String color) {
+        this.color = color;
+    }
 }
