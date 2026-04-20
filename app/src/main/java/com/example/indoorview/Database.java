@@ -127,6 +127,7 @@ public class Database extends SQLiteOpenHelper {
                     c.getString(c.getColumnIndexOrThrow("descripcion")),
                     c.getString(c.getColumnIndexOrThrow("url_imagenes")),
                     c.getString(c.getColumnIndexOrThrow("geojson")),
+                    c.getString(c.getColumnIndexOrThrow("color")),
                     c.getInt(c.getColumnIndexOrThrow("estado"))
             );
             lista.add(l);

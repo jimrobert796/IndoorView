@@ -7,15 +7,17 @@ public class Lugar {
     private String url_imagenes;
 
     private String geojson;
+    private String color;
     private int estado;
 
-    public Lugar(int id_lugar, String nombre, String descripcion,String url_imagenes, String geojson, int estado) {
+    public Lugar(int id_lugar, String nombre, String descripcion,String url_imagenes, String geojson,String color, int estado) {
 
         this.id_lugar = id_lugar;
         this.nombre = nombre;
         this.descripcion = descripcion;
         this.url_imagenes = url_imagenes;
         this.geojson = geojson;
+        this.color = color;
         this.estado = estado;
     }
 
@@ -68,7 +70,11 @@ public class Lugar {
         this.estado = estado;
     }
 
+    public String getColor() {
+        return color;
+    }
 
-
-
+    public void setColor(String color) {
+        this.color = color;
+    }
 }
