@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <!-- Color sólido (sin transparencia) -->
+    <solid android:color="#0E2E49" />
+
+    <!-- Bordes redondeados solo arriba -->
+    <corners
+        android:topLeftRadius="24dp"
+        android:topRightRadius="24dp" />
+
+    <!-- Sin borde (eliminado) -->
+
+</shape>
