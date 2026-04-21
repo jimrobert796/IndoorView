@@ -136,6 +136,16 @@ public class Database extends SQLiteOpenHelper {
         return lista;
     }
 
+    // Actualizar Lugar
+    public int updateLugar(int id, String nombre, String descripcion, String color) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put("nombre", nombre);
+        cv.put("descripcion", descripcion);
+        cv.put("color", color);
+        // Nota: No modificamos url_imagenes ni geojson aquí
+        return db.update("lugar", cv, "id_lugar = ? AND estado = 1", new String[]{String.valueOf(id)});
+    }
 
 
     // ─────────────────────────────────────────
@@ -238,6 +248,32 @@ public class Database extends SQLiteOpenHelper {
         );
         return e;
     }
+    public int updateEspacio(int idEspacio, String nombre, String descripcion) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put("nombre", nombre);
+        cv.put("descripcion", descripcion);
+
+        return db.update("espacio", cv, "id_espacio = ? AND estado = 1",
+                new String[]{String.valueOf(idEspacio)});
+    }
+
+    // Versión completa si necesitas actualizar más campos
+    public int updateEspacioCompleto(int idEspacio, int idLugar, int idPiso,
+                                     String nombre, String descripcion,
+                                     String urlImagenes, String color) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put("id_lugar", idLugar);
+        cv.put("id_piso", idPiso);
+        cv.put("nombre", nombre);
+        cv.put("descripcion", descripcion);
+        cv.put("url_imagenes", urlImagenes);
+        cv.put("color", color);
+
+        return db.update("espacio", cv, "id_espacio = ? AND estado = 1",
+                new String[]{String.valueOf(idEspacio)});
+    }
 
     // ─────────────────────────────────────────
     // CRUD - Geometria
@@ -289,6 +325,54 @@ public class Database extends SQLiteOpenHelper {
             c.getString(c.getColumnIndexOrThrow("color"))
         );
         return g;
+    }
+
+    // Actualizar color de una geometría
+    public int updateGeometriaColor(int idGeometria, String color) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put("color", color);
+
+        return db.update("geometria", cv, "id_geometria = ?",
+                new String[]{String.valueOf(idGeometria)});
+    }
+
+    // Actualizar geometría completa
+    public int updateGeometria(int idGeometria, String tipo, String vertices, String color) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put("tipo", tipo);
+        cv.put("vertices", vertices);
+        cv.put("color", color);
+
+        return db.update("geometria", cv, "id_geometria = ?",
+                new String[]{String.valueOf(idGeometria)});
+    }
+
+    // Obtener geometrías por id_espacio
+    public List<Geometria> getGeometriasByEspacio(int idEspacio) {
+        List<Geometria> lista = new ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor c = db.rawQuery("SELECT * FROM geometria WHERE id_espacio = ?",
+                new String[]{String.valueOf(idEspacio)});
+        while (c.moveToNext()) {
+            lista.add(cursorToGeometria(c));
+        }
+        c.close();
+        return lista;
+    }
+
+    // Obtener geometrías por id_lugar
+    public List<Geometria> getGeometriasByLugar(int idLugar) {
+        List<Geometria> lista = new ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor c = db.rawQuery("SELECT * FROM geometria WHERE id_lugar = ?",
+                new String[]{String.valueOf(idLugar)});
+        while (c.moveToNext()) {
+            lista.add(cursorToGeometria(c));
+        }
+        c.close();
+        return lista;
     }
 
     // ==========================================

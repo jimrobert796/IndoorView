@@ -9,20 +9,27 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.indoorview.models.Espacio;
 import com.example.indoorview.models.Geometria;
 import com.example.indoorview.models.Lugar;
 import com.example.indoorview.models.Pisos;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.gson.JsonObject;
 import com.mapbox.bindgen.Value;
+import com.mapbox.geojson.Feature;
 import com.mapbox.geojson.Point;
 import com.mapbox.maps.CameraOptions;
 import com.mapbox.maps.MapView;
 import com.mapbox.maps.Style;
+import com.mapbox.maps.extension.style.layers.generated.FillLayer;
 import com.mapbox.maps.extension.style.layers.properties.generated.IconAnchor;
 import com.mapbox.maps.extension.style.sources.generated.GeoJsonSource;
 import com.mapbox.maps.plugin.Plugin;
@@ -110,12 +117,15 @@ public class MapManager {
             restaurarPinesOcultos();
 
             if (modoEdicion) {
+                // Crud
+                mostrarBottomSheetCRUD(data, false); // false = lugar
                 Toast.makeText(context, "Listo para modificar CRUD", Toast.LENGTH_SHORT).show();
             } else {
-                mostrarInfoLugar(data);
+                mostrarBottomSheetLugar(data);
+                //mostrarInfoLugar(data);
                 limpiarEspacios();
                 lugarSeleccionado = -1;
-                Toast.makeText(context, "Espacios ocultos", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(context, "Espacios ocultos", Toast.LENGTH_SHORT).show();
             }
             return true;
         });
@@ -171,9 +181,12 @@ public class MapManager {
             JsonObject data = (JsonObject) annotation.getData();
 
             if (modoEdicion) {
+                // Espacios
+                mostrarBottomSheetCRUD(data, true); // true = espacio
                 Toast.makeText(context, "Listo para modificar CRUD", Toast.LENGTH_SHORT).show();
             } else {
-                mostrarInfoEspacio(data);
+                mostrarBottomSheetLugar(data);
+                //mostrarInfoEspacio(data);
             }
             return true;
         });
@@ -381,6 +394,7 @@ public class MapManager {
 
     public void dibujarPoligonoEspacio(Geometria geometria, Espacio espacio) {
         String vertices = geometria.getVertices();
+        int idGeo = geometria.getId_geometria();
 
         if (vertices == null || vertices.isEmpty()) {
             Log.e("DIBUJO", "Vertices vacíos para: " + espacio.getNombre());
@@ -436,7 +450,7 @@ public class MapManager {
 
                 Point centro = calcularCentroDesdeGeoJson(vertices);
                 if (centro != null) {
-                    agregarPinEspacio(centro, espacio.getNombre(), "#0080ff", espacio, vertices);
+                    agregarPinEspacio(centro, espacio.getNombre(), "#0080ff", espacio, geometria);
                 }
 
                 Log.d("DIBUJO", "Dibujado: " + espacio.getNombre());
@@ -522,16 +536,17 @@ public class MapManager {
         managerLugares.create(op);
     }
 
-    private void agregarPinEspacio(Point punto, String texto, String color, Espacio espacio, String vertices) {
+    private void agregarPinEspacio(Point punto, String texto, String color, Espacio espacio, Geometria geometria) {
         JsonObject data = new JsonObject();
         data.addProperty("id_espacio", espacio.getId_espacio());
+        data.addProperty("id_geometria", geometria.getId_geometria());
         data.addProperty("id_lugar", espacio.getId_lugar());
         data.addProperty("id_piso", espacio.getId_piso());
         data.addProperty("nombre", espacio.getNombre());
         data.addProperty("descripcion", espacio.getDescripcion());
         data.addProperty("url_imagenes", espacio.getUrl_imagenes());
         data.addProperty("estado", espacio.getEstado());
-        data.addProperty("vertices", vertices);
+        data.addProperty("vertices", geometria.getVertices());
 
         Bitmap icono = crearPinBitmap(color);
         PointAnnotationOptions op = new PointAnnotationOptions()
@@ -1375,6 +1390,325 @@ public class MapManager {
             Log.e("CENTRO", "Error: " + e.getMessage());
             return null;
         }
+    }
+
+
+    private void mostrarBottomSheetLugar(JsonObject data) {
+        com.google.android.material.bottomsheet.BottomSheetDialog dialog =
+                new com.google.android.material.bottomsheet.BottomSheetDialog(context);
+
+        View view = View.inflate(context, R.layout.bottom_sheet_detalle_lugar, null);
+        dialog.setContentView(view);
+
+        // Referencias UI
+        TextView tvTitulo = view.findViewById(R.id.tv_titulo_lugar);
+        TextView tvDescripcion = view.findViewById(R.id.tv_descripcion);
+
+        // Datos
+        String nombre = data.get("nombre").getAsString();
+        String descripcion = data.get("descripcion").getAsString();
+
+        // Setear datos
+        tvTitulo.setText(nombre);
+        tvDescripcion.setText(descripcion);
+
+        dialog.show();
+    }
+
+    // Contiene la funcionalidad de crud
+    private void mostrarBottomSheetCRUD(JsonObject data, boolean esEspacio) {
+
+        BottomSheetDialog dialog = new BottomSheetDialog(context);
+        View view = View.inflate(context, R.layout.bottom_sheet_detalle_lugarespacio_crud, null);
+        dialog.setContentView(view);
+
+        // COLORES Y OPCIONES
+        List<String> opcionesColor = Arrays.asList(
+                "Azul",
+                "Naranja",
+                "Verde",
+                "Amarillo",
+                "Gris"
+        );
+
+        List<String> coloresHex = Arrays.asList(
+                "#2196F3",
+                "#ed5407",
+                "#0fbf02",
+                "#fce005",
+                "#607D8B"
+        );
+
+        // UI
+        EditText etNombre = view.findViewById(R.id.et_nombre);
+        EditText etDescripcion = view.findViewById(R.id.et_descripcion);
+        Button btnEditar = view.findViewById(R.id.btn_editar);
+        Button btnGuardar = view.findViewById(R.id.btn_guardar);
+        Button btnEliminar = view.findViewById(R.id.btn_eliminar);
+        Spinner spinnerColor = view.findViewById(R.id.spinner_color);
+
+        // DATOS ORIGINALES
+        String nombreOriginal = data.get("nombre").getAsString();
+        String descripcionOriginal = data.get("descripcion").getAsString();
+
+        etNombre.setText(nombreOriginal);
+        etDescripcion.setText(descripcionOriginal);
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                context,
+                android.R.layout.simple_spinner_item,
+                opcionesColor
+        );
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerColor.setAdapter(adapter);
+
+        // DESACTIVADO POR DEFECTO
+        spinnerColor.setEnabled(false);
+
+        // 🔥 AQUÍ MISMO VA EL LISTENER
+        final boolean[] primeraVez = {true};
+
+        spinnerColor.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+
+                if (primeraVez[0]) {
+                    primeraVez[0] = false;
+                    return;
+                }
+
+                String colorSeleccionado = coloresHex.get(position);
+
+                // 🔥 PASA EL PARÁMETRO esEspacio
+                actualizarColorLugar(
+                        esEspacio ? data.get("id_espacio").getAsInt() : data.get("id_lugar").getAsInt(),
+                        colorSeleccionado,
+                        esEspacio  // <-- NUEVO PARÁMETRO
+                );
+
+                data.addProperty("color", colorSeleccionado);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
+
+        String colorActual = data.has("color")
+                ? data.get("color").getAsString()
+                : "#062275"; // default
+
+        int indexSeleccionado = coloresHex.indexOf(colorActual);
+        if (indexSeleccionado != -1) {
+            spinnerColor.setSelection(indexSeleccionado);
+        }
+
+
+        final boolean[] editando = {false};
+
+        // EDITAR / CANCELAR
+        btnEditar.setOnClickListener(v -> {
+
+            if (!editando[0]) {
+
+                mostrarDialogoConfirmacion(
+                        "Modo edición",
+                        "¿Deseas editar este elemento?",
+                        "Sí",
+                        () -> {
+                            editando[0] = true;
+
+                            etNombre.setEnabled(true);
+                            etDescripcion.setEnabled(true);
+                            spinnerColor.setEnabled(true);
+
+                            btnGuardar.setVisibility(View.VISIBLE);
+                            btnEditar.setText("Cancelar");
+
+                            Toast.makeText(context, "Modo edición activado", Toast.LENGTH_SHORT).show();
+                        }
+                );
+
+            } else {
+
+                mostrarDialogoConfirmacion(
+                        "Cancelar edición",
+                        "¿Deseas descartar los cambios?",
+                        "Sí",
+                        () -> {
+                            editando[0] = false;
+
+                            etNombre.setText(nombreOriginal);
+                            etDescripcion.setText(descripcionOriginal);
+
+                            etNombre.setEnabled(false);
+                            etDescripcion.setEnabled(false);
+                            spinnerColor.setEnabled(false);
+
+                            btnGuardar.setVisibility(View.GONE);
+                            btnEditar.setText("Editar");
+
+                            Toast.makeText(context, "Edición cancelada", Toast.LENGTH_SHORT).show();
+                        }
+                );
+            }
+        });
+
+        // GUARDAR
+        btnGuardar.setOnClickListener(v -> {
+
+            String colorSeleccionado = coloresHex.get(spinnerColor.getSelectedItemPosition());
+            String nuevoNombre = etNombre.getText().toString();
+            String nuevaDesc = etDescripcion.getText().toString();
+
+            if (nuevoNombre.isEmpty()) {
+                Toast.makeText(context, "El nombre es requerido", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (esEspacio) {
+                int id = data.get("id_espacio").getAsInt();
+                int pos = spinnerColor.getSelectedItemPosition();
+
+                actualizarColorLugar(id, colorSeleccionado, true);
+
+                // actualizar en JSON local (para que el pin también tenga el nuevo color)
+                data.addProperty("color", colorSeleccionado);
+
+                // Guardar en la bd
+                db.updateEspacio(
+                        data.get("id_espacio").getAsInt(),
+                        nuevoNombre,
+                        nuevaDesc
+                );
+                db.updateGeometriaColor(
+                        data.get("id_geometria").getAsInt(),
+                        colorSeleccionado
+                );
+
+
+
+                // db.updateEspacio(id, nuevoNombre, nuevaDesc);
+                Toast.makeText(context, "Espacio actualizado", Toast.LENGTH_SHORT).show();
+
+            } else {
+                int id = data.get("id_lugar").getAsInt();
+
+                actualizarColorLugar(id, colorSeleccionado, false);
+
+                // actualizar en JSON local (para que el pin también tenga el nuevo color)
+                data.addProperty("color", colorSeleccionado);
+
+                db.updateLugar(
+                        data.get("id_lugar").getAsInt(),
+                        nuevoNombre,
+                        nuevaDesc,
+                        colorSeleccionado
+                );
+
+                Toast.makeText(context, "Lugar actualizado", Toast.LENGTH_SHORT).show();
+
+                limpiarTodo();
+                cargarPoligonosLugar();
+            }
+
+            dialog.dismiss();
+        });
+
+        // Boton eliminar
+        btnEliminar.setOnClickListener(v -> {
+
+            mostrarDialogoConfirmacion(
+                    "Confirmar eliminación",
+                    "Esta acción no se puede deshacer",
+                    "Eliminar",
+                    () -> {
+
+                        if (esEspacio) {
+                            int id = data.get("id_espacio").getAsInt();
+                            // db.deleteEspacio(id);
+                            Toast.makeText(context, "Espacio eliminado", Toast.LENGTH_SHORT).show();
+
+                        } else {
+                            int id = data.get("id_lugar").getAsInt();
+                            // db.deleteLugar(id);
+                            Toast.makeText(context, "Lugar eliminado", Toast.LENGTH_SHORT).show();
+                        }
+
+                        dialog.dismiss();
+                    }
+            );
+        });
+
+        dialog.show();
+    }
+
+    public void actualizarColorLugar(int id, String colorHex, boolean esEspacio) {
+        mapView.getMapboxMap().getStyle(style -> {
+
+            // Para espacios, el sourceId podría ser "espacio-" + id
+            // Para lugares, "edificio-" + id
+            String sourceId = esEspacio ? "espacio-" + id : "edificio-" + id;
+            String fillLayerId = sourceId + "-fill";
+            String lineLayerId = sourceId + "-line";
+
+            try {
+                // Cambiar color del relleno
+                if (style.styleLayerExists(fillLayerId)) {
+                    style.setStyleLayerProperty(
+                            fillLayerId,
+                            "fill-color",
+                            Value.valueOf(colorHex)
+                    );
+                }
+
+                // Cambiar color del borde
+                if (style.styleLayerExists(lineLayerId)) {
+
+                    String borderColor;
+
+                    if (esEspacio) {
+                        // Para ESPACIOS: borde NEGRO
+                        borderColor = "#000000";
+                    } else {
+                        // Para LUGARES: borde del mismo color
+                        borderColor = colorHex;
+                    }
+
+                    style.setStyleLayerProperty(
+                            lineLayerId,
+                            "line-color",
+                            Value.valueOf(borderColor)
+                    );
+                }
+
+                Log.d("MAPBOX_COLOR", "Color actualizado para " + (esEspacio ? "espacio" : "lugar") + " ID: " + id);
+
+            } catch (Exception e) {
+                Log.e("MAPBOX_COLOR", "Error: " + e.getMessage());
+            }
+        });
+    }
+
+
+
+
+    // DUNCION PERFECTA PARA CONFIRMACIONES
+    private void mostrarDialogoConfirmacion(
+            String titulo,
+            String mensaje,
+            String textoPositivo,
+            Runnable onConfirm
+    ) {
+        new AlertDialog.Builder(context)
+                .setTitle(titulo)
+                .setMessage(mensaje)
+                .setPositiveButton(textoPositivo, (d, w) -> {
+                    if (onConfirm != null) {
+                        onConfirm.run();
+                    }
+                })
+                .setNegativeButton("Cancelar", null)
+                .show();
     }
 
     // ════════════════════════════════════════════════════════════════

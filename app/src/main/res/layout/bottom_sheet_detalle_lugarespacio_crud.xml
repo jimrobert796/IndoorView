@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_bottom_sheet"
+    android:paddingBottom="20dp">
+
+    <!-- 🔹 Indicador de arrastre -->
+    <View
+        android:layout_width="40dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="8dp"
+        android:background="#CCCCCC"
+        android:alpha="0.6" />
+
+    <!-- 🔹 NOMBRE -->
+    <EditText
+        android:id="@+id/et_nombre"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="8dp"
+        android:textColor="@android:color/white"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:background="@android:color/transparent"
+        android:enabled="false"
+        android:hint="Nombre del lugar" />
+
+
+    <!-- 🔹 DESCRIPCIÓN -->
+    <EditText
+        android:id="@+id/et_descripcion"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="8dp"
+        android:textColor="#E0E0E0"
+        android:textSize="14sp"
+        android:background="@android:color/transparent"
+        android:enabled="false"
+        android:minLines="3"
+        android:hint="Descripción del lugar"
+        android:lineSpacingExtra="4dp" />
+
+    <!-- 🔹 TÍTULO COLOR -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Color"
+        android:textColor="#FFFFFF"
+        android:paddingStart="16dp"
+        android:paddingTop="8dp"
+        android:textStyle="bold" />
+
+    <!-- 🔹 SPINNER DE COLOR -->
+    <Spinner
+        android:id="@+id/spinner_color"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:enabled="false"
+        android:backgroundTint="#4CAF50"
+        android:popupBackground="#2C2C2C"/>
+
+    <!-- 🔹 CARRUSEL -->
+    <HorizontalScrollView
+        android:id="@+id/hsv_fotos"
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:layout_marginTop="8dp"
+        android:scrollbars="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="1dp">
+
+        <LinearLayout
+            android:id="@+id/ll_fotos"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <ImageView
+                android:id="@+id/iv_foto1"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_marginEnd="8dp"
+                android:scaleType="centerCrop"
+                android:background="#33FFFFFF"
+                android:src="@drawable/ic_placeholder" />
+
+            <ImageView
+                android:id="@+id/iv_foto2"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_marginEnd="8dp"
+                android:scaleType="centerCrop"
+                android:background="#33FFFFFF"
+                android:src="@drawable/ic_placeholder" />
+
+            <ImageView
+                android:id="@+id/iv_foto3"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:scaleType="centerCrop"
+                android:background="#33FFFFFF"
+                android:src="@drawable/ic_placeholder" />
+
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <!-- 🔹 BOTONES -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="12dp">
+
+        <Button
+            android:id="@+id/btn_editar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Editar"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#4CAF50"/>
+
+        <Button
+            android:id="@+id/btn_guardar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Guardar"
+            android:layout_marginStart="8dp"
+            android:visibility="gone"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#4CAF50"/>
+
+        <Button
+            android:id="@+id/btn_eliminar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Eliminar"
+            android:layout_marginStart="8dp"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#F44336"/>
+
+    </LinearLayout>
+
+</LinearLayout>
