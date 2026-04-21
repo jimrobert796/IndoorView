@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/fond">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="24dp">
+
+            <!-- Card principal -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/card_forgot"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="8dp"
+                app:cardBackgroundColor="#80000000">
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="24dp">
+
+                    <!-- Botón Regresar (la flechita de arriba a la izquierda) -->
+                    <ImageView
+                        android:id="@+id/btn_regresar"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:layout_alignParentStart="true"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_regreso"
+                        android:contentDescription="Regresar" />
+
+                    <!-- Logo de la universidad -->
+                    <ImageView
+                        android:id="@+id/iv_logo_ugb"
+                        android:layout_width="80dp"
+                        android:layout_height="80dp"
+                        android:layout_centerHorizontal="true"
+                        android:layout_marginTop="8dp"
+                        android:src="@drawable/logo_universidad"
+                        android:contentDescription="Logo UGB" />
+
+                    <!-- linea divisoria -->
+                    <View
+                        android:id="@+id/divider1"
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_below="@id/iv_logo_ugb"
+                        android:layout_marginTop="20dp"
+                        android:background="#4DFFFFFF" />
+
+                    <!-- titulo: ¿olvidó su contraseña? dale gil di que me amas-->
+                    <TextView
+                        android:id="@+id/tv_pregunta"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_below="@id/divider1"
+                        android:layout_marginTop="20dp"
+                        android:text="¿Olvidó su contraseña?"
+                        android:textColor="#FFCC00"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:gravity="center" />
+
+                    <!-- Descripción -->
+                    <TextView
+                        android:id="@+id/tv_descripcion"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_below="@id/tv_pregunta"
+                        android:layout_marginTop="12dp"
+                        android:text="Por favor escribe tu correo institucional para recibir un código de confirmación para establecer una nueva contraseña."
+                        android:textColor="#E0E0E0"
+                        android:textSize="14sp"
+                        android:lineSpacingExtra="4dp"
+                        android:gravity="center" />
+
+                    <!-- Campo: Correo institucional -->
+                    <TextView
+                        android:id="@+id/label_correo"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_below="@id/tv_descripcion"
+                        android:layout_marginTop="24dp"
+                        android:text="Ingresa tu correo institucional"
+                        android:textColor="#B3FFFFFF"
+                        android:textSize="12sp" />
+
+                    <EditText
+                        android:id="@+id/et_correo"
+                        android:layout_width="match_parent"
+                        android:layout_height="56dp"
+                        android:layout_below="@id/label_correo"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/bg_campo_perfil"
+                        android:hint="ejemplo@ugb.edu.sv"
+                        android:inputType="textEmailAddress"
+                        android:padding="12dp"
+                        android:textColor="@android:color/white"
+                        android:textColorHint="#B3FFFFFF" />
+
+                    <!-- boton confirmar correo -->
+                    <Button
+                        android:id="@+id/btn_confirmar"
+                        android:layout_width="match_parent"
+                        android:layout_height="56dp"
+                        android:layout_below="@id/et_correo"
+                        android:layout_marginTop="28dp"
+                        android:layout_marginBottom="16dp"
+                        android:backgroundTint="#2196F3"
+                        android:text="Confirmar Correo"
+                        android:textColor="@android:color/white"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                </RelativeLayout>
+            </androidx.cardview.widget.CardView>
+
+        </RelativeLayout>
+    </ScrollView>
+
+</RelativeLayout>
