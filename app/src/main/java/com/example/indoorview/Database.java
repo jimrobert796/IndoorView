@@ -137,12 +137,13 @@ public class Database extends SQLiteOpenHelper {
     }
 
     // Actualizar Lugar
-    public int updateLugar(int id, String nombre, String descripcion, String color) {
+    public int updateLugar(int id, String nombre, String descripcion, String color, String url_imagenes) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
         cv.put("nombre", nombre);
         cv.put("descripcion", descripcion);
         cv.put("color", color);
+        cv.put("url_imagenes", url_imagenes);  // Añadir las URLs de imágenes
         // Nota: No modificamos url_imagenes ni geojson aquí
         return db.update("lugar", cv, "id_lugar = ? AND estado = 1", new String[]{String.valueOf(id)});
     }
@@ -248,11 +249,12 @@ public class Database extends SQLiteOpenHelper {
         );
         return e;
     }
-    public int updateEspacio(int idEspacio, String nombre, String descripcion) {
+    public int updateEspacio(int idEspacio, String nombre, String descripcion, String url_imagenes) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
         cv.put("nombre", nombre);
         cv.put("descripcion", descripcion);
+        cv.put("url_imagenes", url_imagenes);
 
         return db.update("espacio", cv, "id_espacio = ? AND estado = 1",
                 new String[]{String.valueOf(idEspacio)});

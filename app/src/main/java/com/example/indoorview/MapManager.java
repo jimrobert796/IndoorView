@@ -2,20 +2,31 @@ package com.example.indoorview;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.HorizontalScrollView;
+import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 
 import com.example.indoorview.models.Espacio;
 import com.example.indoorview.models.Geometria;
@@ -41,8 +52,13 @@ import com.mapbox.maps.plugin.annotation.generated.PointAnnotation;
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotationManager;
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotationOptions;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
@@ -75,14 +91,36 @@ public class MapManager {
     private int lugarActualId = 0;
     private int espacioContador = 0;
 
+    // Array de imágenes para los 3 productos
+    ImageView[] imgProductos = new ImageView[3];
+    int imagenActual = 0;
+    Intent tomarFotoIntento;
+
+    static final int REQUEST_TAKE_PHOTO = 1;
+    static final int REQUEST_PICK_IMAGE = 2;
+
+    private ActivityResultLauncher<Intent> launcherCamara;
+    private ActivityResultLauncher<Intent> launcherGaleria;
+
+    // Variables para imágenes
+    private String urlFoto1 = "", urlFoto2 = "", urlFoto3 = "";
+
+    // Variables temporales para el bottom sheet
+    private JsonObject tempData;
+    private boolean tempEsEspacio;
+    private ImageView tempImageView;
+
     // ════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ════════════════════════════════════════════════════════════════
-    public MapManager(MapView mapView, Database db, Context context, Spinner spinner) {
+    public MapManager(MapView mapView, Database db, Context context, Spinner spinner,ActivityResultLauncher<Intent> camaraLauncher,
+                      ActivityResultLauncher<Intent> galeriaLauncher) {
         this.mapView = mapView;
         this.db = db;
         this.context = context;
         this.spinnerPisos = spinner;
+        this.launcherCamara = camaraLauncher;
+        this.launcherGaleria = galeriaLauncher;
 
         if (spinnerPisos == null) {
             Log.e("SPINNER_ERROR", "¡El spinner es NULL en MapManager!");
@@ -115,6 +153,8 @@ public class MapManager {
             // Limpiamos los espacios por si acaso
             limpiarEspacios();
             restaurarPinesOcultos();
+            // Verifica si no hay pisos BUG SOLUCIONADO
+            cargarPisos(lugarActualId);
 
             if (modoEdicion) {
                 // Crud
@@ -1400,6 +1440,74 @@ public class MapManager {
         View view = View.inflate(context, R.layout.bottom_sheet_detalle_lugar, null);
         dialog.setContentView(view);
 
+        // Encontrar las vistas de imágenes y sus CardView
+        ImageView imgFoto1 = view.findViewById(R.id.iv_foto1);
+        ImageView imgFoto2 = view.findViewById(R.id.iv_foto2);
+        ImageView imgFoto3 = view.findViewById(R.id.iv_foto3);
+
+        // Encontrar los CardView
+        androidx.cardview.widget.CardView cvFoto1 = view.findViewById(R.id.cv_foto1);
+        androidx.cardview.widget.CardView cvFoto2 = view.findViewById(R.id.cv_foto2);
+        androidx.cardview.widget.CardView cvFoto3 = view.findViewById(R.id.cv_foto3);
+
+        // Extraer URLs válidas desde data
+        String urlsImagenesStr = data.has("url_imagenes") ? data.get("url_imagenes").getAsString() : "";
+        List<String> urlsValidas = new ArrayList<>();
+
+        if (urlsImagenesStr != null && !urlsImagenesStr.isEmpty()) {
+            String[] urls = urlsImagenesStr.split(",");
+            for (String url : urls) {
+                if (url != null && !url.isEmpty()) {
+                    urlsValidas.add(url);
+                }
+            }
+        }
+
+        // Ocultar todos los CardView primero
+        cvFoto1.setVisibility(View.GONE);
+        cvFoto2.setVisibility(View.GONE);
+        cvFoto3.setVisibility(View.GONE);
+
+        // Mostrar solo las imágenes que existen
+        if (urlsValidas.size() > 0) {
+            cargarImagenEnImageView(imgFoto1, urlsValidas.get(0));
+            cvFoto1.setVisibility(View.VISIBLE);
+
+            final int pos0 = 0;
+            imgFoto1.setOnClickListener(v -> {
+                mostrarVisorImagenes(urlsValidas.toArray(new String[0]), pos0);
+            });
+        }
+
+        if (urlsValidas.size() > 1) {
+            cargarImagenEnImageView(imgFoto2, urlsValidas.get(1));
+            cvFoto2.setVisibility(View.VISIBLE);
+
+            final int pos1 = 1;
+            imgFoto2.setOnClickListener(v -> {
+                mostrarVisorImagenes(urlsValidas.toArray(new String[0]), pos1);
+            });
+        }
+
+        if (urlsValidas.size() > 2) {
+            cargarImagenEnImageView(imgFoto3, urlsValidas.get(2));
+            cvFoto3.setVisibility(View.VISIBLE);
+
+            final int pos2 = 2;
+            imgFoto3.setOnClickListener(v -> {
+                mostrarVisorImagenes(urlsValidas.toArray(new String[0]), pos2);
+            });
+        }
+
+        // Ocultar el carrusel si no hay imágenes
+        HorizontalScrollView hsvFotos = view.findViewById(R.id.hsv_fotos);
+        if (urlsValidas.isEmpty()) {
+            hsvFotos.setVisibility(View.GONE);
+            Toast.makeText(context, "Este lugar no tiene imágenes", Toast.LENGTH_SHORT).show();
+        } else {
+            hsvFotos.setVisibility(View.VISIBLE);
+        }
+
         // Referencias UI
         TextView tvTitulo = view.findViewById(R.id.tv_titulo_lugar);
         TextView tvDescripcion = view.findViewById(R.id.tv_descripcion);
@@ -1413,6 +1521,98 @@ public class MapManager {
         tvDescripcion.setText(descripcion);
 
         dialog.show();
+    }
+
+
+    // Método para extraer URLs del JSON
+    private String[] extraerUrlsDeData(JsonObject data) {
+        String[] urls = new String[3]; // Inicializar array para 3 imágenes
+        try {
+            String urlsImagenes = data.has("url_imagenes") ? data.get("url_imagenes").getAsString() : "";
+
+            if (!urlsImagenes.isEmpty()) {
+                String[] urlsArray = urlsImagenes.split(",");
+                for (int i = 0; i < urlsArray.length && i < 3; i++) {
+                    urls[i] = urlsArray[i];
+                }
+            }
+        } catch (Exception e) {
+            Log.e("VISOR", "Error extrayendo URLs: " + e.getMessage());
+        }
+        return urls;
+    }
+
+    // Visor de imágenes estilo Google Maps
+    private void mostrarVisorImagenes(String[] urls, int posicionInicial) {
+        // Filtrar solo URLs válidas
+        List<String> urlsValidas = new ArrayList<>();
+        for (String url : urls) {
+            if (url != null && !url.isEmpty()) {
+                urlsValidas.add(url);
+            }
+        }
+
+        if (urlsValidas.isEmpty()) {
+            Toast.makeText(context, "No hay imágenes para mostrar", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Crear el diálogo a pantalla completa
+        AlertDialog.Builder builder = new AlertDialog.Builder(context, R.style.FullScreenImageDialog );
+        View view = View.inflate(context, R.layout.dialog_visor_imagenes, null);
+
+        // Configurar el ViewPager para swipe entre imágenes
+        androidx.viewpager.widget.ViewPager viewPager = view.findViewById(R.id.view_pager_imagenes);
+        TextView tvContador = view.findViewById(R.id.tv_contador_imagenes);
+        ImageView btnCerrar = view.findViewById(R.id.btn_cerrar_visor);
+        TextView tvTituloImagen = view.findViewById(R.id.tv_titulo_imagen);
+
+        // Crear adapter para el ViewPager
+        ImagePagerAdapter pagerAdapter = new ImagePagerAdapter(urlsValidas, context);
+        viewPager.setAdapter(pagerAdapter);
+        viewPager.setCurrentItem(posicionInicial);
+
+        // Actualizar contador
+        actualizarContador(posicionInicial, urlsValidas.size(), tvContador);
+
+        // Listener para cambios de página
+        viewPager.addOnPageChangeListener(new androidx.viewpager.widget.ViewPager.OnPageChangeListener() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
+
+            @Override
+            public void onPageSelected(int position) {
+                actualizarContador(position, urlsValidas.size(), tvContador);
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {}
+        });
+
+        // Configurar gestos de zoom (se maneja en el adapter)
+
+        // Botón cerrar
+        btnCerrar.setOnClickListener(v -> {
+            AlertDialog dialog = (AlertDialog) view.getTag();
+            if (dialog != null) {
+                dialog.dismiss();
+            }
+        });
+
+        builder.setView(view);
+        AlertDialog dialog = builder.create();
+        view.setTag(dialog);
+
+        // Configurar para que ocupe toda la pantalla
+        dialog.show();
+        dialog.getWindow().setLayout(
+                android.view.WindowManager.LayoutParams.MATCH_PARENT,
+                android.view.WindowManager.LayoutParams.MATCH_PARENT
+        );
+    }
+
+    private void actualizarContador(int posicion, int total, TextView tvContador) {
+        tvContador.setText((posicion + 1) + " / " + total);
     }
 
     // Contiene la funcionalidad de crud
@@ -1447,6 +1647,58 @@ public class MapManager {
         Button btnEliminar = view.findViewById(R.id.btn_eliminar);
         Spinner spinnerColor = view.findViewById(R.id.spinner_color);
 
+        // Encontrar las vistas de imágenes
+        ImageView imgFoto1 = view.findViewById(R.id.iv_foto1);
+        ImageView imgFoto2 = view.findViewById(R.id.iv_foto2);
+        ImageView imgFoto3 = view.findViewById(R.id.iv_foto3);
+
+
+
+        // DESACTIVADO POR DEFECTO
+        spinnerColor.setEnabled(false);
+
+        // Variable para controlar modo edición
+        final boolean[] editando = {false};
+
+        imgFoto1.setOnClickListener(v -> {
+            if (editando[0]) {
+                // Solo permite cambiar imagen si está en modo edición
+                mostrarOpcionesImagen(imgFoto1, 0, data, esEspacio);
+            } else {
+                // Si no está en edición, solo visualizar la imagen en grande
+                String url = obtenerUrlFoto(0);
+                if (url != null && !url.isEmpty()) {
+                    mostrarMensaje("Toca el botón editar para cambiar la imagen");
+                }
+            }
+        });
+
+        imgFoto2.setOnClickListener(v -> {
+            if (editando[0]) {
+                mostrarOpcionesImagen(imgFoto2, 1, data, esEspacio);
+            } else {
+                String url = obtenerUrlFoto(1);
+                if (url != null && !url.isEmpty()) {
+                    mostrarMensaje("Toca el botón editar para cambiar la imagen");
+                }
+            }
+        });
+
+        imgFoto3.setOnClickListener(v -> {
+            if (editando[0]) {
+                mostrarOpcionesImagen(imgFoto3, 2, data, esEspacio);
+            } else {
+                String url = obtenerUrlFoto(2);
+                if (url != null && !url.isEmpty()) {
+                    mostrarMensaje("Toca el botón editar para cambiar la imagen");
+                }
+            }
+        });
+
+
+        // Cargar imágenes existentes si las hay
+        cargarImagenesExistentes(data, imgFoto1, imgFoto2, imgFoto3);
+
         // DATOS ORIGINALES
         String nombreOriginal = data.get("nombre").getAsString();
         String descripcionOriginal = data.get("descripcion").getAsString();
@@ -1461,9 +1713,6 @@ public class MapManager {
         );
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerColor.setAdapter(adapter);
-
-        // DESACTIVADO POR DEFECTO
-        spinnerColor.setEnabled(false);
 
         // 🔥 AQUÍ MISMO VA EL LISTENER
         final boolean[] primeraVez = {true};
@@ -1502,8 +1751,6 @@ public class MapManager {
             spinnerColor.setSelection(indexSeleccionado);
         }
 
-
-        final boolean[] editando = {false};
 
         // EDITAR / CANCELAR
         btnEditar.setOnClickListener(v -> {
@@ -1569,6 +1816,8 @@ public class MapManager {
                 int id = data.get("id_espacio").getAsInt();
                 int pos = spinnerColor.getSelectedItemPosition();
 
+                String urlsImagenes = combinarUrlsImagenes();
+
                 actualizarColorLugar(id, colorSeleccionado, true);
 
                 // actualizar en JSON local (para que el pin también tenga el nuevo color)
@@ -1578,14 +1827,13 @@ public class MapManager {
                 db.updateEspacio(
                         data.get("id_espacio").getAsInt(),
                         nuevoNombre,
-                        nuevaDesc
+                        nuevaDesc,
+                        urlsImagenes
                 );
                 db.updateGeometriaColor(
                         data.get("id_geometria").getAsInt(),
                         colorSeleccionado
                 );
-
-
 
                 // db.updateEspacio(id, nuevoNombre, nuevaDesc);
                 Toast.makeText(context, "Espacio actualizado", Toast.LENGTH_SHORT).show();
@@ -1593,16 +1841,22 @@ public class MapManager {
             } else {
                 int id = data.get("id_lugar").getAsInt();
 
+                // 🔥 COMBINAR LAS URLs DE LAS IMÁGENES
+                String urlsImagenes = combinarUrlsImagenes();
+
                 actualizarColorLugar(id, colorSeleccionado, false);
 
                 // actualizar en JSON local (para que el pin también tenga el nuevo color)
                 data.addProperty("color", colorSeleccionado);
 
+
+
                 db.updateLugar(
                         data.get("id_lugar").getAsInt(),
                         nuevoNombre,
                         nuevaDesc,
-                        colorSeleccionado
+                        colorSeleccionado,
+                        urlsImagenes
                 );
 
                 Toast.makeText(context, "Lugar actualizado", Toast.LENGTH_SHORT).show();
@@ -1641,6 +1895,277 @@ public class MapManager {
 
         dialog.show();
     }
+
+    public void mostrarOpcionesImagen(ImageView imageView, int indice, JsonObject data, boolean esEspacio) {
+        // Guardar referencias para usar después
+        this.tempImageView = imageView;
+        this.imagenActual = indice;
+        this.tempData = data;
+        this.tempEsEspacio = esEspacio;
+
+        String[] opciones = {"📷 Tomar foto con cámara", "🖼️ Seleccionar de galería"};
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setTitle("Seleccionar imagen " + (indice + 1));
+        builder.setItems(opciones, (dialog, which) -> {
+            if (which == 0) {
+                tomarFoto();
+            } else {
+                seleccionarDeGaleria();
+            }
+        });
+        builder.setCancelable(true);
+        builder.show();
+    }
+
+    public void tomarFoto() {
+        if (launcherCamara == null) {
+            mostrarMensaje("Error: Launcher de cámara no inicializado");
+            return;
+        }
+
+        Intent tomarFotoIntento = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        File fotoProducto = null;
+
+        try {
+            fotoProducto = crearImgProducto();
+            if (fotoProducto != null) {
+                Uri uriFoto = FileProvider.getUriForFile(context,
+                        "com.example.indoorview.fileprovider", fotoProducto);
+                tomarFotoIntento.putExtra(MediaStore.EXTRA_OUTPUT, uriFoto);
+                launcherCamara.launch(tomarFotoIntento);
+            } else {
+                mostrarMensaje("No se pudo crear la foto");
+            }
+        } catch (Exception e) {
+            mostrarMensaje("Error al tomar la foto: " + e.getMessage());
+        }
+    }
+
+    public void seleccionarDeGaleria() {
+        if (launcherGaleria == null) {
+            mostrarMensaje("Error: Launcher de galería no inicializado");
+            return;
+        }
+
+        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        intent.setType("image/*");
+        launcherGaleria.launch(intent);
+    }
+
+    public void procesarResultadoCamara(Intent data) {
+        // Foto tomada con cámara
+        String urlFoto = obtenerUrlFoto(imagenActual);
+        if (!urlFoto.isEmpty() && tempImageView != null) {
+            tempImageView.setImageURI(Uri.parse(urlFoto));
+            tempImageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            mostrarMensaje("📷 Foto " + (imagenActual + 1) + " guardada");
+        } else {
+            mostrarMensaje("Error: No se pudo obtener la URL de la foto");
+        }
+    }
+
+    public void procesarResultadoGaleria(Intent data) {
+        // Imagen seleccionada de galería
+        if (data != null && data.getData() != null) {
+            Uri selectedImageUri = data.getData();
+            String nuevaUrl = guardarImagenDesdeGaleria(selectedImageUri);
+            if (!nuevaUrl.isEmpty()) {
+                guardarUrlFoto(imagenActual, nuevaUrl);
+                if (tempImageView != null) {
+                    tempImageView.setImageURI(Uri.parse(nuevaUrl));
+                    tempImageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                    mostrarMensaje("🖼️ Imagen " + (imagenActual + 1) + " seleccionada");
+                }
+            } else {
+                mostrarMensaje("Error al guardar la imagen");
+            }
+        }
+    }
+
+    private File crearImgProducto() throws Exception {
+        String fechaHoraMs = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String fileName = "producto_" + fechaHoraMs + "_img" + imagenActual;
+
+        File dirAlmacenamiento;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            dirAlmacenamiento = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        } else {
+            dirAlmacenamiento = context.getExternalFilesDir(Environment.DIRECTORY_DCIM);
+        }
+
+        if (dirAlmacenamiento != null && !dirAlmacenamiento.exists()) {
+            dirAlmacenamiento.mkdirs();
+        }
+
+        if (dirAlmacenamiento == null) {
+            dirAlmacenamiento = context.getFilesDir();
+        }
+
+        File image = File.createTempFile(fileName, ".jpg", dirAlmacenamiento);
+        guardarUrlFoto(imagenActual, image.getAbsolutePath());
+        return image;
+    }
+
+    private String guardarImagenDesdeGaleria(Uri uri) {
+        try {
+            String fechaHoraMs = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+            String fileName = "producto_galeria_" + fechaHoraMs + "_img" + imagenActual + ".jpg";
+
+            File dirAlmacenamiento;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                dirAlmacenamiento = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+            } else {
+                dirAlmacenamiento = context.getExternalFilesDir(Environment.DIRECTORY_DCIM);
+            }
+
+            if (dirAlmacenamiento != null && !dirAlmacenamiento.exists()) {
+                dirAlmacenamiento.mkdirs();
+            }
+
+            if (dirAlmacenamiento == null) {
+                dirAlmacenamiento = context.getFilesDir();
+            }
+
+            File imageFile = new File(dirAlmacenamiento, fileName);
+
+            InputStream inputStream = context.getContentResolver().openInputStream(uri);
+            FileOutputStream outputStream = new FileOutputStream(imageFile);
+
+            byte[] buffer = new byte[4096];
+            int length;
+            while ((length = inputStream.read(buffer)) > 0) {
+                outputStream.write(buffer, 0, length);
+            }
+
+            outputStream.close();
+            inputStream.close();
+
+            return imageFile.getAbsolutePath();
+
+        } catch (Exception e) {
+            mostrarMensaje("Error al guardar imagen: " + e.getMessage());
+            return "";
+        }
+    }
+
+    private String obtenerUrlFoto(int index) {
+        switch (index) {
+            case 0: return urlFoto1;
+            case 1: return urlFoto2;
+            case 2: return urlFoto3;
+            default: return "";
+        }
+    }
+
+    private void guardarUrlFoto(int index, String url) {
+        switch (index) {
+            case 0: urlFoto1 = url; break;
+            case 1: urlFoto2 = url; break;
+            case 2: urlFoto3 = url; break;
+        }
+
+        // Si tenemos datos temporales, actualizar también el JSON
+        if (tempData != null) {
+            String urlsActuales = tempData.has("url_imagenes") ? tempData.get("url_imagenes").getAsString() : "";
+            String[] urls = urlsActuales.split(",");
+            if (index < urls.length) {
+                urls[index] = url;
+            }
+            String nuevasUrls = String.join(",", urls);
+            tempData.addProperty("url_imagenes", nuevasUrls);
+        }
+    }
+
+    // Método auxiliar para combinar las URLs de las imágenes
+    private String combinarUrlsImagenes() {
+        List<String> urlsValidas = new ArrayList<>();
+
+        if (urlFoto1 != null && !urlFoto1.isEmpty()) {
+            urlsValidas.add(urlFoto1);
+        }
+        if (urlFoto2 != null && !urlFoto2.isEmpty()) {
+            urlsValidas.add(urlFoto2);
+        }
+        if (urlFoto3 != null && !urlFoto3.isEmpty()) {
+            urlsValidas.add(urlFoto3);
+        }
+
+        String resultado = String.join(",", urlsValidas);
+        Log.d("IMAGENES", "URLs combinadas: " + resultado);
+
+        return resultado;
+    }
+
+    private void mostrarMensaje(String msg) {
+        Toast.makeText(context, msg, Toast.LENGTH_LONG).show();
+    }
+
+    private void cargarImagenesExistentes(JsonObject data, ImageView img1, ImageView img2, ImageView img3) {
+        try {
+            // Limpiar URLs actuales
+            urlFoto1 = "";
+            urlFoto2 = "";
+            urlFoto3 = "";
+
+            String urlsImagenes = data.has("url_imagenes") ? data.get("url_imagenes").getAsString() : "";
+
+            if (urlsImagenes != null && !urlsImagenes.isEmpty()) {
+                String[] urls = urlsImagenes.split(",");
+
+                // Cargar imagen 1
+                if (urls.length > 0 && urls[0] != null && !urls[0].isEmpty()) {
+                    urlFoto1 = urls[0];
+                    cargarImagenEnImageView(img1, urls[0]);
+                } else {
+                    img1.setImageResource(R.drawable.ic_placeholder);
+                }
+
+                // Cargar imagen 2
+                if (urls.length > 1 && urls[1] != null && !urls[1].isEmpty()) {
+                    urlFoto2 = urls[1];
+                    cargarImagenEnImageView(img2, urls[1]);
+                } else {
+                    img2.setImageResource(R.drawable.ic_placeholder);
+                }
+
+                // Cargar imagen 3
+                if (urls.length > 2 && urls[2] != null && !urls[2].isEmpty()) {
+                    urlFoto3 = urls[2];
+                    cargarImagenEnImageView(img3, urls[2]);
+                } else {
+                    img3.setImageResource(R.drawable.ic_placeholder);
+                }
+            } else {
+                // Sin imágenes, mostrar placeholder
+                img1.setImageResource(R.drawable.ic_placeholder);
+                img2.setImageResource(R.drawable.ic_placeholder);
+                img3.setImageResource(R.drawable.ic_placeholder);
+            }
+        } catch (Exception e) {
+            Log.e("IMAGENES", "Error cargando imágenes: " + e.getMessage());
+            img1.setImageResource(R.drawable.ic_placeholder);
+            img2.setImageResource(R.drawable.ic_placeholder);
+            img3.setImageResource(R.drawable.ic_placeholder);
+        }
+    }
+
+    // Método auxiliar para cargar imagen desde URI
+    private void cargarImagenEnImageView(ImageView imageView, String url) {
+        try {
+            if (url != null && !url.isEmpty()) {
+                Uri uri = Uri.parse(url);
+                imageView.setImageURI(uri);
+                imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            } else {
+                imageView.setImageResource(R.drawable.ic_placeholder);
+            }
+        } catch (Exception e) {
+            Log.e("IMAGENES", "Error cargando imagen en ImageView: " + e.getMessage());
+            imageView.setImageResource(R.drawable.ic_placeholder);
+        }
+    }
+
 
     public void actualizarColorLugar(int id, String colorHex, boolean esEspacio) {
         mapView.getMapboxMap().getStyle(style -> {
@@ -1693,13 +2218,13 @@ public class MapManager {
 
 
     // DUNCION PERFECTA PARA CONFIRMACIONES
-    private void mostrarDialogoConfirmacion(
+    public void mostrarDialogoConfirmacion(
             String titulo,
             String mensaje,
             String textoPositivo,
             Runnable onConfirm
     ) {
-        new AlertDialog.Builder(context)
+        AlertDialog dialog = new AlertDialog.Builder(context)
                 .setTitle(titulo)
                 .setMessage(mensaje)
                 .setPositiveButton(textoPositivo, (d, w) -> {
@@ -1708,9 +2233,18 @@ public class MapManager {
                     }
                 })
                 .setNegativeButton("Cancelar", null)
-                .show();
-    }
+                .create();
 
+        dialog.show();
+
+        // Cambiar color del botón positivo a #2196F3
+        Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        positiveButton.setTextColor(Color.parseColor("#2196F3"));
+
+        // Opcional: También cambiar el botón negativo si quieres
+        Button negativeButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+        negativeButton.setTextColor(Color.parseColor("#2196F3"));
+    }
     // ════════════════════════════════════════════════════════════════
     // GETTERS PÚBLICOS
     // ════════════════════════════════════════════════════════════════

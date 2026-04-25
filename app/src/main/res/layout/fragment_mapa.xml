@@ -15,6 +15,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="HABILITAR"
+
+
+        android:backgroundTint="#2196F3"
+        android:textColor="@android:color/white"
         android:layout_margin="16dp"
         android:layout_alignParentBottom="true"
         android:layout_alignParentEnd="true" />
@@ -24,8 +28,12 @@
         android:id="@+id/btnEditar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+
+        android:backgroundTint="#2196F3"
+        android:textColor="@android:color/white"
         android:text="Agregar Lugar"
-        android:layout_margin="16dp"
+        android:layout_marginTop="40dp"
+        android:layout_marginRight="16dp"
         android:layout_alignParentTop="true"
         android:layout_alignParentEnd="true" />
 
@@ -34,6 +42,8 @@
         android:id="@+id/btnEspacios"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:backgroundTint="#2196F3"
+        android:textColor="@android:color/white"
         android:text="Agregar Espacios"
         android:visibility="gone"
         android:layout_margin="16dp"
@@ -45,6 +55,9 @@
         android:id="@+id/btnCerrar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+
+        android:backgroundTint="#2196F3"
+        android:textColor="@android:color/white"
         android:text="Cerrar"
         android:visibility="gone"
         android:layout_margin="16dp"
@@ -56,6 +69,9 @@
         android:id="@+id/btnDeshacer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+
+        android:backgroundTint="#2196F3"
+        android:textColor="@android:color/white"
         android:text="Deshacer"
         android:visibility="gone"
         android:layout_margin="16dp"
@@ -67,6 +83,9 @@
         android:id="@+id/btnFinalizar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+
+        android:backgroundTint="#2196F3"
+        android:textColor="@android:color/white"
         android:text="Finalizar"
         android:visibility="gone"
         android:layout_margin="16dp"
@@ -91,7 +110,7 @@
         android:layout_width="wrap_content"
         android:layout_height="48dp"
         android:layout_marginLeft="16dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="40dp"
         android:layout_marginRight="16dp"
         android:padding="8dp"
         android:background="#2C3E50"

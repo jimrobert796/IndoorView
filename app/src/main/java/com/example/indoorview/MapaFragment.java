@@ -1,7 +1,9 @@
 package com.example.indoorview;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -17,6 +19,9 @@ import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -77,6 +82,9 @@ public class MapaFragment extends Fragment {
     // Manager permanente para UGB pin
     private PointAnnotationManager managerPermanente;
 
+    private ActivityResultLauncher<Intent> camaraLauncher;
+    private ActivityResultLauncher<Intent> galeriaLauncher;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -92,23 +100,57 @@ public class MapaFragment extends Fragment {
         btnHabilitar = view.findViewById(R.id.btnHabilitar);
         tvModo = view.findViewById(R.id.tvModo);
         spinnerPisos = view.findViewById(R.id.spnPisos);
-
         db = Database.getInstance(getActivity());
 
-        mapManager = new MapManager(mapView, db, getActivity(), spinnerPisos);
+        // Inicaliza el mapa e eventos
+        inicializarLaunchers();
+
         mapManager.verificarConexionBD();
+
+
+        spinnerPisos.setVisibility(View.GONE);
+
+
+        return view;
+    }
+    private void inicializarLaunchers() {
+        // Launcher para la cámara
+        camaraLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == Activity.RESULT_OK) {
+                        if (mapManager != null) {
+                            mapManager.procesarResultadoCamara(result.getData());
+                        }
+                    } else {
+                        Toast.makeText(getContext(), "Foto cancelada", Toast.LENGTH_SHORT).show();
+                    }
+                }
+        );
+
+        // Launcher para la galería
+        galeriaLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                        if (mapManager != null) {
+                            mapManager.procesarResultadoGaleria(result.getData());
+                        }
+                    } else {
+                        Toast.makeText(getContext(), "No se seleccionó imagen", Toast.LENGTH_SHORT).show();
+                    }
+                }
+        );
+
+        // Crear MapManager con los launchers
+        mapManager = new MapManager(mapView, db, requireContext(), spinnerPisos,
+                camaraLauncher, galeriaLauncher);
 
         configurarSpinner();
         configurarMapa();
         configurarBotones();
 
         ocultarEdicion();
-        spinnerPisos.setVisibility(View.GONE);
-
-
-
-
-        return view;
     }
 
     //Configurar el spinner de pisos
@@ -241,11 +283,32 @@ public class MapaFragment extends Fragment {
     private void configurarBtnHabilitar() {
         btnHabilitar.setOnClickListener(v -> {
             if (modoEdicionActivo && mapManager.isModoEdicion()) {
-                // Desactivar modo edición
-                desactivarModoEdicion();
+                mapManager.mostrarDialogoConfirmacion(
+                        "Desabilitar Modo Edición",
+                        "Estás a punto de desabilitar el modo edición.\n\n" +
+                                "¿Deseas continuar?",
+                        "Sí, desahabilitar",
+                        () -> {
+                            // Desactivar modo edición
+                            desactivarModoEdicion();
+                        }
+                );
             } else {
-                // Activar modo edición
-                activarModoEdicion();
+                mapManager.mostrarDialogoConfirmacion(
+                        "Modo Edición",
+                        "Estás a punto de activar el modo edición.\n\n" +
+                                "Podrás realizar los siguientes cambios:\n" +
+                                "• Modificar información del lugar\n" +
+                                "• Cambiar el color del marcador\n" +
+                                "• Actualizar imágenes\n\n" +
+                                "Recuerda guardar los cambios antes de salir.\n\n" +
+                                "¿Deseas continuar?",
+                        "Sí, activar",
+                        () -> {
+                            //ACTIVAR MODO EDICIÓN DENTRO DEL CALLBACK
+                            activarModoEdicion();
+                        }
+                );
             }
         });
     }

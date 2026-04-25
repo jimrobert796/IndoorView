@@ -46,6 +46,9 @@ dependencies {
     // Turf para validar punto dentro del polígono
     implementation("com.mapbox.mapboxsdk:mapbox-sdk-turf:7.10.0")
 
+    // Viewpager para poder visualizar imagenes
+    implementation("androidx.viewpager:viewpager:1.0.0")
+
     //cardview:1.0.0 uso en el login
     implementation("androidx.cardview:cardview:1.0.0")
     //Barra de navegacion inferior
