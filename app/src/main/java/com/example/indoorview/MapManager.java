@@ -86,8 +86,9 @@ public class MapManager {
     // ════════════════════════════════════════════════════════════════
     // VARIABLES PARA MODO EDICIÓN (AGREGAR LUGARES Y ESPACIOS)
     // ════════════════════════════════════════════════════════════════
-    private List<Point> puntosActuales = new ArrayList<>();
-    private List<Point> puntosLugarActual = new ArrayList<>();
+    public List<Point> puntosActuales = new ArrayList<>();
+    public List<Point> puntosLugarActual = new ArrayList<>();
+    public List<Point> puntosEspacioActual = new ArrayList<>();
     private int lugarActualId = 0;
     private int espacioContador = 0;
 
@@ -651,6 +652,81 @@ public class MapManager {
         managerLugares.deleteAll();
     }
 
+    /**
+     * Limpia todos los elementos temporales creados durante el dibujo
+     * Incluye: puntos temporales, líneas de previsualización, polígonos temporales
+     */
+    public void limpiarElementosTemporales() {
+        // 1. Limpiar puntos temporales (los puntos rojos que se van agregando)
+        if (managerTemporal != null) {
+            managerTemporal.deleteAll();
+        }
+
+        // 2. Limpiar la lista de puntos actuales
+        if (puntosActuales != null) {
+            puntosActuales.clear();
+        }
+
+        // 3. Limpiar línea de previsualización del mapa
+        mapView.getMapboxMap().getStyle(style -> {
+            if (style.styleSourceExists("linea-preview")) {
+                style.removeStyleSource("linea-preview");
+            }
+            if (style.styleLayerExists("linea-preview")) {
+                style.removeStyleLayer("linea-preview");
+            }
+        });
+
+        Log.d("LIMPIAR_TEMP", "Elementos temporales eliminados");
+    }
+
+    /**
+     * Limpia elementos temporales y también elimina polígonos específicos por ID
+     * @param idsPoligonos Lista de IDs de polígonos temporales a eliminar
+     */
+    public void limpiarPoligonosTemporales(List<String> idsPoligonos) {
+        mapView.getMapboxMap().getStyle(style -> {
+            for (String id : idsPoligonos) {
+                // Eliminar source y layers del polígono temporal
+                if (style.styleSourceExists(id + "-src")) {
+                    style.removeStyleSource(id + "-src");
+                }
+                if (style.styleLayerExists(id + "-fill")) {
+                    style.removeStyleLayer(id + "-fill");
+                }
+                if (style.styleLayerExists(id + "-line")) {
+                    style.removeStyleLayer(id + "-line");
+                }
+            }
+        });
+    }
+
+    /**
+     * Limpia TODO (temporal y persistente) - Para reinicio completo
+     */
+    public void limpiarTodoTemporal() {
+        // Limpiar elementos temporales de dibujo
+        limpiarElementosTemporales();
+
+        // Limpiar puntos guardados de lugar y espacio
+        if (puntosLugarActual != null) {
+            puntosLugarActual.clear();
+        }
+        if (puntosEspacioActual != null) {
+            puntosEspacioActual.clear();
+        }
+
+        // Resetear contadores si es necesario
+        // resetearContadores(); // Descomentar si quieres resetear también los IDs
+
+        // Limpiar caché de imágenes temporales
+        urlFoto1 = "";
+        urlFoto2 = "";
+        urlFoto3 = "";
+
+        Log.d("LIMPIAR_TEMP", "Todo el contenido temporal ha sido limpiado");
+    }
+
     public void limpiarEspaciosDeLugar(int idLugar) {
         mapView.getMapboxMap().getStyle(style -> {
             List<Espacio> espacios = db.getEspaciosByLugar(idLugar);
@@ -1132,6 +1208,9 @@ public class MapManager {
     /**
      * Cerrar un lugar (polígono)
      */
+    // Modificar cerrarLugar(): MODIFICADO
+
+    // Modificar cerrarLugar(): MODIFICADO
     public void cerrarLugar(Style style) {
         if (puntosActuales.size() < 3) {
             Toast.makeText(context, "Mínimo 3 puntos", Toast.LENGTH_SHORT).show();
@@ -1145,11 +1224,8 @@ public class MapManager {
         String geojson = generarGeoJsonDesdePuntos(puntosActuales,
                 "Lugar " + lugarActualId, "lugar", lugarActualId);
 
-        // Log GeoJSON en Logcat
-        logGeoJson("Lugar " + lugarActualId, geojson);
-
-        // MOSTRAR DIÁLOGO PARA GUARDAR EN ESPERA PARA LA PLANTILLA WILFREDO
-        mostrarDialogoGuardarLugar(geojson);
+        // ✅ CAMBIADO: Usar el nuevo CRUD en modo creación
+        mostrarCRUDCrearLugar(geojson);  // ← Esto muestra el BottomSheet CRUD
 
         dibujarPoligono(style, new ArrayList<>(puntosActuales),
                 "lugar-" + lugarActualId, "#2196F3", 0.25);
@@ -1159,7 +1235,11 @@ public class MapManager {
 
         puntosActuales.clear();
         managerTemporal.deleteAll();
+
+        // ✅ Notificar al Fragment (opcional, el CRUD ya maneja el flujo)
     }
+
+
 
     /**
      * Cerrar un espacio (polígono)
@@ -1172,15 +1252,13 @@ public class MapManager {
 
         espacioContador++;
         puntosActuales.add(puntosActuales.get(0));
+        puntosEspacioActual = new ArrayList<>(puntosActuales);
 
         String geojson = generarGeoJsonDesdePuntos(puntosActuales,
                 "Espacio " + espacioContador, "espacio", espacioContador);
 
-        // Log GeoJSON en Logcat
-        logGeoJson("Espacio " + espacioContador, geojson);
-
-        // MOSTRAR DIÁLOGO PARA GUARDAR
-        mostrarDialogoGuardarEspacio(geojson);
+        // ✅ CAMBIADO: Usar el nuevo CRUD en modo creación
+        mostrarCRUDCrearEspacio(geojson);  // ← Esto muestra el BottomSheet CRUD
 
         String espacioId = "lugar-" + lugarActualId + "-espacio-" + espacioContador;
         dibujarPoligono(style, new ArrayList<>(puntosActuales),
@@ -1191,6 +1269,8 @@ public class MapManager {
 
         puntosActuales.clear();
         managerTemporal.deleteAll();
+
+        // ✅ Notificar al Fragment (opcional)
     }
 
     /**
@@ -1616,7 +1696,19 @@ public class MapManager {
     }
 
     // Contiene la funcionalidad de crud
-    private void mostrarBottomSheetCRUD(JsonObject data, boolean esEspacio) {
+    // ════════════════════════════════════════════════════════════════
+// VERSIÓN MEJORADA: mostrarBottomSheetCRUD() - 4 parámetros
+// ════════════════════════════════════════════════════════════════
+
+    /**
+     * Versión MEJORADA que soporta tanto CREACIÓN como EDICIÓN
+     * @param data JsonObject con datos
+     * @param esEspacio true si es espacio, false si es lugar
+     * @param modoCreacion true si estamos creando, false si editando existente
+     * @param geojsonGuardado GeoJSON ya dibujado (para creación)
+     */
+    private void mostrarBottomSheetCRUD(JsonObject data, boolean esEspacio,
+                                        boolean modoCreacion, String geojsonGuardado) {
 
         BottomSheetDialog dialog = new BottomSheetDialog(context);
         View view = View.inflate(context, R.layout.bottom_sheet_detalle_lugarespacio_crud, null);
@@ -1647,25 +1739,38 @@ public class MapManager {
         Button btnEliminar = view.findViewById(R.id.btn_eliminar);
         Spinner spinnerColor = view.findViewById(R.id.spinner_color);
 
-        // Encontrar las vistas de imágenes
         ImageView imgFoto1 = view.findViewById(R.id.iv_foto1);
         ImageView imgFoto2 = view.findViewById(R.id.iv_foto2);
         ImageView imgFoto3 = view.findViewById(R.id.iv_foto3);
 
+        // ════════════════════════════════════════════════════════════════
+        // AJUSTAR UI SEGÚN MODO
+        // ════════════════════════════════════════════════════════════════
+        if (modoCreacion) {
+            // MODO CREACIÓN: todos los campos habilitados
+            etNombre.setEnabled(true);
+            etDescripcion.setEnabled(true);
+            spinnerColor.setEnabled(true);
 
-
-        // DESACTIVADO POR DEFECTO
-        spinnerColor.setEnabled(false);
+            btnEditar.setVisibility(View.GONE);     // Sin botón editar en creación
+            btnGuardar.setVisibility(View.VISIBLE); // Guardar visible
+            btnEliminar.setVisibility(View.GONE);   // Sin eliminar en creación
+        } else {
+            // MODO EDICIÓN: lógica original
+            spinnerColor.setEnabled(false);
+            btnEliminar.setVisibility(View.VISIBLE);
+        }
 
         // Variable para controlar modo edición
-        final boolean[] editando = {false};
+        final boolean[] editando = {modoCreacion};
 
+        // ════════════════════════════════════════════════════════════════
+        // LISTENERS DE IMÁGENES
+        // ════════════════════════════════════════════════════════════════
         imgFoto1.setOnClickListener(v -> {
             if (editando[0]) {
-                // Solo permite cambiar imagen si está en modo edición
                 mostrarOpcionesImagen(imgFoto1, 0, data, esEspacio);
             } else {
-                // Si no está en edición, solo visualizar la imagen en grande
                 String url = obtenerUrlFoto(0);
                 if (url != null && !url.isEmpty()) {
                     mostrarMensaje("Toca el botón editar para cambiar la imagen");
@@ -1695,8 +1800,6 @@ public class MapManager {
             }
         });
 
-
-        // Cargar imágenes existentes si las hay
         cargarImagenesExistentes(data, imgFoto1, imgFoto2, imgFoto3);
 
         // DATOS ORIGINALES
@@ -1714,13 +1817,14 @@ public class MapManager {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerColor.setAdapter(adapter);
 
-        // 🔥 AQUÍ MISMO VA EL LISTENER
+        // ════════════════════════════════════════════════════════════════
+        // LISTENER DEL SPINNER DE COLOR
+        // ════════════════════════════════════════════════════════════════
         final boolean[] primeraVez = {true};
 
         spinnerColor.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-
                 if (primeraVez[0]) {
                     primeraVez[0] = false;
                     return;
@@ -1728,12 +1832,14 @@ public class MapManager {
 
                 String colorSeleccionado = coloresHex.get(position);
 
-                // 🔥 PASA EL PARÁMETRO esEspacio
-                actualizarColorLugar(
-                        esEspacio ? data.get("id_espacio").getAsInt() : data.get("id_lugar").getAsInt(),
-                        colorSeleccionado,
-                        esEspacio  // <-- NUEVO PARÁMETRO
-                );
+                // En modo EDICIÓN: actualizar color en tiempo real
+                if (!modoCreacion) {
+                    actualizarColorLugar(
+                            esEspacio ? data.get("id_espacio").getAsInt() : data.get("id_lugar").getAsInt(),
+                            colorSeleccionado,
+                            esEspacio
+                    );
+                }
 
                 data.addProperty("color", colorSeleccionado);
             }
@@ -1744,156 +1850,159 @@ public class MapManager {
 
         String colorActual = data.has("color")
                 ? data.get("color").getAsString()
-                : "#062275"; // default
+                : "#2196F3";
 
         int indexSeleccionado = coloresHex.indexOf(colorActual);
         if (indexSeleccionado != -1) {
             spinnerColor.setSelection(indexSeleccionado);
         }
 
+        // ════════════════════════════════════════════════════════════════
+        // BOTÓN EDITAR (solo en modo edición)
+        // ════════════════════════════════════════════════════════════════
+        if (!modoCreacion) {
+            btnEditar.setOnClickListener(v -> {
+                if (!editando[0]) {
+                    mostrarDialogoConfirmacion(
+                            "Modo edición",
+                            "¿Deseas editar este elemento?",
+                            "Sí",
+                            () -> {
+                                editando[0] = true;
+                                etNombre.setEnabled(true);
+                                etDescripcion.setEnabled(true);
+                                spinnerColor.setEnabled(true);
+                                btnGuardar.setVisibility(View.VISIBLE);
+                                btnEditar.setText("Cancelar");
+                                Toast.makeText(context, "Modo edición activado", Toast.LENGTH_SHORT).show();
+                            }
+                    );
+                } else {
+                    mostrarDialogoConfirmacion(
+                            "Cancelar edición",
+                            "¿Deseas descartar los cambios?",
+                            "Sí",
+                            () -> {
+                                editando[0] = false;
+                                etNombre.setText(nombreOriginal);
+                                etDescripcion.setText(descripcionOriginal);
+                                etNombre.setEnabled(false);
+                                etDescripcion.setEnabled(false);
+                                spinnerColor.setEnabled(false);
+                                btnGuardar.setVisibility(View.GONE);
+                                btnEditar.setText("Editar");
+                                Toast.makeText(context, "Edición cancelada", Toast.LENGTH_SHORT).show();
+                            }
+                    );
+                }
+            });
+        }
 
-        // EDITAR / CANCELAR
-        btnEditar.setOnClickListener(v -> {
-
-            if (!editando[0]) {
-
-                mostrarDialogoConfirmacion(
-                        "Modo edición",
-                        "¿Deseas editar este elemento?",
-                        "Sí",
-                        () -> {
-                            editando[0] = true;
-
-                            etNombre.setEnabled(true);
-                            etDescripcion.setEnabled(true);
-                            spinnerColor.setEnabled(true);
-
-                            btnGuardar.setVisibility(View.VISIBLE);
-                            btnEditar.setText("Cancelar");
-
-                            Toast.makeText(context, "Modo edición activado", Toast.LENGTH_SHORT).show();
-                        }
-                );
-
-            } else {
-
-                mostrarDialogoConfirmacion(
-                        "Cancelar edición",
-                        "¿Deseas descartar los cambios?",
-                        "Sí",
-                        () -> {
-                            editando[0] = false;
-
-                            etNombre.setText(nombreOriginal);
-                            etDescripcion.setText(descripcionOriginal);
-
-                            etNombre.setEnabled(false);
-                            etDescripcion.setEnabled(false);
-                            spinnerColor.setEnabled(false);
-
-                            btnGuardar.setVisibility(View.GONE);
-                            btnEditar.setText("Editar");
-
-                            Toast.makeText(context, "Edición cancelada", Toast.LENGTH_SHORT).show();
-                        }
-                );
-            }
-        });
-
-        // GUARDAR
+        // ════════════════════════════════════════════════════════════════
+        // BOTÓN GUARDAR
+        // ════════════════════════════════════════════════════════════════
         btnGuardar.setOnClickListener(v -> {
-
             String colorSeleccionado = coloresHex.get(spinnerColor.getSelectedItemPosition());
-            String nuevoNombre = etNombre.getText().toString();
-            String nuevaDesc = etDescripcion.getText().toString();
+            String nuevoNombre = etNombre.getText().toString().trim();
+            String nuevaDesc = etDescripcion.getText().toString().trim();
 
             if (nuevoNombre.isEmpty()) {
                 Toast.makeText(context, "El nombre es requerido", Toast.LENGTH_SHORT).show();
                 return;
             }
+            if (nuevaDesc.isEmpty()) {
+                nuevaDesc = "";
+            }
 
-            if (esEspacio) {
-                int id = data.get("id_espacio").getAsInt();
-                int pos = spinnerColor.getSelectedItemPosition();
+            String urlsImagenes = combinarUrlsImagenes();
 
-                String urlsImagenes = combinarUrlsImagenes();
 
-                actualizarColorLugar(id, colorSeleccionado, true);
+            /*
 
-                // actualizar en JSON local (para que el pin también tenga el nuevo color)
-                data.addProperty("color", colorSeleccionado);
+            PODEMOS MEJORARLO Y OPTIMIZARLO MUCHISIMO MEJOOOOORRRRRRRRRRRR
+             */
 
-                // Guardar en la bd
-                db.updateEspacio(
-                        data.get("id_espacio").getAsInt(),
-                        nuevoNombre,
-                        nuevaDesc,
-                        urlsImagenes
-                );
-                db.updateGeometriaColor(
-                        data.get("id_geometria").getAsInt(),
-                        colorSeleccionado
-                );
+            if (modoCreacion) {
+                // ✅ MODO CREACIÓN: Notificar al Fragment via callback
+                Log.d("CRUD_CREAR", "Guardando " + (esEspacio ? "Espacio" : "Lugar"));
+                Log.d("CRUD_CREAR", "Nombre: " + nuevoNombre);
+                Log.d("CRUD_CREAR", "Color: " + colorSeleccionado);
+                Log.d("CRUD_CREAR", "geometria: " + geojsonGuardado);
 
-                // db.updateEspacio(id, nuevoNombre, nuevaDesc);
-                Toast.makeText(context, "Espacio actualizado", Toast.LENGTH_SHORT).show();
+                if (flujoCRUDListener != null) {
+                    if (esEspacio) {
+                        flujoCRUDListener.onEspacioGuardado(nuevoNombre, nuevaDesc, urlsImagenes, colorSeleccionado);
+                    } else {
+                        flujoCRUDListener.onLugarGuardado(nuevoNombre, nuevaDesc, urlsImagenes, colorSeleccionado);
+                    }
+                }
+                Toast.makeText(context, "✓ " + (esEspacio ? "Espacio" : "Lugar") + " creado", Toast.LENGTH_SHORT).show();
 
             } else {
-                int id = data.get("id_lugar").getAsInt();
+                // ✅ MODO EDICIÓN: Guardar en BD (lógica existente)
+                if (esEspacio) {
+                    actualizarColorLugar(data.get("id_espacio").getAsInt(), colorSeleccionado, true);
+                    data.addProperty("color", colorSeleccionado);
+                    db.updateEspacio(
+                            data.get("id_espacio").getAsInt(),
+                            nuevoNombre,
+                            nuevaDesc,
+                            urlsImagenes
+                    );
+                    db.updateGeometriaColor(data.get("id_geometria").getAsInt(), colorSeleccionado);
+                    Toast.makeText(context, "Espacio actualizado", Toast.LENGTH_SHORT).show();
 
-                // 🔥 COMBINAR LAS URLs DE LAS IMÁGENES
-                String urlsImagenes = combinarUrlsImagenes();
-
-                actualizarColorLugar(id, colorSeleccionado, false);
-
-                // actualizar en JSON local (para que el pin también tenga el nuevo color)
-                data.addProperty("color", colorSeleccionado);
-
-
-
-                db.updateLugar(
-                        data.get("id_lugar").getAsInt(),
-                        nuevoNombre,
-                        nuevaDesc,
-                        colorSeleccionado,
-                        urlsImagenes
-                );
-
-                Toast.makeText(context, "Lugar actualizado", Toast.LENGTH_SHORT).show();
-
-                limpiarTodo();
-                cargarPoligonosLugar();
+                } else {
+                    actualizarColorLugar(data.get("id_lugar").getAsInt(), colorSeleccionado, false);
+                    data.addProperty("color", colorSeleccionado);
+                    db.updateLugar(
+                            data.get("id_lugar").getAsInt(),
+                            nuevoNombre,
+                            nuevaDesc,
+                            colorSeleccionado,
+                            urlsImagenes
+                    );
+                    Toast.makeText(context, "Lugar actualizado", Toast.LENGTH_SHORT).show();
+                    limpiarTodo();
+                    cargarPoligonosLugar();
+                }
             }
 
             dialog.dismiss();
         });
 
-        // Boton eliminar
-        btnEliminar.setOnClickListener(v -> {
 
-            mostrarDialogoConfirmacion(
-                    "Confirmar eliminación",
-                    "Esta acción no se puede deshacer",
-                    "Eliminar",
-                    () -> {
 
-                        if (esEspacio) {
-                            int id = data.get("id_espacio").getAsInt();
-                            // db.deleteEspacio(id);
-                            Toast.makeText(context, "Espacio eliminado", Toast.LENGTH_SHORT).show();
-
-                        } else {
-                            int id = data.get("id_lugar").getAsInt();
-                            // db.deleteLugar(id);
-                            Toast.makeText(context, "Lugar eliminado", Toast.LENGTH_SHORT).show();
+        // ════════════════════════════════════════════════════════════════
+        // BOTÓN ELIMINAR (solo en modo edición)
+        // ════════════════════════════════════════════════════════════════
+        if (!modoCreacion) {
+            btnEliminar.setOnClickListener(v -> {
+                mostrarDialogoConfirmacion(
+                        "Confirmar eliminación",
+                        "Esta acción no se puede deshacer",
+                        "Eliminar",
+                        () -> {
+                            if (esEspacio) {
+                                int id = data.get("id_espacio").getAsInt();
+                                // db.deleteEspacio(id);
+                                Toast.makeText(context, "Espacio eliminado", Toast.LENGTH_SHORT).show();
+                            } else {
+                                int id = data.get("id_lugar").getAsInt();
+                                // db.deleteLugar(id);
+                                Toast.makeText(context, "Lugar eliminado", Toast.LENGTH_SHORT).show();
+                            }
+                            dialog.dismiss();
                         }
-
-                        dialog.dismiss();
-                    }
-            );
-        });
+                );
+            });
+        }
 
         dialog.show();
+    }
+
+    private void mostrarBottomSheetCRUD(JsonObject data, boolean esEspacio) {
+        mostrarBottomSheetCRUD(data, esEspacio, false, null);
     }
 
     public void mostrarOpcionesImagen(ImageView imageView, int indice, JsonObject data, boolean esEspacio) {
@@ -2245,6 +2354,63 @@ public class MapManager {
         Button negativeButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
         negativeButton.setTextColor(Color.parseColor("#2196F3"));
     }
+
+    // AHORA VAMOS A MEJORAR LO QUE SERIA AGREGAR SIN PROBLEMA ALGUNO HE?
+
+    // En MapManager, agregar interface y variable:
+    public interface OnLugarCerradoListener {
+        void onLugarCerrado();
+        void onEspacioCerrado();
+    }
+
+    private OnLugarCerradoListener flujoCerradoListener;
+
+
+    public void setFlujoCerradoListener(OnLugarCerradoListener listener) {
+        this.flujoCerradoListener = listener;
+    }
+
+    public interface OnFlujoCRUDListener {
+        void onLugarGuardado(String nombre, String descripcion, String urlImagenes, String color);
+        void onEspacioGuardado(String nombre, String descripcion, String urlImagenes, String color);
+    }
+
+    private OnFlujoCRUDListener flujoCRUDListener;
+
+    public void setFlujoCRUDListener(OnFlujoCRUDListener listener) {
+        this.flujoCRUDListener = listener;
+    }
+
+    /**
+     * NUEVO: Mostrar CRUD en modo CREACIÓN para Lugar
+     * Reutiliza el XML bottom_sheet_detalle_lugarespacio_crud
+     */
+    public void mostrarCRUDCrearLugar(String geojson) {
+        JsonObject dataTemp = new JsonObject();
+        dataTemp.addProperty("nombre", "Lugar " + (lugarActualId));
+        dataTemp.addProperty("descripcion", "");
+        dataTemp.addProperty("url_imagenes", "");
+        dataTemp.addProperty("color", "#2196F3");
+        dataTemp.addProperty("geojson", geojson);
+
+        mostrarBottomSheetCRUD(dataTemp, false, true, geojson);
+    }
+    /**
+     * NUEVO: Mostrar CRUD en modo CREACIÓN para Espacio
+     * Reutiliza el XML bottom_sheet_detalle_lugarespacio_crud
+     */
+    public void mostrarCRUDCrearEspacio(String geojson) {
+        JsonObject dataTemp = new JsonObject();
+        dataTemp.addProperty("nombre", "Espacio " + espacioContador);
+        dataTemp.addProperty("descripcion", "");
+        dataTemp.addProperty("url_imagenes", "");
+        dataTemp.addProperty("color", "#FF9800");
+        dataTemp.addProperty("geojson", geojson);
+
+        mostrarBottomSheetCRUD(dataTemp, true, true, geojson);
+    }
+
+
     // ════════════════════════════════════════════════════════════════
     // GETTERS PÚBLICOS
     // ════════════════════════════════════════════════════════════════
@@ -2271,3 +2437,40 @@ public class MapManager {
         espacioContador = 0;
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -85,6 +85,9 @@ public class MapaFragment extends Fragment {
     private ActivityResultLauncher<Intent> camaraLauncher;
     private ActivityResultLauncher<Intent> galeriaLauncher;
 
+    long idLugar;
+    long pisoId;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -101,6 +104,9 @@ public class MapaFragment extends Fragment {
         tvModo = view.findViewById(R.id.tvModo);
         spinnerPisos = view.findViewById(R.id.spnPisos);
         db = Database.getInstance(getActivity());
+
+
+
 
         // Inicaliza el mapa e eventos
         inicializarLaunchers();
@@ -145,6 +151,109 @@ public class MapaFragment extends Fragment {
         // Crear MapManager con los launchers
         mapManager = new MapManager(mapView, db, requireContext(), spinnerPisos,
                 camaraLauncher, galeriaLauncher);
+
+        // ✅ NUEVO: Conectar listener de CRUD
+
+        mapManager.setFlujoCRUDListener(new MapManager.OnFlujoCRUDListener() {
+            @Override
+            public void onLugarGuardado(String nombre, String descripcion, String urlImagenes, String color) {
+                // Convertir puntos a GeoJSON
+                String geojson = obtenerGeojsonDePuntos(mapManager.puntosLugarActual);
+
+                // Guardar en BD
+                idLugar = db.insertLugar(nombre, descripcion, urlImagenes, geojson, color);
+
+                Log.d("FLUJO_CRUD", "✓ Lugar guardado en BD: " + nombre + "Id lugar "+ idLugar);
+                Log.d("FLUJO_CRUD", "Nombre: "+ nombre);
+                Log.d("FLUJO_CRUD", "Descripcion: "+ descripcion);
+                Log.d("FLUJO_CRUD", "Url: "+ urlImagenes);
+                Log.d("FLUJO_CRUD", "geojson: "+ geojson);
+                Log.d("FLUJO_CRUD", "color: "+ color);
+
+                // Continuar flujo
+                flujoPostLugar();
+
+                crearPrimerPisoPorDefecto();
+            }
+
+            @Override
+            public void onEspacioGuardado(String nombre, String descripcion, String urlImagenes, String color) {
+                int id_creado = (int) idLugar;
+                int idPiso = 1;
+
+
+
+                if (spinnerPisos.getVisibility() == View.VISIBLE) {
+                    List<Integer> pisosId = (List<Integer>) spinnerPisos.getTag();
+                    if (pisosId != null && spinnerPisos.getSelectedItemPosition() >= 0) {
+                        idPiso = pisosId.get(spinnerPisos.getSelectedItemPosition());
+                    }
+                }
+
+                try {
+                    // ════════════════════════════════════════════════════════════════
+                    // 1. CREAR ESPACIO
+                    // ════════════════════════════════════════════════════════════════
+
+                    long espacioId = db.insertEspacio(id_creado, (int) pisoId, nombre, descripcion, urlImagenes);
+
+                    if (espacioId == -1) {
+                        Toast.makeText(getContext(), "Error al guardar espacio", Toast.LENGTH_SHORT).show();
+                        Log.e("FLUJO_CRUD", "insertEspacio retornó -1");
+                        return;
+                    }
+
+                    Log.d("FLUJO_CRUD", "✓ Espacio #" + espacioId + ": " + nombre);
+                    Log.d("FLUJO_CRUD", "Nombre: "+ nombre);
+                    Log.d("FLUJO_CRUD", "Descripcion: "+ descripcion);
+                    Log.d("FLUJO_CRUD", "Url: "+ urlImagenes);
+                    Log.d("FLUJO_CRUD", "color: "+ color);
+
+                    // ════════════════════════════════════════════════════════════════
+                    // 2. CREAR GEOMETRÍA
+                    // ════════════════════════════════════════════════════════════════
+                    String verticesJson = obtenerGeojsonDePuntos(mapManager.puntosEspacioActual);
+
+                    int espac = (int) espacioId;
+
+                    long geometriaId = db.insertGeometria(espac, id_creado, (int) pisoId, verticesJson, color);
+
+                    if (geometriaId == -1) {
+                        Toast.makeText(getContext(), "Error al guardar geometría", Toast.LENGTH_SHORT).show();
+                        Log.e("FLUJO_CRUD", "insertGeometria retornó -1");
+                        // NO return - el espacio ya está creado, al menos
+                    }
+
+                    Log.d("FLUJO_CRUD", "✓ Geometría #" + geometriaId + " | Color: " + color);
+                    Log.d("FLUJO_CRUD", "Id espacio: "+ espac);
+                    Log.d("FLUJO_CRUD", "Id lugar: "+ id_creado);
+                    Log.d("FLUJO_CRUD", "Id piso: "+ pisoId);
+                    Log.d("FLUJO_CRUD", "vertices: "+ verticesJson);
+                    Log.d("FLUJO_CRUD", "color: "+ color);
+
+                    // ════════════════════════════════════════════════════════════════
+                    // 3. LOG FINAL Y CONTINUAR
+                    // ════════════════════════════════════════════════════════════════
+                    Log.d("FLUJO_CRUD", "════════════════════════════════════════════");
+                    Log.d("FLUJO_CRUD", "Espacio creado exitosamente:");
+                    Log.d("FLUJO_CRUD", "  ID Espacio: " + espacioId);
+                    Log.d("FLUJO_CRUD", "  ID Lugar: " + id_creado);
+                    Log.d("FLUJO_CRUD", "  ID Piso: " + idPiso);
+                    Log.d("FLUJO_CRUD", "  Nombre: " + nombre);
+                    Log.d("FLUJO_CRUD", "  Color: " + color);
+                    Log.d("FLUJO_CRUD", "════════════════════════════════════════════");
+
+                    Toast.makeText(getContext(), "✓ Espacio guardado: " + nombre, Toast.LENGTH_SHORT).show();
+
+                    flujoPostEspacio();
+
+                } catch (Exception e) {
+                    Toast.makeText(getContext(), "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    Log.e("FLUJO_CRUD", "Excepción en onEspacioGuardado: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+        });
 
         configurarSpinner();
         configurarMapa();
@@ -351,10 +460,10 @@ public class MapaFragment extends Fragment {
             mapView.getMapboxMap().getStyle(style -> {
                 if (modoActual == MODO_LUGAR) {
                     mapManager.cerrarLugar(style);
-                    actualizarUIAlCerrarLugar();
+                    // El flujo continúa automáticamente via callback onLugarCerrado()
                 } else if (modoActual == MODO_ESPACIO) {
                     mapManager.cerrarEspacio(style);
-                    tvModo.setText("Espacio guardada. Dibuja la siguiente.");
+                    // El flujo continúa automáticamente via callback onEspacioCerrado()
                 }
             });
         });
@@ -456,7 +565,6 @@ public class MapaFragment extends Fragment {
         mapManager.limpiarVérticesTemporales();
         tvModo.setText("Dibuja ESPACIOS dentro del Lugar " + mapManager.obtenerLugarActualId());
     }
-
     /**
      * Cancelar modo actual
      */
@@ -516,6 +624,231 @@ public class MapaFragment extends Fragment {
         btnDeshacer.setVisibility(View.GONE);
     }
 
+    // ════════════════════════════════════════════════════════════════
+// FLUJO: AGREGAR LUGAR CON ESPACIOS
+// ════════════════════════════════════════════════════════════════
+
+    /**
+     * Llamado después de que cerrarLugar() completa
+     * Muestra diálogo: ¿Deseas agregar espacios?
+     */
+    private void flujoPostLugar() {
+        AlertDialog dialog = new AlertDialog.Builder(getContext())
+                .setTitle("Lugar Guardado")
+                .setMessage("¿Deseas agregar espacios a este lugar?")
+                .setPositiveButton("Sí", (d, w) -> iniciarModoEspacios())
+                .setNegativeButton("No", (d, w) -> flujoPostEspacios_NO())
+                .create();
+
+        dialog.show();
+        Button pos = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        Button neg = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+        pos.setTextColor(Color.parseColor("#2196F3"));
+        neg.setTextColor(Color.parseColor("#2196F3"));
+    }
+
+    /**
+     * Llamado después de cerrarEspacio()
+     * Muestra diálogo: ¿Otro espacio?
+     */
+    private void flujoPostEspacio() {
+        AlertDialog dialog = new AlertDialog.Builder(getContext())
+                .setTitle("Espacio Guardado")
+                .setMessage("¿Deseas agregar otro espacio?")
+                .setPositiveButton("Sí", (d, w) -> {
+                    // Volver a dibujar otro espacio
+                    modoActual = MODO_ESPACIO;
+                    mapManager.limpiarVérticesTemporales();
+                    tvModo.setText("Dibuja el siguiente espacio...");
+                })
+                .setNegativeButton("No", (d, w) -> flujoPostEspacios_NO())
+                .create();
+
+        dialog.show();
+        Button pos = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        Button neg = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+        pos.setTextColor(Color.parseColor("#2196F3"));
+        neg.setTextColor(Color.parseColor("#2196F3"));
+    }
+
+    /**
+     * Si NO a "¿Agregar espacios?" o "¿Otro espacio?"
+     * Pregunta si desea agregar otro piso
+     */
+    private void flujoPostEspacios_NO() {
+        AlertDialog dialog = new AlertDialog.Builder(getContext())
+                .setTitle("Piso Completado")
+                .setMessage("¿Deseas agregar otro piso a este lugar?")
+                .setPositiveButton("Sí", (d, w) -> mostrarDialogoNuevoPiso())
+                .setNegativeButton("No", (d, w) -> flujoFinalizar())
+                .create();
+
+        dialog.show();
+        Button pos = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        Button neg = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+        pos.setTextColor(Color.parseColor("#2196F3"));
+        neg.setTextColor(Color.parseColor("#2196F3"));
+    }
+
+    /**
+     * Mostrar diálogo para crear un nuevo piso
+     */
+    private void mostrarDialogoNuevoPiso() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setTitle("Crear Nuevo Piso");
+
+        android.widget.LinearLayout layout = new android.widget.LinearLayout(getContext());
+        layout.setOrientation(android.widget.LinearLayout.VERTICAL);
+        layout.setPadding(20, 20, 20, 20);
+
+        android.widget.TextView tvNombre = new android.widget.TextView(getContext());
+        tvNombre.setText("Nombre del Piso:");
+        tvNombre.setTypeface(null, android.graphics.Typeface.BOLD);
+        layout.addView(tvNombre);
+
+        android.widget.EditText etNombre = new android.widget.EditText(getContext());
+        etNombre.setHint("Ej: Segundo Piso");
+        layout.addView(etNombre);
+
+        android.widget.TextView tvNumero = new android.widget.TextView(getContext());
+        tvNumero.setText("Número del Piso:");
+        tvNumero.setTypeface(null, android.graphics.Typeface.BOLD);
+        tvNumero.setPadding(0, 15, 0, 0);
+        layout.addView(tvNumero);
+
+        android.widget.EditText etNumero = new android.widget.EditText(getContext());
+        etNumero.setHint("Ej: 2");
+        etNumero.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        layout.addView(etNumero);
+
+        android.widget.ScrollView scrollView = new android.widget.ScrollView(getContext());
+        scrollView.addView(layout);
+        builder.setView(scrollView);
+
+        builder.setPositiveButton("Guardar", (dialog, which) -> {
+            String nombre = etNombre.getText().toString().trim();
+            String numeroStr = etNumero.getText().toString().trim();
+
+            if (nombre.isEmpty() || numeroStr.isEmpty()) {
+                Toast.makeText(getContext(), "Completa todos los campos", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            try {
+                int numero = Integer.parseInt(numeroStr);
+
+                // ════════════════════════════════════════════════════════════════
+                // MEJORADO: CREAR OBJETO Pisos Y INSERTARLO
+                // ════════════════════════════════════════════════════════════════
+
+
+                pisoId = db.insertPiso((int) idLugar , numero, nombre);
+
+                Log.d("FLUJO_PISO", "✓ Piso creado en BD: " + nombre + " (ID: " + pisoId + ")");
+
+                Toast.makeText(getContext(), "✓ Piso creado: " + nombre, Toast.LENGTH_SHORT).show();
+
+                // Actualizar spinner de pisos
+                mapManager.cargarPisos(mapManager.obtenerLugarActualId());
+
+                // Volver a dibujar espacios en el nuevo piso
+                iniciarModoEspacios();
+
+            } catch (NumberFormatException e) {
+                Toast.makeText(getContext(), "El número debe ser válido", Toast.LENGTH_SHORT).show();
+                Log.e("FLUJO_PISO", "Error: " + e.getMessage());
+            }
+        });
+
+        builder.setNegativeButton("Cancelar", null);
+        builder.show();
+    }
+    /**
+     * Crear el primer piso por defecto automáticamente
+     */
+    private void crearPrimerPisoPorDefecto() {
+        String nombrePiso = "Primera Planta";
+        int numeroPiso = 1;
+
+        pisoId = db.insertPiso((int) idLugar, numeroPiso, nombrePiso);
+
+        if (pisoId != -1) {
+            Log.d("FLUJO_PISO", "✓ Primer piso creado por defecto: " + nombrePiso + " (ID: " + pisoId + ")");
+            Toast.makeText(getContext(), "✓ Piso creado: " + nombrePiso, Toast.LENGTH_SHORT).show();
+
+            Log.d("FLUJO_CRUD", "✓ Piso #" + pisoId);
+            Log.d("FLUJO_CRUD", "Id Piso: "+ pisoId);
+            Log.d("FLUJO_CRUD", "Id lugar: "+ idLugar);
+            Log.d("FLUJO_CRUD", "Nombre: "+ nombrePiso);
+
+            // Actualizar spinner de pisos
+            mapManager.cargarPisos((int) idLugar);
+
+
+        } else {
+            Log.e("FLUJO_PISO", "Error al crear el piso por defecto");
+            Toast.makeText(getContext(), "Error al crear el piso", Toast.LENGTH_SHORT).show();
+            flujoFinalizar();
+        }
+    }
+
+    /**
+     * Manejar la creación del primer piso (para cuando el usuario dice "No" a espacios)
+     */
+
+    /**
+     * Finalizar todo el proceso
+     */
+    private void flujoFinalizar() {
+        modoActual = MODO_NINGUNO;
+        mapManager.limpiarVérticesTemporales();
+        btnLugar.setText("Lugar");
+        btnEspacios.setText("Espacios");
+        btnHabilitar.setText("HABILITAR");
+        modoEdicionActivo = false;
+        mapManager.setModoEdicion(false);
+
+        mapManager.limpiarVérticesTemporales();
+        mapManager.limpiarElementosTemporales();
+        mapManager.limpiarTodoTemporal();
+
+        ocultarEdicion();
+
+        tvModo.setText("✓ Lugar y espacios guardados correctamente");
+        Toast.makeText(getContext(), "Modo edición finalizado", Toast.LENGTH_LONG).show();
+    }
+
+
+    /**
+     * Convertir lista de puntos a GeoJSON
+     */
+    private String obtenerGeojsonDePuntos(List<Point> puntos) {
+        if (puntos == null || puntos.isEmpty()) {
+            mapManager.mostrarDialogoConfirmacion("ERROR", "HEY ESTAN FALLANDO EL GEOJSON", "SI",null);
+
+            return "[]";
+        }
+
+        StringBuilder coords = new StringBuilder();
+        for (int i = 0; i < puntos.size(); i++) {
+            Point p = puntos.get(i);
+            coords.append("[").append(p.longitude())
+                    .append(",").append(p.latitude()).append("]");
+            if (i < puntos.size() - 1) coords.append(",");
+        }
+
+        return "[[" + coords.toString() + "]]";
+    }
+
+    private int obtenerUltimoEspacioId(int idLugar) {
+        List<Espacio> espacios = db.getEspaciosByLugar(idLugar);
+        if (!espacios.isEmpty()) {
+            return espacios.get(espacios.size() - 1).getId_espacio();
+        }
+        return -1;
+    }
+
+
     /*
     // Lifecycle methods (descomentar si necesitas)
     @Override
@@ -536,4 +869,5 @@ public class MapaFragment extends Fragment {
         mapView.onDestroy();
     }
     */
+
 }

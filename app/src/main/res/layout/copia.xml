@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Mapa de Mapbox (fondo) -->
+    <com.mapbox.maps.MapView
+        android:id="@+id/mapView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- ============================================================ -->
+    <!-- ESQUINA INFERIOR DERECHA -->
+    <!-- ============================================================ -->
+
+    <!-- Botón Habilitar (fijo en esquina inferior derecha) -->
+    <Button
+        android:id="@+id/btnHabilitar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:layout_margin="16dp"
+        android:backgroundTint="#2196F3"
+        android:text="HABILITAR"
+        android:textColor="@android:color/white" />
+
+    <!-- ============================================================ -->
+    <!-- ESQUINA SUPERIOR DERECHA - CONTENEDOR DE BOTONES -->
+    <!-- ============================================================ -->
+
+    <LinearLayout
+        android:id="@+id/ll_botones_superiores"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="60dp"
+        android:layout_marginEnd="16dp"
+        android:orientation="vertical">
+
+        <!-- Botón Agregar Lugar -->
+        <Button
+            android:id="@+id/btnEditar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:backgroundTint="#2196F3"
+            android:text="Agregar Lugar"
+            android:textColor="@android:color/white" />
+
+        <!-- Botón Agregar Espacios -->
+        <Button
+            android:id="@+id/btnEspacios"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:backgroundTint="#2196F3"
+            android:text="Agregar Espacios"
+            android:textColor="@android:color/white"
+            android:visibility="gone" />
+
+        <!-- Botón Cerrar Polígono -->
+        <Button
+            android:id="@+id/btnCerrar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:backgroundTint="#2196F3"
+            android:text="Cerrar"
+            android:textColor="@android:color/white"
+            android:visibility="gone" />
+
+        <!-- Botón Deshacer Punto -->
+        <Button
+            android:id="@+id/btnDeshacer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:backgroundTint="#2196F3"
+            android:text="Deshacer"
+            android:textColor="@android:color/white"
+            android:visibility="gone" />
+
+        <!-- Botón Finalizar Edición -->
+        <Button
+            android:id="@+id/btnFinalizar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="#2196F3"
+            android:text="Finalizar"
+            android:textColor="@android:color/white"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+    <!-- ============================================================ -->
+    <!-- ESQUINA INFERIOR IZQUIERDA -->
+    <!-- ============================================================ -->
+
+    <!-- TextView Modo (estado actual) -->
+    <TextView
+        android:id="@+id/tvModo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentStart="true"
+        android:layout_margin="16dp"
+        android:background="#88000000"
+        android:padding="8dp"
+        android:textColor="#ffffff" />
+
+    <!-- ============================================================ -->
+    <!-- ESQUINA SUPERIOR IZQUIERDA -->
+    <!-- ============================================================ -->
+
+    <!-- Spinner de Pisos -->
+    <Spinner
+        android:id="@+id/spnPisos"
+        android:layout_width="wrap_content"
+        android:layout_height="48dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="40dp"
+        android:background="#2C3E50"
+        android:dropDownSelector="@android:drawable/btn_dropdown"
+        android:padding="8dp"
+        android:popupBackground="#2C3E50"
+        android:spinnerMode="dropdown"
+        android:textColor="@android:color/white"
+        android:textColorHint="@android:color/darker_gray"
+        android:visibility="gone" />
+
+</RelativeLayout>

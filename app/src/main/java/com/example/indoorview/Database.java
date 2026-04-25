@@ -105,15 +105,21 @@ public class Database extends SQLiteOpenHelper {
     }
 
     // CRUD - Lugar
-    public long insertLugar(Lugar lugar) {
+
+    public long insertLugar(String nombre, String descripcion, String urlImagenes,
+                            String geojson, String color) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
-        cv.put("nombre", lugar.getNombre());
-        cv.put("descripcion", lugar.getDescripcion());
-        cv.put("url_imagenes", lugar.getUrl_imagenes());
-        cv.put("geojson", lugar.getGeojson());
+        cv.put("nombre", nombre);
+        cv.put("descripcion", descripcion);
+        cv.put("url_imagenes", urlImagenes);
+        cv.put("geojson", geojson);
+        cv.put("color", color);
         cv.put("estado", 1);
-        return db.insert("lugar", null, cv);
+
+        long id = db.insert("lugar", null, cv);
+        db.close();
+        return id;
     }
 
     public List<Lugar> getLugares() {
@@ -172,22 +178,35 @@ public class Database extends SQLiteOpenHelper {
         c.close();
         return lista;
     }
+    public long insertPiso(int idLugar, int numero, String nombre) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put("id_lugar", idLugar);
+        cv.put("numero", numero);
+        cv.put("nombre", nombre);
+        cv.put("activo", 1);
+
+        long id = db.insert("pisos", null, cv);
+        db.close();
+
+        return id;
+    }
+
 
     // ─────────────────────────────────────────
     // CRUD - Espacio
     // ─────────────────────────────────────────
-    public long insertEspacio(Espacio espacio) {
+    public long insertEspacio(int idLugar, int idPiso, String nombre, String descripcion, String urlImagenes) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
-        cv.put("id_lugar", espacio.getId_lugar());
-        cv.put("id_piso", espacio.getId_piso());
-        cv.put("nombre", espacio.getNombre());
-        cv.put("descripcion", espacio.getDescripcion());
-        cv.put("url_imagenes", espacio.getUrl_imagenes());
+        cv.put("id_lugar", idLugar);
+        cv.put("id_piso", idPiso);
+        cv.put("nombre", nombre);
+        cv.put("descripcion", descripcion);
+        cv.put("url_imagenes", urlImagenes);
         cv.put("estado", 1);
         return db.insert("espacio", null, cv);
     }
-
 
     public Espacio getEspacioById(int idEspacio) {
         SQLiteDatabase db = getReadableDatabase();
@@ -280,17 +299,22 @@ public class Database extends SQLiteOpenHelper {
     // ─────────────────────────────────────────
     // CRUD - Geometria
     // ─────────────────────────────────────────
-    public long insertGeometria(Geometria geo) {
+    public long insertGeometria(int idEspacio, int idLugar, int idPiso,
+                                String vertices, String color) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
-        cv.put("id_espacio", geo.getId_espacio());
-        cv.put("id_lugar", geo.getId_lugar());
-        cv.put("id_piso", geo.getId_piso());
-        cv.put("tipo", geo.getTipo());
-        cv.put("vertices", geo.getVertices());
-        cv.put("color", geo.getColor());
-        return db.insert("geometria", null, cv);
+        cv.put("id_espacio", idEspacio);
+        cv.put("id_lugar", idLugar);
+        cv.put("id_piso", idPiso);
+        cv.put("tipo", "polygon");
+        cv.put("vertices", vertices);
+        cv.put("color", color);
+
+        long id = db.insert("geometria", null, cv);
+        db.close();
+        return id;
     }
+
 
     public Geometria getGeometriaByLugar(int idLugar) {
         SQLiteDatabase db = getReadableDatabase();
