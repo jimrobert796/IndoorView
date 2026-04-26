@@ -110,6 +110,7 @@ public class MapManager {
     private JsonObject tempData;
     private boolean tempEsEspacio;
     private ImageView tempImageView;
+    private boolean hayEspacios;
 
     // ════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -190,15 +191,18 @@ public class MapManager {
                 }
 
                 if (lugarSeleccionado != idLugar) {
-                    pinesOcultos.add(annotation);
-                    annotation.setIconSize(0.0);
-                    annotation.setTextOpacity(0.0);
-                    managerLugares.update(annotation);
-                    pinOcultoActual = annotation;
 
                     limpiarEspacios();
                     limpiarEspaciosDeLugar(lugarSeleccionado);
                     cargarPisos(idLugar);
+
+                    if(hayEspacios){
+                        pinesOcultos.add(annotation);
+                        annotation.setIconSize(0.0);
+                        annotation.setTextOpacity(0.0);
+                        managerLugares.update(annotation);
+                        pinOcultoActual = annotation;
+                    }
 
                     lugarSeleccionado = idLugar;
                     Toast.makeText(context, "Mostrando espacios del lugar", Toast.LENGTH_SHORT).show();
@@ -1285,6 +1289,7 @@ public class MapManager {
             spinnerPisos.setAdapter(adapter);
             spinnerPisos.setTag(listaPisosId);
             spinnerPisos.setVisibility(View.VISIBLE);
+            hayEspacios = true;
 
             Toast.makeText(context, "Selecciona un piso", Toast.LENGTH_SHORT).show();
 
@@ -1295,7 +1300,7 @@ public class MapManager {
 
         } else {
             spinnerPisos.setVisibility(View.GONE);
-            Toast.makeText(context, "No hay pisos registrados", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(context, "No hay pisosregistrados ", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -1308,10 +1313,15 @@ public class MapManager {
         Log.d("DEBUG_PISO", "Total espacios en lugar: " + espacios.size());
 
         if (espacios.isEmpty()) {
+            hayEspacios = false;
             Toast.makeText(context, "No hay espacios", Toast.LENGTH_SHORT).show();
             Log.d("DEBUG_PISO", "Lista vacía");
             return;
+        }else {
+
+            hayEspacios = true;
         }
+
 
         int espaciosMostrados = 0;
 

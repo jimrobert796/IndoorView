@@ -1,123 +1,112 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Mapa de Mapbox (fondo) -->
     <com.mapbox.maps.MapView
         android:id="@+id/mapView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Botón Habilitar (esquina inferior derecha) -->
-    <Button
-        android:id="@+id/btnHabilitar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="HABILITAR"
-
-
-        android:backgroundTint="#2196F3"
-        android:textColor="@android:color/white"
-        android:layout_margin="16dp"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentEnd="true" />
-
-    <!-- Botón Edificio (esquina superior derecha) -->
-    <Button
-        android:id="@+id/btnEditar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-
-        android:backgroundTint="#2196F3"
-        android:textColor="@android:color/white"
-        android:text="Agregar Lugar"
-        android:layout_marginTop="40dp"
-        android:layout_marginRight="16dp"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentEnd="true" />
-
-    <!-- Botón Aulas (debajo de btnEditar) -->
-    <Button
-        android:id="@+id/btnEspacios"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:backgroundTint="#2196F3"
-        android:textColor="@android:color/white"
-        android:text="Agregar Espacios"
-        android:visibility="gone"
-        android:layout_margin="16dp"
-        android:layout_below="@id/btnEditar"
-        android:layout_alignEnd="@id/btnEditar" />
-
-    <!-- Botón Cerrar -->
-    <Button
-        android:id="@+id/btnCerrar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-
-        android:backgroundTint="#2196F3"
-        android:textColor="@android:color/white"
-        android:text="Cerrar"
-        android:visibility="gone"
-        android:layout_margin="16dp"
-        android:layout_below="@id/btnEspacios"
-        android:layout_alignEnd="@id/btnEditar" />
-
-    <!-- Botón Deshacer -->
-    <Button
-        android:id="@+id/btnDeshacer"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-
-        android:backgroundTint="#2196F3"
-        android:textColor="@android:color/white"
-        android:text="Deshacer"
-        android:visibility="gone"
-        android:layout_margin="16dp"
-        android:layout_below="@id/btnCerrar"
-        android:layout_alignEnd="@id/btnEditar" />
-
-    <!-- Botón Finalizar -->
-    <Button
-        android:id="@+id/btnFinalizar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-
-        android:backgroundTint="#2196F3"
-        android:textColor="@android:color/white"
-        android:text="Finalizar"
-        android:visibility="gone"
-        android:layout_margin="16dp"
-        android:layout_below="@id/btnDeshacer"
-        android:layout_alignEnd="@id/btnEditar" />
-
-    <!-- TextView Modo (esquina inferior izquierda) -->
-    <TextView
-        android:id="@+id/tvModo"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textColor="#ffffff"
-        android:background="#88000000"
-        android:padding="8dp"
-        android:layout_margin="16dp"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentStart="true" />
-
-    <!-- Spinner (esquina superior izquierda) -->
     <Spinner
         android:id="@+id/spnPisos"
         android:layout_width="wrap_content"
         android:layout_height="48dp"
-        android:layout_marginLeft="16dp"
-        android:layout_marginTop="40dp"
-        android:layout_marginRight="16dp"
-        android:padding="8dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="45dp"
         android:background="#2C3E50"
+        android:padding="8dp"
         android:popupBackground="#2C3E50"
         android:textColor="@android:color/white"
-        android:textColorHint="@android:color/darker_gray"
-        android:spinnerMode="dropdown"
-        android:dropDownSelector="@android:drawable/btn_dropdown"/>
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-</RelativeLayout>
+    <Button
+        android:id="@+id/btnEditar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="45dp"
+        android:layout_marginEnd="16dp"
+        android:text="Agregar Lugar"
+        android:backgroundTint="#2196F3"
+        android:textColor="@android:color/white"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/btnEspacios"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Agregar Espacios"
+        android:backgroundTint="#2196F3"
+        android:textColor="@android:color/white"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="@id/btnEditar"
+        app:layout_constraintTop_toBottomOf="@id/btnEditar" />
+
+    <Button
+        android:id="@+id/btnCerrar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Cerrar"
+        android:backgroundTint="#2196F3"
+        android:textColor="@android:color/white"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="@id/btnEditar"
+        app:layout_constraintTop_toBottomOf="@id/btnEspacios" />
+
+    <Button
+        android:id="@+id/btnDeshacer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Deshacer"
+        android:backgroundTint="#2196F3"
+        android:textColor="@android:color/white"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="@id/btnEditar"
+        app:layout_constraintTop_toBottomOf="@id/btnCerrar" />
+
+    <Button
+        android:id="@+id/btnFinalizar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Finalizar"
+        android:backgroundTint="#2196F3"
+        android:textColor="@android:color/white"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="@id/btnEditar"
+        app:layout_constraintTop_toBottomOf="@id/btnDeshacer" />
+
+    <Button
+        android:id="@+id/btnHabilitar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:text="HABILITAR"
+        android:backgroundTint="#2196F3"
+        android:textColor="@android:color/white"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <TextView
+        android:id="@+id/tvModo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:background="#88000000"
+        android:padding="8dp"
+        android:textColor="#ffffff"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

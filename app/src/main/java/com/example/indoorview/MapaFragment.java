@@ -587,7 +587,7 @@ public class MapaFragment extends Fragment {
      */
     private void activarModoEdicion() {
         modoEdicionActivo = true;
-        btnHabilitar.setText("CANCELAR");
+        btnHabilitar.setText("DESABILITAR");
         mapManager.setModoEdicion(true);
 
         // Mostrar solo botón Lugar inicialmente
@@ -615,7 +615,7 @@ public class MapaFragment extends Fragment {
         // Salir de cualquier modo activo
         if (modoActual != MODO_NINGUNO) {
             modoActual = MODO_NINGUNO;
-            btnLugar.setText("Lugar");
+            btnLugar.setText("Agregar Lugar");
             mapManager.limpiarVérticesTemporales();
         }
 
@@ -633,6 +633,7 @@ public class MapaFragment extends Fragment {
         btnFinalizar.setVisibility(View.GONE);
         btnCerrar.setVisibility(View.VISIBLE);
         btnDeshacer.setVisibility(View.VISIBLE);
+        btnHabilitar.setEnabled(false);
         mapManager.limpiarVérticesTemporales();
         Toast.makeText(getContext(), "Dibuje por puntos", Toast.LENGTH_SHORT).show();
         tvModo.setText("Dibuja el LUGAR — toca el mapa punto a punto");
@@ -657,7 +658,7 @@ public class MapaFragment extends Fragment {
         modoActual = MODO_NINGUNO;
         btnLugar.setText("Agregar Lugar");
         btnEspacios.setText("Espacios");
-
+        btnHabilitar.setEnabled(true);
         // Ocultar botones de dibujo
         btnCerrar.setVisibility(View.GONE);
         btnDeshacer.setVisibility(View.GONE);
@@ -790,18 +791,20 @@ public class MapaFragment extends Fragment {
         tvInfo.setText("Se creará el PISO #" + nextNumero);
         tvInfo.setTextColor(Color.parseColor("#2196F3"));
         tvInfo.setTypeface(null, android.graphics.Typeface.BOLD);
-        tvInfo.setPadding(0, 0, 0, 15);
+        tvInfo.setPadding(55, 0, 0, 15);
         layout.addView(tvInfo);
 
         android.widget.TextView tvNombre = new android.widget.TextView(getContext());
         tvNombre.setText("Nombre del Piso o planta:");
         tvNombre.setTypeface(null, android.graphics.Typeface.BOLD);
+        tvNombre.setPadding(20, 0, 0, 15);;
         layout.addView(tvNombre);
 
         android.widget.EditText etNombre = new android.widget.EditText(getContext());
         etNombre.setHint("Ej: Segundo Piso, Planta Alta, etc.");
         // Sugerir nombre automático
         etNombre.setText("Piso " + nextNumero);
+        etNombre.setPadding(20, 0, 0, 20);
         layout.addView(etNombre);
 
         android.widget.ScrollView scrollView = new android.widget.ScrollView(getContext());
@@ -842,7 +845,14 @@ public class MapaFragment extends Fragment {
         });
 
         builder.setNegativeButton("Cancelar", null);
-        builder.show();
+        // Mostrar el diálogo y luego personalizar los colores de los botones
+        AlertDialog dialog = builder.show();
+
+        // AQUÍ ES DONDE DEBES AGREGAR LOS COLORES A LOS BOTONES
+        Button pos = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        Button neg = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+        pos.setTextColor(Color.parseColor("#2196F3"));
+        neg.setTextColor(Color.parseColor("#2196F3"));
     }
 
     // Metodo auxiliar para obtener el siguiente número de piso
@@ -913,6 +923,7 @@ public class MapaFragment extends Fragment {
 
         // Actualizar UI
         btnLugar.setText("Agregar Lugar");
+        btnHabilitar.setEnabled(true);
         btnLugar.setVisibility(View.VISIBLE);
         btnEspacios.setVisibility(View.GONE);
         btnCerrar.setVisibility(View.GONE);
