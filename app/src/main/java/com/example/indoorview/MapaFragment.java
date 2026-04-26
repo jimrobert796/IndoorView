@@ -428,11 +428,75 @@ public class MapaFragment extends Fragment {
     private void configurarBtnLugar() {
         btnLugar.setOnClickListener(v -> {
             if (modoActual == MODO_LUGAR) {
-                // Cancelar modo lugar
-                cancelarModo();
+                // Cancelar modo lugar - con confirmación si hay puntos
+                int puntosDibujados = mapManager.obtenerCantidadPuntos();
+
+                if (puntosDibujados >= 0) {
+                    mapManager.mostrarDialogoConfirmacion(
+                            "Cancelar dibujo",
+                            "Has dibujado " + puntosDibujados + " punto" +
+                                    (puntosDibujados != 1 ? "s" : "") + ".\n\n" +
+                                    "Si cancelas, perderás todo el progreso.\n\n" +
+                                    "¿Deseas cancelar el dibujo del LUGAR?",
+                            "Sí, cancelar",
+                            () -> {
+                                cancelarModo();
+                                tvModo.setText("Dibujo de lugar cancelado");
+                                Toast.makeText(getContext(), "Dibujo cancelado", Toast.LENGTH_SHORT).show();
+                            }
+                    );
+                } else {
+                    // Sin puntos, cancelar directamente
+                    cancelarModo();
+                    Toast.makeText(getContext(), "Modo lugar desactivado", Toast.LENGTH_SHORT).show();
+                }
+
+            } else if (modoActual == MODO_NINGUNO) {
+                mapManager.mostrarDialogoConfirmacion(
+                        "Agregar un lugar",
+                        "Esta seguro de agregar un nuevo lugar en la institucion?",
+                        "si",
+                        () ->{
+                            iniciarModoLugar();
+                        }
+                );
+
+            } else if (modoActual == MODO_ESPACIO) {
+                // Cambiar de espacio a lugar - con confirmación
+                int puntosDibujados = mapManager.obtenerCantidadPuntos();
+                String mensaje = puntosDibujados > 0
+                        ? "Actualmente estás dibujando un ESPACIO con " + puntosDibujados + " punto" +
+                        (puntosDibujados != 1 ? "s" : "") + ".\n\n" +
+                        "Si cambias a LUGAR, perderás el progreso del espacio.\n\n" +
+                        "¿Deseas cambiar a modo LUGAR?"
+                        : "Actualmente estás en modo ESPACIO.\n\n¿Deseas cambiar a modo LUGAR?";
+
+                mapManager.mostrarDialogoConfirmacion(
+                        "Cambiar a LUGAR",
+                        mensaje,
+                        "Sí",
+                        () -> {
+                            cancelarModo();
+                            iniciarModoLugar();
+                        }
+                );
+
             } else {
-                // Activar modo lugar
-                iniciarModoLugar();
+                // No hay modo activo - activar lugar
+                // Verificar si estamos en modo edición
+                if (!modoEdicionActivo) {
+                    mapManager.mostrarDialogoConfirmacion(
+                            "Modo Edición",
+                            "Para dibujar un LUGAR, primero debes activar el modo edición.\n\n" +
+                                    "¿Deseas activar el modo edición?",
+                            "Sí, activar",
+                            () -> {
+                                activarModoEdicion();
+                                // Después de activar, iniciar modo lugar
+                                iniciarModoLugar();
+                            }
+                    );
+                }
             }
         });
     }
@@ -457,15 +521,35 @@ public class MapaFragment extends Fragment {
      */
     private void configurarBtnCerrar() {
         btnCerrar.setOnClickListener(v -> {
-            mapView.getMapboxMap().getStyle(style -> {
-                if (modoActual == MODO_LUGAR) {
-                    mapManager.cerrarLugar(style);
-                    // El flujo continúa automáticamente via callback onLugarCerrado()
-                } else if (modoActual == MODO_ESPACIO) {
-                    mapManager.cerrarEspacio(style);
-                    // El flujo continúa automáticamente via callback onEspacioCerrado()
-                }
-            });
+            // Verificar si hay puntos suficientes
+            if (mapManager.obtenerCantidadPuntos() < 3) {
+                Toast.makeText(getContext(),
+                        "Mínimo 3 puntos para finalizar.",
+                        Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            String titulo = modoActual == MODO_LUGAR ? "Finalizar Lugar" : "Finalizar Espacio";
+            String mensaje = modoActual == MODO_LUGAR
+                    ? "¿Estás seguro de finalizar la geometría del LUGAR?\n\n" +
+                    "Puntos dibujados: " + mapManager.obtenerCantidadPuntos()
+                    : "¿Estás seguro de finalizar la geometría del ESPACIO?\n\n" +
+                    "Puntos dibujados: " + mapManager.obtenerCantidadPuntos();
+
+            mapManager.mostrarDialogoConfirmacion(
+                    titulo,
+                    mensaje,
+                    "Sí, finalizar",
+                    () -> {
+                        mapView.getMapboxMap().getStyle(style -> {
+                            if (modoActual == MODO_LUGAR) {
+                                mapManager.cerrarLugar(style);
+                            } else if (modoActual == MODO_ESPACIO) {
+                                mapManager.cerrarEspacio(style);
+                            }
+                        });
+                    }
+            );
         });
     }
 
@@ -486,7 +570,7 @@ public class MapaFragment extends Fragment {
         btnFinalizar.setOnClickListener(v -> {
             modoActual = MODO_NINGUNO;
             mapManager.limpiarVérticesTemporales();
-            btnLugar.setText("Lugar");
+            btnLugar.setText("Agregar Lugar");
             btnFinalizar.setVisibility(View.GONE);
             btnEspacios.setVisibility(View.GONE);
             tvModo.setText("¡Listo! Lugar y espacios guardados.");
@@ -550,6 +634,7 @@ public class MapaFragment extends Fragment {
         btnCerrar.setVisibility(View.VISIBLE);
         btnDeshacer.setVisibility(View.VISIBLE);
         mapManager.limpiarVérticesTemporales();
+        Toast.makeText(getContext(), "Dibuje por puntos", Toast.LENGTH_SHORT).show();
         tvModo.setText("Dibuja el LUGAR — toca el mapa punto a punto");
     }
 
@@ -570,7 +655,7 @@ public class MapaFragment extends Fragment {
      */
     private void cancelarModo() {
         modoActual = MODO_NINGUNO;
-        btnLugar.setText("Lugar");
+        btnLugar.setText("Agregar Lugar");
         btnEspacios.setText("Espacios");
 
         // Ocultar botones de dibujo
@@ -578,9 +663,7 @@ public class MapaFragment extends Fragment {
         btnDeshacer.setVisibility(View.GONE);
 
         // 👇 IMPORTANTE: Mantener visible Finalizar si estamos en modo edición
-        if (modoEdicionActivo) {
-            btnFinalizar.setVisibility(View.VISIBLE);
-        } else {
+        if (!modoEdicionActivo) {
             btnFinalizar.setVisibility(View.GONE);
         }
 
@@ -695,31 +778,31 @@ public class MapaFragment extends Fragment {
      */
     private void mostrarDialogoNuevoPiso() {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-        builder.setTitle("Crear Nuevo Piso");
+        builder.setTitle("Agregar Nuevo Piso");
 
         android.widget.LinearLayout layout = new android.widget.LinearLayout(getContext());
         layout.setOrientation(android.widget.LinearLayout.VERTICAL);
         layout.setPadding(20, 20, 20, 20);
 
+        // Mostrar información del próximo número de piso
+        android.widget.TextView tvInfo = new android.widget.TextView(getContext());
+        int nextNumero = obtenerSiguienteNumeroPiso();
+        tvInfo.setText("Se creará el PISO #" + nextNumero);
+        tvInfo.setTextColor(Color.parseColor("#2196F3"));
+        tvInfo.setTypeface(null, android.graphics.Typeface.BOLD);
+        tvInfo.setPadding(0, 0, 0, 15);
+        layout.addView(tvInfo);
+
         android.widget.TextView tvNombre = new android.widget.TextView(getContext());
-        tvNombre.setText("Nombre del Piso:");
+        tvNombre.setText("Nombre del Piso o planta:");
         tvNombre.setTypeface(null, android.graphics.Typeface.BOLD);
         layout.addView(tvNombre);
 
         android.widget.EditText etNombre = new android.widget.EditText(getContext());
-        etNombre.setHint("Ej: Segundo Piso");
+        etNombre.setHint("Ej: Segundo Piso, Planta Alta, etc.");
+        // Sugerir nombre automático
+        etNombre.setText("Piso " + nextNumero);
         layout.addView(etNombre);
-
-        android.widget.TextView tvNumero = new android.widget.TextView(getContext());
-        tvNumero.setText("Número del Piso:");
-        tvNumero.setTypeface(null, android.graphics.Typeface.BOLD);
-        tvNumero.setPadding(0, 15, 0, 0);
-        layout.addView(tvNumero);
-
-        android.widget.EditText etNumero = new android.widget.EditText(getContext());
-        etNumero.setHint("Ej: 2");
-        etNumero.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
-        layout.addView(etNumero);
 
         android.widget.ScrollView scrollView = new android.widget.ScrollView(getContext());
         scrollView.addView(layout);
@@ -727,41 +810,47 @@ public class MapaFragment extends Fragment {
 
         builder.setPositiveButton("Guardar", (dialog, which) -> {
             String nombre = etNombre.getText().toString().trim();
-            String numeroStr = etNumero.getText().toString().trim();
 
-            if (nombre.isEmpty() || numeroStr.isEmpty()) {
-                Toast.makeText(getContext(), "Completa todos los campos", Toast.LENGTH_SHORT).show();
+            if (nombre.isEmpty()) {
+                Toast.makeText(getContext(), "Ingresa un nombre para el piso", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            try {
-                int numero = Integer.parseInt(numeroStr);
+            int numero = obtenerSiguienteNumeroPiso();
 
-                // ════════════════════════════════════════════════════════════════
-                // MEJORADO: CREAR OBJETO Pisos Y INSERTARLO
-                // ════════════════════════════════════════════════════════════════
+            // Insertar piso
+            pisoId = db.insertPiso((int) idLugar, numero, nombre);
 
-
-                pisoId = db.insertPiso((int) idLugar , numero, nombre);
-
-                Log.d("FLUJO_PISO", "✓ Piso creado en BD: " + nombre + " (ID: " + pisoId + ")");
-
-                Toast.makeText(getContext(), "✓ Piso creado: " + nombre, Toast.LENGTH_SHORT).show();
+            if (pisoId != -1) {
+                Log.d("FLUJO_PISO", "✓ Piso creado: " + nombre + " (#" + numero + ") ID: " + pisoId);
+                Toast.makeText(getContext(), "✓ Piso creado: " + nombre + " (Piso " + numero + ")", Toast.LENGTH_SHORT).show();
 
                 // Actualizar spinner de pisos
                 mapManager.cargarPisos(mapManager.obtenerLugarActualId());
 
                 // Volver a dibujar espacios en el nuevo piso
                 iniciarModoEspacios();
-
-            } catch (NumberFormatException e) {
-                Toast.makeText(getContext(), "El número debe ser válido", Toast.LENGTH_SHORT).show();
-                Log.e("FLUJO_PISO", "Error: " + e.getMessage());
+            } else {
+                Toast.makeText(getContext(), "Error al crear el piso", Toast.LENGTH_SHORT).show();
             }
         });
 
         builder.setNegativeButton("Cancelar", null);
         builder.show();
+    }
+
+    // Metodo auxiliar para obtener el siguiente número de piso
+    private int obtenerSiguienteNumeroPiso() {
+        List<Pisos> pisosExistentes = db.getPisosByLugar((int) idLugar);
+        int maxNumero = 0;
+
+        for (Pisos piso : pisosExistentes) {
+            if (piso.getNumero() > maxNumero) {
+                maxNumero = piso.getNumero();
+            }
+        }
+
+        return maxNumero + 1;
     }
     /**
      * Crear el primer piso por defecto automáticamente
@@ -800,23 +889,42 @@ public class MapaFragment extends Fragment {
      * Finalizar todo el proceso
      */
     private void flujoFinalizar() {
+        Log.d("FLUJO_FINALIZAR", "════════════════════════════════════════════");
+        Log.d("FLUJO_FINALIZAR", "INICIANDO FLUJO DE FINALIZACIÓN");
+        Log.d("FLUJO_FINALIZAR", "════════════════════════════════════════════");
+
+        // Resetear estado de modos
         modoActual = MODO_NINGUNO;
+
+        // LIMPIEZA COMPLETA DE GEOMETRÍA TEMPORAL
+        mapManager.limpiarGeometriaTemporalCompleta();
+
+        // LIMPIEZA DE PUNTOS TEMPORALES
         mapManager.limpiarVérticesTemporales();
-        btnLugar.setText("Lugar");
-        btnEspacios.setText("Espacios");
-        btnHabilitar.setText("HABILITAR");
-        modoEdicionActivo = false;
-        mapManager.setModoEdicion(false);
 
-        mapManager.limpiarVérticesTemporales();
-        mapManager.limpiarElementosTemporales();
-        mapManager.limpiarTodoTemporal();
+        // 4LIMPIEZA DE PINS PERMANENTES (de dibujo)
+        mapManager.limpiarPinesTemporales();
 
-        ocultarEdicion();
+        // Actualizar UI
+        btnLugar.setText("Agregar Lugar");
+        btnLugar.setVisibility(View.VISIBLE);
+        btnEspacios.setVisibility(View.GONE);
+        btnCerrar.setVisibility(View.GONE);
+        btnDeshacer.setVisibility(View.GONE);
+        btnFinalizar.setVisibility(View.GONE);
 
-        tvModo.setText("✓ Lugar y espacios guardados correctamente");
-        Toast.makeText(getContext(), "Modo edición finalizado", Toast.LENGTH_LONG).show();
+        // Mantener modo edición activo (importante!)
+        // NO desactivar: modoEdicionActivo se mantiene true
+
+        // 7Mensajes al usuario
+        tvModo.setText("✓ Lugar guardado. Toca 'Agregar Lugar' para agregar otro");
+        Toast.makeText(getContext(), "✓ Lugar completado. Puedes agregar otro", Toast.LENGTH_LONG).show();
+
+        Log.d("FLUJO_FINALIZAR", "════════════════════════════════════════════");
+        Log.d("FLUJO_FINALIZAR", "✅ FLUJO FINALIZADO - MODO EDICIÓN ACTIVO");
+        Log.d("FLUJO_FINALIZAR", "════════════════════════════════════════════");
     }
+
 
 
     /**

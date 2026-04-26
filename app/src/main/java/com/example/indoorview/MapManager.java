@@ -652,6 +652,171 @@ public class MapManager {
         managerLugares.deleteAll();
     }
 
+
+    public void limpiarPinesTemporales(){
+        managerPermanente.deleteAll();
+    }
+
+
+    public void limpiarGeometriaTemporalCompleta() {
+        Log.d("LIMPIAR_GEO", "════════════════════════════════════════════");
+        Log.d("LIMPIAR_GEO", "LIMPIANDO GEOMETRÍA TEMPORAL COMPLETA");
+        Log.d("LIMPIAR_GEO", "════════════════════════════════════════════");
+
+        mapView.getMapboxMap().getStyle(style -> {
+            if (style == null) {
+                Log.e("LIMPIAR_GEO", "Style es null, abortando limpieza");
+                return;
+            }
+
+            // 1️⃣ LIMPIAR LÍNEA DE PREVISUALIZACIÓN
+            limpiarLineaPrevia(style);
+
+            // 2️⃣ LIMPIAR POLÍGONO TEMPORAL DEL LUGAR
+            limpiarPoligonoTemporal(style, "lugar");
+
+            // 3️⃣ LIMPIAR POLÍGONO TEMPORAL DEL ESPACIO
+            limpiarPoligonoTemporal(style, "espacio");
+
+            // 4️⃣ LIMPIAR TODOS LOS PUNTOS TEMPORALES
+            if (managerTemporal != null) {
+                managerTemporal.deleteAll();
+                Log.d("LIMPIAR_GEO", "✓ Puntos temporales eliminados");
+            }
+
+            // 5️⃣ LIMPIAR LISTAS DE PUNTOS
+            if (puntosActuales != null) {
+                puntosActuales.clear();
+                Log.d("LIMPIAR_GEO", "✓ Lista puntosActuales limpiada");
+            }
+
+            if (puntosLugarActual != null) {
+                puntosLugarActual.clear();
+                Log.d("LIMPIAR_GEO", "✓ Lista puntosLugarActual limpiada");
+            }
+
+            if (puntosEspacioActual != null) {
+                puntosEspacioActual.clear();
+                Log.d("LIMPIAR_GEO", "✓ Lista puntosEspacioActual limpiada");
+            }
+
+            Log.d("LIMPIAR_GEO", "════════════════════════════════════════════");
+            Log.d("LIMPIAR_GEO", "✅ GEOMETRÍA TEMPORAL LIMPIADA COMPLETAMENTE");
+            Log.d("LIMPIAR_GEO", "════════════════════════════════════════════");
+        });
+    }
+
+    /**
+     * 🗑️ AUXILIAR: Limpiar línea de previsualización
+     */
+    private void limpiarLineaPrevia(Style style) {
+        try {
+            if (style.styleLayerExists("linea-preview")) {
+                style.removeStyleLayer("linea-preview");
+                Log.d("LIMPIAR_GEO", "✓ Capa 'linea-preview' eliminada");
+            }
+
+            if (style.styleSourceExists("linea-preview")) {
+                style.removeStyleSource("linea-preview");
+                Log.d("LIMPIAR_GEO", "✓ Fuente 'linea-preview' eliminada");
+            }
+        } catch (Exception e) {
+            Log.e("LIMPIAR_GEO", "Error limpiando línea previa: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 🗑️ AUXILIAR: Limpiar polígono temporal específico
+     */
+    private void limpiarPoligonoTemporal(Style style, String tipo) {
+        try {
+            Log.d("LIMPIAR_GEO", "Limpiando polígonos tipo: " + tipo);
+
+            // Para lugares
+            if (tipo.equals("lugar")) {
+                for (int i = 0; i <= lugarActualId; i++) {
+                    String baseId = "lugar-" + i;
+                    limpiarCapasYFuentes(style, baseId);
+                }
+                Log.d("LIMPIAR_GEO", "✓ Polígonos de LUGAR limpiados (IDs: 0-" + lugarActualId + ")");
+            }
+
+            // Para espacios
+            if (tipo.equals("espacio")) {
+                for (int i = 0; i <= espacioContador; i++) {
+                    String baseId = "lugar-" + lugarActualId + "-espacio-" + i;
+                    limpiarCapasYFuentes(style, baseId);
+                }
+                Log.d("LIMPIAR_GEO", "✓ Polígonos de ESPACIO limpiados (IDs: 0-" + espacioContador + ")");
+            }
+
+        } catch (Exception e) {
+            Log.e("LIMPIAR_GEO", "Error limpiando polígono " + tipo + ": " + e.getMessage());
+        }
+    }
+
+    /**
+     * 🗑️ AUXILIAR: Eliminar capas y fuentes por ID base
+     */
+    private void limpiarCapasYFuentes(Style style, String baseId) {
+        try {
+            // Eliminar capa fill
+            if (style.styleLayerExists(baseId + "-fill")) {
+                style.removeStyleLayer(baseId + "-fill");
+                Log.d("LIMPIAR_GEO", "  ✓ Capa " + baseId + "-fill eliminada");
+            }
+
+            // Eliminar capa line
+            if (style.styleLayerExists(baseId + "-line")) {
+                style.removeStyleLayer(baseId + "-line");
+                Log.d("LIMPIAR_GEO", "  ✓ Capa " + baseId + "-line eliminada");
+            }
+
+            // Eliminar fuente
+            if (style.styleSourceExists(baseId + "-src")) {
+                style.removeStyleSource(baseId + "-src");
+                Log.d("LIMPIAR_GEO", "  ✓ Fuente " + baseId + "-src eliminada");
+            }
+
+        } catch (Exception e) {
+            Log.e("LIMPIAR_GEO", "Error limpiando " + baseId + ": " + e.getMessage());
+        }
+    }
+
+    /**
+     * 🗑️ MEJORADO: Ahora limpia TODO (temporal y persistente) - Para reinicio completo
+     */
+    public void limpiarTodoTemporal() {
+        Log.d("LIMPIAR_TOTAL", "════════════════════════════════════════════");
+        Log.d("LIMPIAR_TOTAL", "LIMPIANDO TODO (TEMPORAL + PERSISTENTE)");
+        Log.d("LIMPIAR_TOTAL", "════════════════════════════════════════════");
+
+        // 1. Limpiar geometría temporal del mapa (líneas, polígonos)
+        limpiarGeometriaTemporalCompleta();
+
+        // 2. Limpiar puntos (ya se hace en limpiarGeometriaTemporalCompleta)
+        if (managerTemporal != null) {
+            managerTemporal.deleteAll();
+        }
+
+        // 3. Limpiar pins permanentes
+        if (managerPermanente != null) {
+            managerPermanente.deleteAll();
+        }
+
+        // 4. Limpiar URLs de imágenes
+        urlFoto1 = "";
+        urlFoto2 = "";
+        urlFoto3 = "";
+        Log.d("LIMPIAR_TOTAL", "✓ URLs de imágenes limpiadas");
+
+        // 5. Resetear contadores (opcional)
+        // resetearContadores();
+
+        Log.d("LIMPIAR_TOTAL", "════════════════════════════════════════════");
+        Log.d("LIMPIAR_TOTAL", "✅ TODO HA SIDO LIMPIADO");
+        Log.d("LIMPIAR_TOTAL", "════════════════════════════════════════════");
+    }
     /**
      * Limpia todos los elementos temporales creados durante el dibujo
      * Incluye: puntos temporales, líneas de previsualización, polígonos temporales
@@ -701,31 +866,7 @@ public class MapManager {
         });
     }
 
-    /**
-     * Limpia TODO (temporal y persistente) - Para reinicio completo
-     */
-    public void limpiarTodoTemporal() {
-        // Limpiar elementos temporales de dibujo
-        limpiarElementosTemporales();
 
-        // Limpiar puntos guardados de lugar y espacio
-        if (puntosLugarActual != null) {
-            puntosLugarActual.clear();
-        }
-        if (puntosEspacioActual != null) {
-            puntosEspacioActual.clear();
-        }
-
-        // Resetear contadores si es necesario
-        // resetearContadores(); // Descomentar si quieres resetear también los IDs
-
-        // Limpiar caché de imágenes temporales
-        urlFoto1 = "";
-        urlFoto2 = "";
-        urlFoto3 = "";
-
-        Log.d("LIMPIAR_TEMP", "Todo el contenido temporal ha sido limpiado");
-    }
 
     public void limpiarEspaciosDeLugar(int idLugar) {
         mapView.getMapboxMap().getStyle(style -> {
@@ -1909,9 +2050,9 @@ public class MapManager {
             if (nuevoNombre.isEmpty()) {
                 Toast.makeText(context, "El nombre es requerido", Toast.LENGTH_SHORT).show();
                 return;
-            }
-            if (nuevaDesc.isEmpty()) {
-                nuevaDesc = "";
+            }if (nuevaDesc.isEmpty()) {
+                Toast.makeText(context, "La descripcion es requerido", Toast.LENGTH_SHORT).show();
+                return;
             }
 
             String urlsImagenes = combinarUrlsImagenes();
@@ -1922,6 +2063,8 @@ public class MapManager {
             PODEMOS MEJORARLO Y OPTIMIZARLO MUCHISIMO MEJOOOOORRRRRRRRRRRR
              */
 
+            String tipo = esEspacio ? "ESPACIO" : "LUGAR";
+
             if (modoCreacion) {
                 // ✅ MODO CREACIÓN: Notificar al Fragment via callback
                 Log.d("CRUD_CREAR", "Guardando " + (esEspacio ? "Espacio" : "Lugar"));
@@ -1929,46 +2072,52 @@ public class MapManager {
                 Log.d("CRUD_CREAR", "Color: " + colorSeleccionado);
                 Log.d("CRUD_CREAR", "geometria: " + geojsonGuardado);
 
-                if (flujoCRUDListener != null) {
-                    if (esEspacio) {
-                        flujoCRUDListener.onEspacioGuardado(nuevoNombre, nuevaDesc, urlsImagenes, colorSeleccionado);
-                    } else {
-                        flujoCRUDListener.onLugarGuardado(nuevoNombre, nuevaDesc, urlsImagenes, colorSeleccionado);
+                mostrarDialogoConfirmacion("Guardar "+ tipo, "Estas seguro de guardar", "Si", () ->{
+                    if (flujoCRUDListener != null) {
+                        if (esEspacio) {
+                            flujoCRUDListener.onEspacioGuardado(nuevoNombre, nuevaDesc, urlsImagenes, colorSeleccionado);
+                        } else {
+                            flujoCRUDListener.onLugarGuardado(nuevoNombre, nuevaDesc, urlsImagenes, colorSeleccionado);
+                        }
                     }
-                }
-                Toast.makeText(context, "✓ " + (esEspacio ? "Espacio" : "Lugar") + " creado", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(context, "✓ " + (esEspacio ? "Espacio" : "Lugar") + " creado", Toast.LENGTH_SHORT).show();
+                    dialog.dismiss();
+                });
+
 
             } else {
-                // ✅ MODO EDICIÓN: Guardar en BD (lógica existente)
-                if (esEspacio) {
-                    actualizarColorLugar(data.get("id_espacio").getAsInt(), colorSeleccionado, true);
-                    data.addProperty("color", colorSeleccionado);
-                    db.updateEspacio(
-                            data.get("id_espacio").getAsInt(),
-                            nuevoNombre,
-                            nuevaDesc,
-                            urlsImagenes
-                    );
-                    db.updateGeometriaColor(data.get("id_geometria").getAsInt(), colorSeleccionado);
-                    Toast.makeText(context, "Espacio actualizado", Toast.LENGTH_SHORT).show();
+                mostrarDialogoConfirmacion("Guardar "+ tipo, "Estas seguro de guardar", "Si", () ->{
 
-                } else {
-                    actualizarColorLugar(data.get("id_lugar").getAsInt(), colorSeleccionado, false);
-                    data.addProperty("color", colorSeleccionado);
-                    db.updateLugar(
-                            data.get("id_lugar").getAsInt(),
-                            nuevoNombre,
-                            nuevaDesc,
-                            colorSeleccionado,
-                            urlsImagenes
-                    );
-                    Toast.makeText(context, "Lugar actualizado", Toast.LENGTH_SHORT).show();
-                    limpiarTodo();
-                    cargarPoligonosLugar();
-                }
+                    // ✅ MODO EDICIÓN: Guardar en BD (lógica existente)
+                    if (esEspacio) {
+                        actualizarColorLugar(data.get("id_espacio").getAsInt(), colorSeleccionado, true);
+                        data.addProperty("color", colorSeleccionado);
+                        db.updateEspacio(
+                                data.get("id_espacio").getAsInt(),
+                                nuevoNombre,
+                                nuevaDesc,
+                                urlsImagenes
+                        );
+                        db.updateGeometriaColor(data.get("id_geometria").getAsInt(), colorSeleccionado);
+                        Toast.makeText(context, "Espacio actualizado", Toast.LENGTH_SHORT).show();
+
+                    } else {
+                        actualizarColorLugar(data.get("id_lugar").getAsInt(), colorSeleccionado, false);
+                        data.addProperty("color", colorSeleccionado);
+                        db.updateLugar(
+                                data.get("id_lugar").getAsInt(),
+                                nuevoNombre,
+                                nuevaDesc,
+                                colorSeleccionado,
+                                urlsImagenes
+                        );
+                        Toast.makeText(context, "Lugar actualizado", Toast.LENGTH_SHORT).show();
+                        limpiarTodo();
+                        cargarPoligonosLugar();
+                    }
+                    dialog.dismiss();
+                });
             }
-
-            dialog.dismiss();
         });
 
 
