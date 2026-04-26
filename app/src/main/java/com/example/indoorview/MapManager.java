@@ -658,6 +658,26 @@ public class MapManager {
     }
 
 
+    public void limpiarGeometriaTemporalEspacios() {
+
+        mapView.getMapboxMap().getStyle(style -> {
+        if (style == null) {
+            Log.e("LIMPIAR_GEO", "Style es null, abortando limpieza");
+            return;
+        }
+
+        // 3️⃣ LIMPIAR POLÍGONO TEMPORAL DEL ESPACIO
+        limpiarPoligonoTemporal(style, "espacio");
+
+        Log.d("LIMPIAR_GEO", "════════════════════════════════════════════");
+        Log.d("LIMPIAR_GEO", "✅ GEOMETRÍA TEMPORAL LIMPIADA COMPLETAMENTE");
+        Log.d("LIMPIAR_GEO", "════════════════════════════════════════════");
+    });
+
+
+    };
+
+
     public void limpiarGeometriaTemporalCompleta() {
         Log.d("LIMPIAR_GEO", "════════════════════════════════════════════");
         Log.d("LIMPIAR_GEO", "LIMPIANDO GEOMETRÍA TEMPORAL COMPLETA");

@@ -152,7 +152,7 @@ public class MapaFragment extends Fragment {
         mapManager = new MapManager(mapView, db, requireContext(), spinnerPisos,
                 camaraLauncher, galeriaLauncher);
 
-        // ✅ NUEVO: Conectar listener de CRUD
+        //  NUEVO: Conectar listener de CRUD
 
         mapManager.setFlujoCRUDListener(new MapManager.OnFlujoCRUDListener() {
             @Override
@@ -827,6 +827,12 @@ public class MapaFragment extends Fragment {
 
                 // Actualizar spinner de pisos
                 mapManager.cargarPisos(mapManager.obtenerLugarActualId());
+
+
+                mapManager.limpiarGeometriaTemporalEspacios();
+
+                // 4LIMPIEZA DE PINS PERMANENTES (de dibujo)
+                mapManager.limpiarPinesTemporales();
 
                 // Volver a dibujar espacios en el nuevo piso
                 iniciarModoEspacios();
