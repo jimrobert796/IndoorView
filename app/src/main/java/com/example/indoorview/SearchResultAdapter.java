@@ -79,7 +79,6 @@ public class SearchResultAdapter extends RecyclerView.Adapter<SearchResultAdapte
         private CardView cardView;
         private TextView tvNombre;
         private TextView tvDescripcion;
-        private TextView tvTipo;
         private ImageView ivColor;
 
         public ViewHolder(@NonNull View itemView) {
@@ -88,7 +87,6 @@ public class SearchResultAdapter extends RecyclerView.Adapter<SearchResultAdapte
             cardView = itemView.findViewById(R.id.cardResultado);
             tvNombre = itemView.findViewById(R.id.tv_nombre_resultado);
             tvDescripcion = itemView.findViewById(R.id.tv_descripcion_resultado);
-            tvTipo = itemView.findViewById(R.id.tv_tipo_resultado);
             ivColor = itemView.findViewById(R.id.iv_color_indicador);
         }
 
@@ -102,14 +100,6 @@ public class SearchResultAdapter extends RecyclerView.Adapter<SearchResultAdapte
             }
             tvDescripcion.setText(desc);
 
-            // Tipo con badge
-            tvTipo.setText(result.tipo);
-
-            if ("LUGAR".equals(result.tipo)) {
-                tvTipo.setTextColor(0xFF2196F3);
-            } else {
-                tvTipo.setTextColor(0xFFFF9800);
-            }
 
             // Color indicador
             try {

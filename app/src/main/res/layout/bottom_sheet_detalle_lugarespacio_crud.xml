@@ -132,7 +132,7 @@
             android:layout_height="wrap_content"
             android:text="Editar"
             android:textColor="#FFFFFF"
-            android:backgroundTint="#4CAF50"/>
+            android:backgroundTint="#2196F3"/>
 
         <Button
             android:id="@+id/btn_guardar"
@@ -142,7 +142,7 @@
             android:layout_marginStart="8dp"
             android:visibility="gone"
             android:textColor="#FFFFFF"
-            android:backgroundTint="#4CAF50"/>
+            android:backgroundTint="#2196F3"/>
 
         <Button
             android:id="@+id/btn_eliminar"
@@ -151,7 +151,7 @@
             android:text="Eliminar"
             android:layout_marginStart="8dp"
             android:textColor="#FFFFFF"
-            android:backgroundTint="#F44336"/>
+            android:backgroundTint="#D42504"/>
 
     </LinearLayout>
 
