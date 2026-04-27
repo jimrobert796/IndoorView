@@ -241,6 +241,183 @@ public class MapManager {
     // MÉTODOS PÚBLICOS GENERALES
     // ════════════════════════════════════════════════════════════════
 
+
+    // ════════════════════════════════════════════════════════════════
+// MÉTODOS PARA BÚSQUEDA (Agregar estos a MapManager.java)
+// ════════════════════════════════════════════════════════════════
+
+    /**
+     * Seleccionar un lugar desde la búsqueda
+     * Simula un click en el pin del lugar
+     */
+    public void seleccionarLugarPorBusqueda(JsonObject data) {
+        int idLugar = data.get("id_lugar").getAsInt();
+
+        Log.d("SEARCH_SELECT", "Seleccionando lugar por búsqueda: ID " + idLugar);
+
+        // Limpiar espacios anteriores
+        limpiarEspacios();
+        restaurarPinesOcultos();
+
+        // Cargar pisos del lugar
+        cargarPisos(lugarActualId);
+
+        if (modoEdicion) {
+            // En modo edición: mostrar CRUD
+            mostrarBottomSheetCRUD(data, false); // false = lugar
+            Toast.makeText(context, "Lugar seleccionado - Listo para modificar", Toast.LENGTH_SHORT).show();
+        } else {
+            // En modo vista: mostrar detalles
+            mostrarBottomSheetLugar(data);
+            limpiarEspacios();
+            lugarSeleccionado = -1;
+            Toast.makeText(context, "Lugar: " + data.get("nombre").getAsString(), Toast.LENGTH_SHORT).show();
+        }
+
+        // Animar cámara hacia el lugar
+        if (data.has("geojson")) {
+            Point centro = calcularCentroDesdeGeoJson(data.get("geojson").getAsString());
+            if (centro != null) {
+                redireccionPin(centro);
+            }
+        }
+    }
+
+    /**
+     * Seleccionar un espacio desde la búsqueda
+     * Simula un click en el pin del espacio
+     */
+    public void seleccionarEspacioPorBusqueda(JsonObject data) {
+        int idEspacio = data.get("id_espacio").getAsInt();
+        int idLugar = data.get("id_lugar").getAsInt();
+        int idPiso = data.get("id_piso").getAsInt();
+        String nombreEspacio = data.get("nombre").getAsString();
+
+        Log.d("SEARCH_SELECT", "=========================================");
+        Log.d("SEARCH_SELECT", "Seleccionando espacio por búsqueda:");
+        Log.d("SEARCH_SELECT", "  Espacio: " + nombreEspacio + " (ID: " + idEspacio + ")");
+        Log.d("SEARCH_SELECT", "  Lugar ID: " + idLugar);
+        Log.d("SEARCH_SELECT", "  Piso ID: " + idPiso);
+        Log.d("SEARCH_SELECT", "=========================================");
+
+        // 1. LIMPIAR SELECCIÓN ANTERIOR
+        limpiarEspacios();
+        restaurarPinesOcultos();
+
+        // 2. OCULTAR EL PIN DEL LUGAR
+        ocultarPinLugar(idLugar);
+
+        // 3. CARGAR Y SELECCIONAR EL PISO CORRECTO EN EL SPINNER
+        lugarSeleccionado = idLugar;
+
+        // Cargar todos los pisos del lugar
+        List<Pisos> pisosDelLugar = db.getPisosByLugar(idLugar);
+
+        // Encontrar el índice del piso que queremos seleccionar
+        int pisoIndex = -1;
+        int pisoIdSeleccionado = -1;
+        for (int i = 0; i < pisosDelLugar.size(); i++) {
+            Pisos piso = pisosDelLugar.get(i);
+            if (piso.getId_piso() == idPiso) {
+                pisoIndex = i;
+                pisoIdSeleccionado = piso.getId_piso();
+                Log.d("SEARCH_SELECT", "Piso encontrado: " + piso.getNombre() +
+                        " (ID: " + piso.getId_piso() + ", #" + piso.getNumero() + ")");
+                break;
+            }
+        }
+
+        // 4. SELECCIONAR EL PISO EN EL SPINNER
+        if (pisoIndex != -1 && spinnerPisos != null && pisosDelLugar.size() > 1) {
+            // Mostrar y seleccionar el piso en el spinner
+            mostrarPisosEnSpinner(pisosDelLugar, pisoIndex, idLugar);
+        } else {
+            // Si solo hay un piso o no hay spinner, mostrar directamente
+            Log.d("SEARCH_SELECT", "Solo hay un piso o spinner no disponible, mostrando directamente");
+        }
+
+        // 5. MOSTRAR LOS ESPACIOS DEL PISO SELECCIONADO
+        mostrarEspaciosPorPiso(idLugar, idPiso);
+
+        // 6. ANIMAR CÁMARA HACIA EL ESPACIO
+        if (data.has("vertices")) {
+            Point centro = calcularCentroDesdeGeoJson(data.get("vertices").getAsString());
+            if (centro != null) {
+                new android.os.Handler().postDelayed(() -> {
+                    redireccionPin(centro);
+                }, 300); // Delay para que primero cargue los espacios
+            }
+        }
+
+        // 7. MOSTRAR BOTTOM SHEET SEGÚN MODO
+        if (modoEdicion) {
+            mostrarBottomSheetCRUD(data, true);
+            Toast.makeText(context, "Editando: " + nombreEspacio, Toast.LENGTH_SHORT).show();
+        } else {
+            mostrarBottomSheetLugar(data);
+
+        }
+    }
+
+    // Metodo auxiliar para mostrar pisos en el spinner y seleccionar uno
+    private void mostrarPisosEnSpinner(List<Pisos> pisos, int pisoSeleccionadoIndex, int idLugar) {
+        if (spinnerPisos == null) {
+            Log.e("SEARCH_SELECT", "Spinner es null");
+            return;
+        }
+
+        // Mostrar spinner
+        spinnerPisos.setVisibility(View.VISIBLE);
+
+        // Crear lista de nombres de pisos
+        List<String> nombresPisos = new ArrayList<>();
+        List<Integer> idsPisos = new ArrayList<>();
+
+        for (Pisos piso : pisos) {
+            nombresPisos.add(piso.getNombre());
+            idsPisos.add(piso.getId_piso());
+        }
+
+        // Crear adapter
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                context,
+                android.R.layout.simple_spinner_item,
+                nombresPisos
+        );
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerPisos.setAdapter(adapter);
+        spinnerPisos.setTag(idsPisos);
+
+        // Seleccionar el piso deseado
+        spinnerPisos.setSelection(pisoSeleccionadoIndex);
+
+        Log.d("SEARCH_SELECT", "Spinner configurado con " + pisos.size() + " pisos, seleccionado índice " + pisoSeleccionadoIndex);
+    }
+    public void ocultarPinLugar(int idLugar) {
+        // Buscar el pin del lugar en el manager
+        List<PointAnnotation> todosLosPines = managerLugares.getAnnotations();
+
+        for (PointAnnotation pin : todosLosPines) {
+            JsonObject data = (JsonObject) pin.getData();
+            if (data != null && data.has("id_lugar")) {
+                int pinIdLugar = data.get("id_lugar").getAsInt();
+                if (pinIdLugar == idLugar) {
+                    // Guardar referencia del pin que vamos a ocultar
+                    pinOcultoActual = pin;
+                    pinesOcultos.add(pin);
+
+                    // Ocultar el pin (tamaño 0 y texto invisible)
+                    pin.setIconSize(0.0);
+                    pin.setTextOpacity(0.0);
+                    managerLugares.update(pin);
+
+                    Log.d("OCULTAR_PIN", "Pin del lugar " + idLugar + " ocultado");
+                    break;
+                }
+            }
+        }
+    }
+
     public void setModoEdicion(boolean activar) {
         this.modoEdicion = activar;
     }

@@ -9,6 +9,8 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,6 +18,8 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -25,6 +29,9 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.example.indoorview.models.Espacio;
 import com.example.indoorview.models.Geometria;
 import com.example.indoorview.models.Lugar;
@@ -63,6 +70,7 @@ public class MapaFragment extends Fragment {
     private MapView mapView;
     private MapManager mapManager;
     private Database db;
+    private SearchManager searchManager;
 
     // UI Elements
     private Button btnLugar, btnEspacios, btnCerrar, btnDeshacer, btnFinalizar, btnHabilitar;
@@ -85,6 +93,11 @@ public class MapaFragment extends Fragment {
     private ActivityResultLauncher<Intent> camaraLauncher;
     private ActivityResultLauncher<Intent> galeriaLauncher;
 
+    private EditText etBuscar;
+    private ImageView btnLimpiarBusqueda;
+    private RecyclerView rvResultados;
+    private SearchResultAdapter searchAdapter;
+
     long idLugar;
     long pisoId;
 
@@ -105,16 +118,24 @@ public class MapaFragment extends Fragment {
         spinnerPisos = view.findViewById(R.id.spnPisos);
         db = Database.getInstance(getActivity());
 
-
+        // Para la busqueda
+        etBuscar = view.findViewById(R.id.etBuscar);
+        btnLimpiarBusqueda = view.findViewById(R.id.btnLimpiarBusqueda);
+        rvResultados = view.findViewById(R.id.rvResultados);
 
 
         // Inicaliza el mapa e eventos
         inicializarLaunchers();
 
         mapManager.verificarConexionBD();
+        searchManager = new SearchManager(db);
 
 
         spinnerPisos.setVisibility(View.GONE);
+
+
+
+        configurarBusqueda();
 
 
         return view;
@@ -262,6 +283,123 @@ public class MapaFragment extends Fragment {
         ocultarEdicion();
     }
 
+
+    // ════════════════════════════════════════════════════════════════
+    // 🔍 CONFIGURACIÓN DE BÚSQUEDA
+    // ════════════════════════════════════════════════════════════════
+
+    private void configurarBusqueda() {
+        // Configurar RecyclerView
+        rvResultados.setLayoutManager(new LinearLayoutManager(getContext()));
+        searchAdapter = new SearchResultAdapter(new ArrayList<>(), getContext());
+        rvResultados.setAdapter(searchAdapter);
+
+        // Callback cuando se selecciona un resultado
+        searchAdapter.setOnResultClickListener(result -> {
+            onResultadoBusquedaSeleccionado(result);
+        });
+
+        // TextWatcher para cambios en el EditText
+        etBuscar.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                realizarBusqueda(s.toString());
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+
+        // Botón limpiar
+        btnLimpiarBusqueda.setOnClickListener(v -> {
+            etBuscar.setText("");
+            ocultarResultados();
+        });
+
+        // Mostrar/Ocultar botón limpiar según haya texto
+        etBuscar.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                btnLimpiarBusqueda.setVisibility(
+                        s.length() > 0 ? View.VISIBLE : View.GONE
+                );
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+    }
+
+    /**
+     * Realizar búsqueda con el texto ingresado
+     */
+    private void realizarBusqueda(String query) {
+        Log.d("SEARCH_UI", "Buscando: " + query);
+
+        if (query.trim().isEmpty()) {
+            ocultarResultados();
+            return;
+        }
+
+        List<SearchManager.SearchResult> resultados = searchManager.buscar(query);
+
+        if (resultados.isEmpty()) {
+            Log.d("SEARCH_UI", "Sin resultados");
+            ocultarResultados();
+            Toast.makeText(getContext(), "No se encontraron resultados", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Mostrar resultados
+        mostrarResultados(resultados);
+    }
+
+    /**
+     * Mostrar lista de resultados
+     */
+    private void mostrarResultados(List<SearchManager.SearchResult> resultados) {
+        searchAdapter.actualizarResultados(resultados);
+        rvResultados.setVisibility(View.VISIBLE);
+        Log.d("SEARCH_UI", "Mostrando " + resultados.size() + " resultados");
+    }
+
+    /**
+     * Ocultar lista de resultados
+     */
+    private void ocultarResultados() {
+        rvResultados.setVisibility(View.GONE);
+        searchManager.limpiar();
+        searchAdapter.actualizarResultados(new ArrayList<>());
+    }
+
+    /**
+     * Callback cuando se selecciona un resultado
+     * Simula un click en el pin del lugar/espacio
+     */
+    private void onResultadoBusquedaSeleccionado(SearchManager.SearchResult result) {
+        Log.d("SEARCH_SELECTED", "Resultado seleccionado: " + result.nombre + " (" + result.tipo + ")");
+
+        // Limpiar búsqueda
+        etBuscar.setText("");
+        ocultarResultados();
+
+        // Simular click en el pin
+        if ("LUGAR".equals(result.tipo)) {
+            // Simular click en lugar
+            mapManager.seleccionarLugarPorBusqueda(result.jsonData);
+        } else if ("ESPACIO".equals(result.tipo)) {
+            // Simular click en espacio
+            mapManager.seleccionarEspacioPorBusqueda(result.jsonData);
+        }
+    }
+
+
     //Configurar el spinner de pisos
     private void configurarSpinner() {
         spinnerPisos.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -400,6 +538,8 @@ public class MapaFragment extends Fragment {
                         () -> {
                             // Desactivar modo edición
                             desactivarModoEdicion();
+                            reInicarMapa();
+
                         }
                 );
             } else {
@@ -921,6 +1061,9 @@ public class MapaFragment extends Fragment {
         // 4LIMPIEZA DE PINS PERMANENTES (de dibujo)
         mapManager.limpiarPinesTemporales();
 
+        // Re iniciar el mapa con los datos correctos
+        reInicarMapa();
+
         // Actualizar UI
         btnLugar.setText("Agregar Lugar");
         btnHabilitar.setEnabled(true);
@@ -938,7 +1081,7 @@ public class MapaFragment extends Fragment {
         Toast.makeText(getContext(), "✓ Lugar completado. Puedes agregar otro", Toast.LENGTH_LONG).show();
 
         Log.d("FLUJO_FINALIZAR", "════════════════════════════════════════════");
-        Log.d("FLUJO_FINALIZAR", "✅ FLUJO FINALIZADO - MODO EDICIÓN ACTIVO");
+        Log.d("FLUJO_FINALIZAR", "FLUJO FINALIZADO - MODO EDICIÓN ACTIVO");
         Log.d("FLUJO_FINALIZAR", "════════════════════════════════════════════");
     }
 
@@ -971,6 +1114,12 @@ public class MapaFragment extends Fragment {
             return espacios.get(espacios.size() - 1).getId_espacio();
         }
         return -1;
+    }
+
+    private void reInicarMapa(){
+        mapManager.limpiarLugares();
+        mapManager.limpiarTodo();
+        mapManager.cargarPoligonosLugar();
     }
 
 

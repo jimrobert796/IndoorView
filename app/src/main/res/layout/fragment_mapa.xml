@@ -5,6 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <!-- MapView (ocupa todo el fondo) -->
     <com.mapbox.maps.MapView
         android:id="@+id/mapView"
         android:layout_width="0dp"
@@ -14,24 +15,95 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <!-- BARRA DE BÚSQUEDA -->
+    <FrameLayout
+        android:id="@+id/searchContainer"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
+        android:layout_marginLeft="20px"
+        android:layout_marginRight="55dp"
+        android:elevation="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="#FFFFFF"
+            android:gravity="center_vertical">
+
+            <!-- Icono de búsqueda -->
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:contentDescription="Buscar"
+                android:src="@android:drawable/ic_search_category_default" />
+
+            <!-- EditText de búsqueda -->
+            <EditText
+                android:id="@+id/etBuscar"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="12dp"
+                android:background="@null"
+                android:hint="Buscar lugar o espacio..."
+                android:textColorHint="@android:color/darker_gray"
+                android:textColor="@android:color/black"
+                android:inputType="text"
+                android:imeOptions="actionSearch" />
+
+            <!-- Botón limpiar búsqueda -->
+            <ImageView
+                android:id="@+id/btnLimpiarBusqueda"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:contentDescription="Limpiar"
+                android:src="@android:drawable/ic_menu_close_clear_cancel"
+                android:visibility="gone" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <!-- LISTA DE RESULTADOS (RecyclerView) -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvResultados"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:elevation="8dp"
+
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/searchContainer"
+        app:layout_constraintBottom_toBottomOf="parent"/>
+    <!-- Spinner Pisos (existente) -->
     <Spinner
         android:id="@+id/spnPisos"
         android:layout_width="wrap_content"
         android:layout_height="48dp"
         android:layout_marginStart="16dp"
-        android:layout_marginTop="45dp"
-        android:background="#2C3E50"
+        android:layout_marginTop="90dp"
+        android:background="@color/black"
         android:padding="8dp"
-        android:popupBackground="#2C3E50"
+        android:popupBackground="@color/black"
         android:textColor="@android:color/white"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+
+    <!-- Botón LUGAR (existente) -->
     <Button
         android:id="@+id/btnEditar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="45dp"
+        android:layout_marginTop="90dp"
         android:layout_marginEnd="16dp"
         android:text="Agregar Lugar"
         android:backgroundTint="#2196F3"
@@ -39,6 +111,8 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+
+    <!-- Otros botones (existentes) -->
     <Button
         android:id="@+id/btnEspacios"
         android:layout_width="wrap_content"
