@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="4dp"
+    app:cardBackgroundColor="#80000000">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
+
+        <!-- Título del evento (izquierda arriba) -->
+        <TextView
+            android:id="@+id/tv_titulo_evento"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:text="Conferencia de Tecnología"
+            android:textColor="#FFCC00"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <!-- Hora de inicio (derecha arriba) -->
+        <TextView
+            android:id="@+id/tv_hora_inicio"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentTop="true"
+            android:text="19:00"
+            android:textColor="#60A5FA"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <!-- Descripción del evento (izquierda abajo) -->
+        <TextView
+            android:id="@+id/tv_descripcion"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/tv_titulo_evento"
+            android:layout_alignParentStart="true"
+            android:layout_marginTop="8dp"
+            android:text="Evento sobre inteligencia artificial y más."
+            android:textColor="#E0E0E0"
+            android:textSize="12sp"
+            android:maxLines="2"
+            android:ellipsize="end" />
+
+        <!-- Hora de fin (derecha abajo) -->
+        <TextView
+            android:id="@+id/tv_hora_fin"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/tv_titulo_evento"
+            android:layout_alignParentEnd="true"
+            android:layout_marginTop="8dp"
+            android:text="A 22:00"
+            android:textColor="#60A5FA"
+            android:textSize="12sp" />
+
+    </RelativeLayout>
+
+</androidx.cardview.widget.CardView>

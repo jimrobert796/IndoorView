@@ -1,16 +1,64 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#80000000">
+    android:background="@drawable/fond">
 
-    <TextView
+    <!-- ScrollView para lista de eventos -->
+    <ScrollView
+        android:id="@+id/scroll_eventos"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/fab_agregar"
+        android:padding="16dp"
+        android:fillViewport="true"
+        android:scrollbars="vertical">
+
+        <LinearLayout
+            android:id="@+id/ll_contenedor_eventos"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Los eventos se agregarán dinámicamente aquí -->
+            <!-- Ejemplo de evento 1 -->
+            <include
+                layout="@layout/item_evento"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Ejemplo de evento 2 -->
+            <include
+                layout="@layout/item_evento"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Ejemplo de evento 3 -->
+            <include
+                layout="@layout/item_evento"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp" />
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Botón flotante (FAB) para agregar eventos (solo admin) -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_agregar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        android:text="PANTALLA DE EVENTOS"
-        android:textColor="@android:color/white"
-        android:textSize="24sp"
-        android:textStyle="bold" />
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="80dp"
+        android:src="@drawable/ic_add"
+        app:backgroundTint="#2196F3"
+        app:tint="@android:color/white"
+        android:contentDescription="Agregar evento"
+        android:visibility="gone" />  <!-- oculto por defecto visible solo para admin -->
 
 </RelativeLayout>

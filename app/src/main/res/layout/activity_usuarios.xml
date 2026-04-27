@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/fond">
+
+    <!-- Botón Regresar -->
+    <ImageView
+        android:id="@+id/btn_regresar"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_margin="16dp"
+        android:padding="8dp"
+        android:src="@drawable/ic_regreso"
+        android:contentDescription="Regresar" />
+
+    <!-- titulo -->
+    <TextView
+        android:id="@+id/tv_titulo_usuarios"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="20dp"
+        android:text="Administrar Usuarios"
+        android:textColor="#FFCC00"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <!-- Buscador -->
+    <EditText
+        android:id="@+id/et_buscador"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_below="@id/tv_titulo_usuarios"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/bg_campo_perfil"
+        android:drawableStart="@drawable/ic_search"
+        android:drawablePadding="12dp"
+        android:hint="Buscar por nombre o carnet"
+        android:padding="12dp"
+        android:textColor="@android:color/white"
+        android:textColorHint="#B3FFFFFF"
+        android:inputType="text" />
+
+    <!-- Lista de usuarios (ScrollView) -->
+    <ScrollView
+        android:id="@+id/scroll_usuarios"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/et_buscador"
+        android:layout_marginTop="16dp"
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="80dp">
+
+        <LinearLayout
+            android:id="@+id/ll_contenedor_usuarios"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Ejemplo de usuario 1 -->
+            <include
+                layout="@layout/item_usuario"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Ejemplo de usuario 2 -->
+            <include
+                layout="@layout/item_usuario"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Ejemplo de usuario 3 -->
+            <include
+                layout="@layout/item_usuario"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp" />
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Boton flotante para agregar usuario (solo admin) wacha el gone en visibility -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_agregar_usuario"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="80dp"
+        android:src="@drawable/ic_add"
+        app:backgroundTint="#2196F3"
+        app:tint="@android:color/white"
+        android:contentDescription="Agregar usuario"
+        android:visibility="gone" />  <!-- Oculto por defecto, visible solo para admin -->
+
+</RelativeLayout>

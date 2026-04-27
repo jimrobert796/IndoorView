@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Imagen de fondo -->
+    <ImageView
+        android:id="@+id/fondo_imagen"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:src="@drawable/fond"
+        android:scaleType="centerCrop"
+        android:contentDescription="Fondo" />
+
+    <!-- ScrollView para pantallas pequeñas -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="24dp">
+
+            <!-- Botón Regresar (flecha) -->
+            <ImageView
+                android:id="@+id/btn_regresar"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_alignParentStart="true"
+                android:padding="8dp"
+                android:src="@drawable/ic_regreso"
+                android:contentDescription="Regresar" />
+
+            <!-- Logo de la universidad -->
+            <ImageView
+                android:id="@+id/iv_logo_ugb"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:layout_centerHorizontal="true"
+                android:layout_marginTop="8dp"
+                android:src="@drawable/logo_universidad"
+                android:contentDescription="Logo UGB" />
+
+            <!-- Título: ¿Olvidó su contraseña? -->
+            <TextView
+                android:id="@+id/tv_pregunta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/iv_logo_ugb"
+                android:layout_marginTop="24dp"
+                android:text="¿Olvidó su contraseña?"
+                android:textColor="#FFCC00"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:gravity="center" />
+
+            <!-- Descripción del correo -->
+            <TextView
+                android:id="@+id/tv_correo_descripcion"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/tv_pregunta"
+                android:layout_marginTop="12dp"
+                android:text="Código de verificación enviado a:"
+                android:textColor="#E0E0E0"
+                android:textSize="14sp"
+                android:gravity="center" />
+
+            <TextView
+                android:id="@+id/tv_correo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/tv_correo_descripcion"
+                android:layout_marginTop="4dp"
+                android:text="usuario@outlook.com"
+                android:textColor="#60A5FA"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:gravity="center" />
+
+            <!-- Contenedor de los 4 cuadros para el código -->
+            <LinearLayout
+                android:id="@+id/ll_codigo_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/tv_correo"
+                android:layout_marginTop="32dp"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:weightSum="4">
+
+                <!-- Cuadro 1 -->
+                <EditText
+                    android:id="@+id/et_code_1"
+                    android:layout_width="0dp"
+                    android:layout_height="70dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginEnd="4dp"
+                    android:background="@drawable/bg_codigo_verificacion"
+                    android:gravity="center"
+                    android:inputType="number"
+                    android:maxLength="1"
+                    android:textColor="@android:color/white"
+                    android:textSize="24sp"
+                    android:textStyle="bold" />
+
+                <!-- Cuadro 2 -->
+                <EditText
+                    android:id="@+id/et_code_2"
+                    android:layout_width="0dp"
+                    android:layout_height="70dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginEnd="4dp"
+                    android:background="@drawable/bg_codigo_verificacion"
+                    android:gravity="center"
+                    android:inputType="number"
+                    android:maxLength="1"
+                    android:textColor="@android:color/white"
+                    android:textSize="24sp"
+                    android:textStyle="bold" />
+
+                <!-- Cuadro 3 -->
+                <EditText
+                    android:id="@+id/et_code_3"
+                    android:layout_width="0dp"
+                    android:layout_height="70dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginEnd="4dp"
+                    android:background="@drawable/bg_codigo_verificacion"
+                    android:gravity="center"
+                    android:inputType="number"
+                    android:maxLength="1"
+                    android:textColor="@android:color/white"
+                    android:textSize="24sp"
+                    android:textStyle="bold" />
+
+                <!-- Cuadro 4 -->
+                <EditText
+                    android:id="@+id/et_code_4"
+                    android:layout_width="0dp"
+                    android:layout_height="70dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginEnd="4dp"
+                    android:background="@drawable/bg_codigo_verificacion"
+                    android:gravity="center"
+                    android:inputType="number"
+                    android:maxLength="1"
+                    android:textColor="@android:color/white"
+                    android:textSize="24sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+            <!-- Botón Confirmar Código -->
+            <Button
+                android:id="@+id/btn_confirmar_codigo"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_below="@id/ll_codigo_container"
+                android:layout_marginTop="32dp"
+                android:backgroundTint="#2196F3"
+                android:text="Confirmar Código"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <!-- enlace reenviar codigo con temporizador -->
+            <TextView
+                android:id="@+id/tv_reenviar_codigo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/btn_confirmar_codigo"
+                android:layout_centerHorizontal="true"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="20dp"
+                android:text="00:29 reenviar código de confirmación"
+                android:textColor="#60A5FA"
+                android:textSize="13sp"
+                android:padding="8dp" />
+
+        </RelativeLayout>
+    </ScrollView>
+
+</RelativeLayout>
