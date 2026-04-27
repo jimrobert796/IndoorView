@@ -2766,6 +2766,100 @@ public class MapManager {
         mostrarBottomSheetCRUD(dataTemp, true, true, geojson);
     }
 
+    // METODOS PARA MANEJO DE ZOOM
+
+    public void actualizarVisibilidadPinesPorZoom(double zoomActual) {
+        // Configurar umbrales de zoom (puedes ajustar estos valores)
+        double zoomMinimoLugares = 17.0;  // Mostrar lugares a partir de zoom 17
+        double zoomMinimoPines = 18.5;    // Mostrar pines de espacios a partir de zoom 18.5
+
+        // Actualizar visibilidad de pines de LUGARES
+        if (zoomActual >= zoomMinimoLugares) {
+            if (managerLugares.getAnnotations().isEmpty()) {
+                Log.d("ZOOM_PINS", "✓ Mostrando pines de LUGARES (zoom: " + zoomActual + ")");
+            }
+            mostrarPinesLugaresZoom();
+        } else {
+            Log.d("ZOOM_PINS", "✗ Ocultando pines de LUGARES (zoom: " + zoomActual + ")");
+            ocultarPinesLugaresZoom();
+        }
+
+        // Actualizar visibilidad de pines de ESPACIOS
+        if (zoomActual >= zoomMinimoPines && managerEspacios.getAnnotations().size() > 0) {
+            Log.d("ZOOM_PINS", "✓ Mostrando pines de ESPACIOS (zoom: " + zoomActual + ")");
+            mostrarPinesEspaciosZoom();
+        } else if (zoomActual < zoomMinimoPines) {
+            Log.d("ZOOM_PINS", "✗ Ocultando pines de ESPACIOS (zoom: " + zoomActual + ")");
+            ocultarPinesEspaciosZoom();
+        }
+    }
+
+    private void mostrarPinesLugaresZoom() {
+        try {
+            List<PointAnnotation> pines = managerLugares.getAnnotations();
+            for (PointAnnotation pin : pines) {
+                // Solo mostrar si no está oculto por selección
+                if (!pinesOcultos.contains(pin)) {
+                    pin.setIconSize(0.9);
+                    pin.setTextOpacity(1.0);
+                    managerLugares.update(pin);
+                }
+            }
+        } catch (Exception e) {
+            Log.e("ZOOM_PINS", "Error mostrando pines de lugares: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Ocultar todos los pines de lugares
+     */
+    private void ocultarPinesLugaresZoom() {
+        try {
+            List<PointAnnotation> pines = managerLugares.getAnnotations();
+            for (PointAnnotation pin : pines) {
+                pin.setIconSize(0.0);
+                pin.setTextOpacity(0.0);
+                managerLugares.update(pin);
+            }
+        } catch (Exception e) {
+            Log.e("ZOOM_PINS", "Error ocultando pines de lugares: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Mostrar todos los pines de espacios
+     */
+    private void mostrarPinesEspaciosZoom() {
+        try {
+            List<PointAnnotation> pines = managerEspacios.getAnnotations();
+            for (PointAnnotation pin : pines) {
+                pin.setIconSize(0.9);
+                pin.setTextOpacity(1.0);
+                managerEspacios.update(pin);
+            }
+        } catch (Exception e) {
+            Log.e("ZOOM_PINS", "Error mostrando pines de espacios: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Ocultar todos los pines de espacios
+     */
+    private void ocultarPinesEspaciosZoom() {
+        try {
+            List<PointAnnotation> pines = managerEspacios.getAnnotations();
+            for (PointAnnotation pin : pines) {
+                pin.setIconSize(0.0);
+                pin.setTextOpacity(0.0);
+                managerEspacios.update(pin);
+            }
+        } catch (Exception e) {
+            Log.e("ZOOM_PINS", "Error ocultando pines de espacios: " + e.getMessage());
+        }
+    }
+
+
+
 
     // ════════════════════════════════════════════════════════════════
     // GETTERS PÚBLICOS

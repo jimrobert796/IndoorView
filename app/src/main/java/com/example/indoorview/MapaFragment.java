@@ -276,9 +276,11 @@ public class MapaFragment extends Fragment {
             }
         });
 
-        configurarSpinner();
-        configurarMapa();
-        configurarBotones();
+        // Lanzar metodos de configuraciones previas
+        configurarSpinner(); // Preparar spinner
+        configurarMapa(); // Preparar el mapa
+        configurarListenerZoom(); // Preparar configuraciones de zooom
+        configurarBotones(); // Funcionamiento de botones
 
         ocultarEdicion();
     }
@@ -464,23 +466,37 @@ public class MapaFragment extends Fragment {
             managerPermanente = (PointAnnotationManager) annotationPlugin
                     .createAnnotationManager(AnnotationType.PointAnnotation, null);
 
-            // Agregar pin UGB permanente
-            agregarPinUGB();
+            // Agregar pin UGB permanente para pruebas
+            //agregarPinUGB();
 
             // Configurar click listener para agregar puntos
             configurarClickMapa(style);
         });
     }
 
+    // NUEVO METODO: Configurar listener de cambios de zoom
+    private void configurarListenerZoom() {
+        mapView.getMapboxMap().addOnCameraChangeListener(cameraChangedCallback -> {
+            // Obtener nivel de zoom actual
+            double zoomActual = mapView.getMapboxMap().getCameraState().getZoom();
+
+            Log.d("ZOOM_PINS", "Zoom actual: " + zoomActual);
+
+            // Actualizar visibilidad de pines según zoom
+            mapManager.actualizarVisibilidadPinesPorZoom(zoomActual);
+        });
+    }
+
+
     /**
-     * Agregar pin UGB en el mapa
-     */
+     * Agregar pin UGB en el mapa SE utilizo para pruebas
     private void agregarPinUGB() {
         mapManager.agregarPinPermanente(
                 Point.fromLngLat(-88.41783453298294, 13.342296805328829),
                 "UGB", "#0080ff"
         );
     }
+      */
 
     /**
      * Configurar listener de clicks en el mapa
@@ -1117,6 +1133,7 @@ public class MapaFragment extends Fragment {
     }
 
     private void reInicarMapa(){
+        mapManager.limpiarEspacios();
         mapManager.limpiarLugares();
         mapManager.limpiarTodo();
         mapManager.cargarPoligonosLugar();
