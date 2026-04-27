@@ -1447,13 +1447,23 @@ public class MapManager {
         Log.d("DEBUG_PISO", "=== CARGANDO PISOS ===");
         Log.d("DEBUG_PISO", "ID Lugar: " + idLugar);
 
+        // Filtrar solo pisos que tienen espacios activos (estado = 1)
         for (Pisos p : pisos) {
-            Log.d("DEBUG_PISO", "Piso: ID=" + p.getId_piso() + " | Número=" + p.getNumero() + " | Nombre=" + p.getNombre());
-            listaPisosId.add(p.getId_piso());
-            nombresPisos.add(p.getNombre());
+            int cantidadEspaciosActivos = db.contarEspaciosActivosPorPiso(p.getId_piso());
+
+            Log.d("DEBUG_PISO", "Piso: ID=" + p.getId_piso() +
+                    " | Nombre=" + p.getNombre() +
+                    " | Espacios activos: " + cantidadEspaciosActivos);
+
+
+            // Solo agregar el piso si tiene al menos un espacio activo
+            if (cantidadEspaciosActivos > 0) {
+                listaPisosId.add(p.getId_piso());
+                nombresPisos.add(p.getNombre());
+            }
         }
 
-        Log.d("DEBUG_PISO", "Nombres en spinner: " + nombresPisos.toString());
+        Log.d("DEBUG_PISO", "Pisos con espacios activos: " + nombresPisos.toString());
         Log.d("DEBUG_PISO", "IDs reales: " + listaPisosId.toString());
 
         if (nombresPisos.size() > 1) {
@@ -1477,7 +1487,8 @@ public class MapManager {
 
         } else {
             spinnerPisos.setVisibility(View.GONE);
-            //Toast.makeText(context, "No hay pisosregistrados ", Toast.LENGTH_SHORT).show();
+            hayEspacios = false;
+            //Toast.makeText(context, "No hay espacios disponibles en este lugar", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -2336,16 +2347,33 @@ public class MapManager {
             btnEliminar.setOnClickListener(v -> {
                 mostrarDialogoConfirmacion(
                         "Confirmar eliminación",
-                        "Esta acción no se puede deshacer",
+                        "Esta acción no se puede deshacer, si elimina un lugar todos sus espacios se eliminaran en conjunto",
                         "Eliminar",
                         () -> {
                             if (esEspacio) {
+                                // SOFT DELETE
                                 int id = data.get("id_espacio").getAsInt();
-                                // db.deleteEspacio(id);
+                                db.eliminarEspacio(id);
+
+                                // Re inciar el mapa
+                                limpiarEspacios();
+                                limpiarLugares();
+                                limpiarTodo();
+                                cargarPoligonosLugar();
+
                                 Toast.makeText(context, "Espacio eliminado", Toast.LENGTH_SHORT).show();
                             } else {
+                                // SOFT DELETE (en cadena ya que espacio depende de lugar)
                                 int id = data.get("id_lugar").getAsInt();
-                                // db.deleteLugar(id);
+                                db.eliminarLugar(id);
+
+
+
+                                // Re inciar el mapa
+                                limpiarEspacios();
+                                limpiarLugares();
+                                limpiarTodo();
+                                cargarPoligonosLugar();
                                 Toast.makeText(context, "Lugar eliminado", Toast.LENGTH_SHORT).show();
                             }
                             dialog.dismiss();

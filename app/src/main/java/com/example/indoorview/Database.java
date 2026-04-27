@@ -154,6 +154,16 @@ public class Database extends SQLiteOpenHelper {
         return db.update("lugar", cv, "id_lugar = ? AND estado = 1", new String[]{String.valueOf(id)});
     }
 
+    public boolean eliminarLugar(int idLugar) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put("estado", 0);  // Cambiar estado a 0 (eliminado/inactivo)
+
+        int rowsAffected = db.update("lugar", values, "id_lugar = ?", new String[]{String.valueOf(idLugar)});
+        db.close();
+
+        return rowsAffected > 0;
+    }
 
     // ─────────────────────────────────────────
     // CRUD - Pisos
@@ -190,6 +200,24 @@ public class Database extends SQLiteOpenHelper {
         db.close();
 
         return id;
+    }
+
+    // Cuenta los espacios activos por piso en local
+    public int contarEspaciosActivosPorPiso(int idPiso) {
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor c = db.rawQuery(
+                "SELECT COUNT(*) FROM espacio WHERE id_piso = ? AND estado = 1",
+                new String[]{String.valueOf(idPiso)}
+        );
+
+        int count = 0;
+        if (c.moveToFirst()) {
+            count = c.getInt(0);
+        }
+        c.close();
+        db.close();
+
+        return count;
     }
 
 
@@ -294,6 +322,17 @@ public class Database extends SQLiteOpenHelper {
 
         return db.update("espacio", cv, "id_espacio = ? AND estado = 1",
                 new String[]{String.valueOf(idEspacio)});
+    }
+
+    public boolean eliminarEspacio(int idEspacio) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put("estado", 0);  // Cambiar estado a 0 (eliminado/inactivo)
+
+        int rowsAffected = db.update("espacio", values, "id_espacio = ?", new String[]{String.valueOf(idEspacio)});
+        db.close();
+
+        return rowsAffected > 0;
     }
 
     // ─────────────────────────────────────────
