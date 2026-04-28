@@ -1587,7 +1587,7 @@ public class MapManager {
         mostrarCRUDCrearLugar(geojson);  // ← Esto muestra el BottomSheet CRUD
 
         dibujarPoligono(style, new ArrayList<>(puntosActuales),
-                "lugar-" + lugarActualId, "#2196F3", 0.25);
+                "lugar-" + lugarActualId, "#2196F3", 0.1);
 
         Point centro = calcularCentro(puntosActuales);
         agregarPinPermanente(centro, "Lugar " + lugarActualId, "#1565C0");
@@ -2066,6 +2066,8 @@ public class MapManager {
      * @param modoCreacion true si estamos creando, false si editando existente
      * @param geojsonGuardado GeoJSON ya dibujado (para creación)
      */
+
+    // POSDATA ES UN MOUNSTRO DE FUNCION
     private void mostrarBottomSheetCRUD(JsonObject data, boolean esEspacio,
                                         boolean modoCreacion, String geojsonGuardado) {
 
@@ -2177,7 +2179,7 @@ public class MapManager {
         spinnerColor.setAdapter(adapter);
 
         // ════════════════════════════════════════════════════════════════
-        // LISTENER DEL SPINNER DE COLOR
+        // ✅ LISTENER DEL SPINNER CON PREVIEW EN TIEMPO REAL
         // ════════════════════════════════════════════════════════════════
         final boolean[] primeraVez = {true};
 
@@ -2191,13 +2193,24 @@ public class MapManager {
 
                 String colorSeleccionado = coloresHex.get(position);
 
-                // En modo EDICIÓN: actualizar color en tiempo real
-                if (!modoCreacion) {
+                // 🎨 ✅ PREVIEW EN TIEMPO REAL - ACTUALIZAR POLÍGONO DEL MAPA
+                if (modoCreacion) {
+                    // EN CREACIÓN: Actualizar polígono temporal
+                    actualizarPoligonoTemporalColor(
+                            esEspacio ? "lugar-" + lugarActualId + "-espacio-" + espacioContador
+                                    : "lugar-" + lugarActualId,
+                            colorSeleccionado,
+                            esEspacio
+                    );
+                    Log.d("PREVIEW_COLOR", "Preview color creación: " + colorSeleccionado);
+                } else {
+                    // EN EDICIÓN: Actualizar polígono existente
                     actualizarColorLugar(
                             esEspacio ? data.get("id_espacio").getAsInt() : data.get("id_lugar").getAsInt(),
                             colorSeleccionado,
                             esEspacio
                     );
+                    Log.d("PREVIEW_COLOR", "Preview color edición: " + colorSeleccionado);
                 }
 
                 data.addProperty("color", colorSeleccionado);
@@ -2209,7 +2222,7 @@ public class MapManager {
 
         String colorActual = data.has("color")
                 ? data.get("color").getAsString()
-                : "#2196F3";
+                : (esEspacio ? "#FF9800" : "#2196F3");
 
         int indexSeleccionado = coloresHex.indexOf(colorActual);
         if (indexSeleccionado != -1) {
@@ -2217,7 +2230,7 @@ public class MapManager {
         }
 
         // ════════════════════════════════════════════════════════════════
-        // BOTÓN EDITAR (solo en modo edición)
+        // BOTÓN EDITAR (solo en modo no creación)
         // ════════════════════════════════════════════════════════════════
         if (!modoCreacion) {
             btnEditar.setOnClickListener(v -> {
@@ -2230,7 +2243,7 @@ public class MapManager {
                                 editando[0] = true;
                                 etNombre.setEnabled(true);
                                 etDescripcion.setEnabled(true);
-                                spinnerColor.setEnabled(true);
+                                spinnerColor.setEnabled(true);  // ✅ Habilitar spinner
                                 btnGuardar.setVisibility(View.VISIBLE);
                                 btnEditar.setText("Cancelar");
                                 Toast.makeText(context, "Modo edición activado", Toast.LENGTH_SHORT).show();
@@ -2247,9 +2260,16 @@ public class MapManager {
                                 etDescripcion.setText(descripcionOriginal);
                                 etNombre.setEnabled(false);
                                 etDescripcion.setEnabled(false);
-                                spinnerColor.setEnabled(false);
+                                spinnerColor.setEnabled(false);  // ✅ Deshabilitar spinner
                                 btnGuardar.setVisibility(View.GONE);
                                 btnEditar.setText("Editar");
+
+                                // ✅ RESTAURAR COLOR ORIGINAL EN PREVIEW
+                                int indexOriginal = coloresHex.indexOf(colorActual);
+                                if (indexOriginal != -1) {
+                                    spinnerColor.setSelection(indexOriginal);
+                                }
+
                                 Toast.makeText(context, "Edición cancelada", Toast.LENGTH_SHORT).show();
                             }
                     );
@@ -2268,19 +2288,13 @@ public class MapManager {
             if (nuevoNombre.isEmpty()) {
                 Toast.makeText(context, "El nombre es requerido", Toast.LENGTH_SHORT).show();
                 return;
-            }if (nuevaDesc.isEmpty()) {
-                Toast.makeText(context, "La descripcion es requerido", Toast.LENGTH_SHORT).show();
+            }
+            if (nuevaDesc.isEmpty()) {
+                Toast.makeText(context, "La descripcion es requerida", Toast.LENGTH_SHORT).show();
                 return;
             }
 
             String urlsImagenes = combinarUrlsImagenes();
-
-
-            /*
-
-            PODEMOS MEJORARLO Y OPTIMIZARLO MUCHISIMO MEJOOOOORRRRRRRRRRRR
-             */
-
             String tipo = esEspacio ? "ESPACIO" : "LUGAR";
 
             if (modoCreacion) {
@@ -2288,9 +2302,8 @@ public class MapManager {
                 Log.d("CRUD_CREAR", "Guardando " + (esEspacio ? "Espacio" : "Lugar"));
                 Log.d("CRUD_CREAR", "Nombre: " + nuevoNombre);
                 Log.d("CRUD_CREAR", "Color: " + colorSeleccionado);
-                Log.d("CRUD_CREAR", "geometria: " + geojsonGuardado);
 
-                mostrarDialogoConfirmacion("Guardar "+ tipo, "Estas seguro de guardar", "Si", () ->{
+                mostrarDialogoConfirmacion("Guardar "+ tipo, "Estás seguro de guardar", "Sí", () ->{
                     if (flujoCRUDListener != null) {
                         if (esEspacio) {
                             flujoCRUDListener.onEspacioGuardado(nuevoNombre, nuevaDesc, urlsImagenes, colorSeleccionado);
@@ -2302,14 +2315,10 @@ public class MapManager {
                     dialog.dismiss();
                 });
 
-
             } else {
-                mostrarDialogoConfirmacion("Guardar "+ tipo, "Estas seguro de guardar", "Si", () ->{
-
-                    // ✅ MODO EDICIÓN: Guardar en BD (lógica existente)
+                mostrarDialogoConfirmacion("Guardar "+ tipo, "Estás seguro de guardar", "Sí", () ->{
+                    //  MODO EDICIÓN: Guardar en BD
                     if (esEspacio) {
-                        actualizarColorLugar(data.get("id_espacio").getAsInt(), colorSeleccionado, true);
-                        data.addProperty("color", colorSeleccionado);
                         db.updateEspacio(
                                 data.get("id_espacio").getAsInt(),
                                 nuevoNombre,
@@ -2320,8 +2329,6 @@ public class MapManager {
                         Toast.makeText(context, "Espacio actualizado", Toast.LENGTH_SHORT).show();
 
                     } else {
-                        actualizarColorLugar(data.get("id_lugar").getAsInt(), colorSeleccionado, false);
-                        data.addProperty("color", colorSeleccionado);
                         db.updateLugar(
                                 data.get("id_lugar").getAsInt(),
                                 nuevoNombre,
@@ -2338,8 +2345,6 @@ public class MapManager {
             }
         });
 
-
-
         // ════════════════════════════════════════════════════════════════
         // BOTÓN ELIMINAR (solo en modo edición)
         // ════════════════════════════════════════════════════════════════
@@ -2347,29 +2352,20 @@ public class MapManager {
             btnEliminar.setOnClickListener(v -> {
                 mostrarDialogoConfirmacion(
                         "Confirmar eliminación",
-                        "Esta acción no se puede deshacer, si elimina un lugar todos sus espacios se eliminaran en conjunto",
+                        "Esta acción no se puede deshacer, si elimina un lugar todos sus espacios se eliminarán",
                         "Eliminar",
                         () -> {
                             if (esEspacio) {
-                                // SOFT DELETE
                                 int id = data.get("id_espacio").getAsInt();
                                 db.eliminarEspacio(id);
-
-                                // Re inciar el mapa
                                 limpiarEspacios();
                                 limpiarLugares();
                                 limpiarTodo();
                                 cargarPoligonosLugar();
-
                                 Toast.makeText(context, "Espacio eliminado", Toast.LENGTH_SHORT).show();
                             } else {
-                                // SOFT DELETE (en cadena ya que espacio depende de lugar)
                                 int id = data.get("id_lugar").getAsInt();
                                 db.eliminarLugar(id);
-
-
-
-                                // Re inciar el mapa
                                 limpiarEspacios();
                                 limpiarLugares();
                                 limpiarTodo();
@@ -2383,6 +2379,59 @@ public class MapManager {
         }
 
         dialog.show();
+    }
+
+    // ════════════════════════════════════════════════════════════════
+// ✅ NUEVO MÉTODO: Actualizar color de polígono TEMPORAL
+// ════════════════════════════════════════════════════════════════
+    /**
+     * Actualiza el color de un polígono temporal (durante creación)
+     * @param idPoligono ID del polígono temporal (ej: "lugar-1" o "lugar-1-espacio-1")
+     * @param colorHex Color hexadecimal
+     * @param esEspacio true si es espacio, false si es lugar
+     */
+    private void actualizarPoligonoTemporalColor(String idPoligono, String colorHex, boolean esEspacio) {
+        mapView.getMapboxMap().getStyle(style -> {
+            if (style == null) return;
+
+            try {
+                String fillLayerId = idPoligono + "-fill";
+                String lineLayerId = idPoligono + "-line";
+
+                // Actualizar color del relleno
+                if (style.styleLayerExists(fillLayerId)) {
+                    style.setStyleLayerProperty(
+                            fillLayerId,
+                            "fill-color",
+                            Value.valueOf(colorHex)
+                    );
+                    Log.d("POLY_PREVIEW", "Color fill actualizado: " + colorHex);
+                }
+
+                // Actualizar color del borde
+                if (style.styleLayerExists(lineLayerId)) {
+                    String borderColor;
+
+                    if (esEspacio) {
+                        // Para ESPACIOS: borde NEGRO
+                        borderColor = "#000000";
+                    } else {
+                        // Para LUGARES: borde del mismo color
+                        borderColor = colorHex;
+                    }
+
+                    style.setStyleLayerProperty(
+                            lineLayerId,
+                            "line-color",
+                            Value.valueOf(borderColor)
+                    );
+                    Log.d("POLY_PREVIEW", "Color line actualizado: " + borderColor);
+                }
+
+            } catch (Exception e) {
+                Log.e("POLY_PREVIEW", "Error: " + e.getMessage());
+            }
+        });
     }
 
     private void mostrarBottomSheetCRUD(JsonObject data, boolean esEspacio) {
@@ -2843,6 +2892,7 @@ public class MapManager {
      */
     private void ocultarPinesLugaresZoom() {
         try {
+            // RECUERDA HACERLO VIA ANOTATION O ALMENOS IR POR LOS DATA
             List<PointAnnotation> pines = managerLugares.getAnnotations();
             for (PointAnnotation pin : pines) {
                 pin.setIconSize(0.0);

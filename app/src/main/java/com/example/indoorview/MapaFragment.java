@@ -1134,6 +1134,9 @@ public class MapaFragment extends Fragment {
     }
 
     private void reInicarMapa(){
+        mapManager.limpiarGeometriaTemporalCompleta();
+        mapManager.limpiarVérticesTemporales();
+        mapManager.limpiarPinesTemporales();
         mapManager.limpiarEspacios();
         mapManager.limpiarLugares();
         mapManager.limpiarTodo();
