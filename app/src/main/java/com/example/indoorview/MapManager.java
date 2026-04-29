@@ -562,7 +562,7 @@ public class MapManager {
 
             Point centro = calcularCentroDesdeGeoJson(geojson);
             if (centro != null) {
-                agregarPinLugar(centro, lugar.getNombre(), "#0080ff", lugar);
+                agregarPinLugar(centro, lugar.getNombre(), lugar.getColor(), lugar);
             }
 
             Log.d("POLIGONOS", "Dibujado: " + lugar.getNombre());
@@ -672,7 +672,7 @@ public class MapManager {
 
                 Point centro = calcularCentroDesdeGeoJson(vertices);
                 if (centro != null) {
-                    agregarPinEspacio(centro, espacio.getNombre(), "#0080ff", espacio, geometria);
+                    agregarPinEspacio(centro, espacio.getNombre(), geometria.getColor(), espacio, geometria);
                 }
 
                 Log.d("DIBUJO", "Dibujado: " + espacio.getNombre());
