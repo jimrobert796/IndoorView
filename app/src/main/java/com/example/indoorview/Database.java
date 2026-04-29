@@ -106,6 +106,42 @@ public class Database extends SQLiteOpenHelper {
 
     // CRUD - Lugar
 
+    public long insertOrUpdateLugarSync(int idLugar, String nombre, String descripcion, String urlImagenes,
+                                        String geojson, String color, int estado) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put("id_lugar", idLugar);
+        cv.put("nombre", nombre);
+        cv.put("descripcion", descripcion);
+        cv.put("url_imagenes", urlImagenes);
+        cv.put("geojson", geojson);
+        cv.put("color", color);
+        cv.put("estado", estado);
+
+        long id = -1;
+
+        // Verificar si ya existe
+        Cursor cursor = db.query("lugar", new String[]{"id_lugar"},
+                "id_lugar = ?", new String[]{String.valueOf(idLugar)},
+                null, null, null);
+
+        if (cursor.getCount() > 0) {
+            // Existe → UPDATE
+            String whereClause = "id_lugar = ?";
+            String[] whereArgs = { String.valueOf(idLugar) };
+            db.update("lugar", cv, whereClause, whereArgs);
+            id = idLugar;
+        } else if (estado == 1) {
+            // No existe → INSERT
+            id = db.insert("lugar", null, cv);
+        }
+
+        cursor.close();
+        db.close();
+        return id;
+    }
+
+    // LOCAL USE
     public long insertLugar(String nombre, String descripcion, String urlImagenes,
                             String geojson, String color) {
         SQLiteDatabase db = getWritableDatabase();
@@ -188,6 +224,41 @@ public class Database extends SQLiteOpenHelper {
         c.close();
         return lista;
     }
+
+    // PARA SINCRONIZACION
+    public long insertOrUpdatePisoSync(int idPiso, int idLugar, int numero, String nombre) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put("id_piso", idPiso);
+        cv.put("id_lugar", idLugar);
+        cv.put("numero", numero);
+        cv.put("nombre", nombre);
+        cv.put("activo", 1);
+
+        long id = -1;
+
+        // Verificar si existe
+        Cursor cursor = db.query("pisos", new String[]{"id_piso"},
+                "id_piso = ?", new String[]{String.valueOf(idPiso)},
+                null, null, null);
+
+        if (cursor.getCount() > 0) {
+            // Existe → UPDATE
+            String whereClause = "id_piso = ?";
+            String[] whereArgs = { String.valueOf(idPiso) };
+            db.update("pisos", cv, whereClause, whereArgs);
+            id = idPiso;
+        } else {
+            // No existe → INSERT
+            id = db.insert("pisos", null, cv);
+        }
+
+        cursor.close();
+        db.close();
+        return id;
+    }
+
+    // para guardado local
     public long insertPiso(int idLugar, int numero, String nombre) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
@@ -224,6 +295,40 @@ public class Database extends SQLiteOpenHelper {
     // ─────────────────────────────────────────
     // CRUD - Espacio
     // ─────────────────────────────────────────
+    public long insertOrUpdateEspacio(int idEspacio, int idLugar, int idPiso,
+                                      String nombre, String descripcion, String urlImagenes, int estado) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put("id_espacio", idEspacio);
+        cv.put("id_lugar", idLugar);
+        cv.put("id_piso", idPiso);
+        cv.put("nombre", nombre);
+        cv.put("descripcion", descripcion);
+        cv.put("url_imagenes", urlImagenes);
+        cv.put("estado", estado);
+
+        long id = -1;
+
+        Cursor cursor = db.query("espacio", new String[]{"id_espacio"},
+                "id_espacio = ?", new String[]{String.valueOf(idEspacio)},
+                null, null, null);
+
+        if (cursor.getCount() > 0) {
+            String whereClause = "id_espacio = ?";
+            String[] whereArgs = { String.valueOf(idEspacio) };
+            db.update("espacio", cv, whereClause, whereArgs);
+            id = idEspacio;
+            Log.d("DB_ESPACIO", "Espacio ACTUALIZADO - ID: " + idEspacio);
+        } else {
+            id = db.insert("espacio", null, cv);
+            Log.d("DB_ESPACIO", "Espacio INSERTADO - ID: " + idEspacio);
+        }
+
+        cursor.close();
+        db.close();
+        return id;
+    }
+
     public long insertEspacio(int idLugar, int idPiso, String nombre, String descripcion, String urlImagenes) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
@@ -338,6 +443,42 @@ public class Database extends SQLiteOpenHelper {
     // ─────────────────────────────────────────
     // CRUD - Geometria
     // ─────────────────────────────────────────
+
+    public long insertOrUpdateGeometria(int idGeometria, int idEspacio, int idLugar, int idPiso,
+                                        String vertices, String color) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put("id_geometria", idGeometria);
+        cv.put("id_espacio", idEspacio);
+        cv.put("id_lugar", idLugar);
+        cv.put("id_piso", idPiso);
+        cv.put("tipo", "polygon");
+        cv.put("vertices", vertices);
+        cv.put("color", color);
+
+        long id = -1;
+
+        Cursor cursor = db.query("geometria", new String[]{"id_geometria"},
+                "id_geometria = ?", new String[]{String.valueOf(idGeometria)},
+                null, null, null);
+
+        if (cursor.getCount() > 0) {
+            String whereClause = "id_geometria = ?";
+            String[] whereArgs = { String.valueOf(idGeometria) };
+            db.update("geometria", cv, whereClause, whereArgs);
+            id = idGeometria;
+            Log.d("DB_GEOMETRIA", "Geometría ACTUALIZADA - ID: " + idGeometria);
+        } else {
+            id = db.insert("geometria", null, cv);
+            Log.d("DB_GEOMETRIA", "Geometría INSERTADA - ID: " + idGeometria);
+        }
+
+        cursor.close();
+        db.close();
+        return id;
+    }
+
+
     public long insertGeometria(int idEspacio, int idLugar, int idPiso,
                                 String vertices, String color) {
         SQLiteDatabase db = getWritableDatabase();
@@ -381,13 +522,13 @@ public class Database extends SQLiteOpenHelper {
 
     private Geometria cursorToGeometria(Cursor c) {
         Geometria g = new Geometria(
-            c.getInt(c.getColumnIndexOrThrow("id_geometria")),
-            c.getInt(c.getColumnIndexOrThrow("id_espacio")),
+                c.getInt(c.getColumnIndexOrThrow("id_geometria")),
+                c.getInt(c.getColumnIndexOrThrow("id_espacio")),
                 c.getInt(c.getColumnIndexOrThrow("id_lugar")),
-            c.getInt(c.getColumnIndexOrThrow("id_piso")),
-            c.getString(c.getColumnIndexOrThrow("tipo")),
-            c.getString(c.getColumnIndexOrThrow("vertices")),
-            c.getString(c.getColumnIndexOrThrow("color"))
+                c.getInt(c.getColumnIndexOrThrow("id_piso")),
+                c.getString(c.getColumnIndexOrThrow("tipo")),
+                c.getString(c.getColumnIndexOrThrow("vertices")),
+                c.getString(c.getColumnIndexOrThrow("color"))
         );
         return g;
     }

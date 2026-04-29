@@ -112,6 +112,10 @@ public class MapManager {
     private ImageView tempImageView;
     private boolean hayEspacios;
 
+
+    private int elementoSeleccionadoId = -1;
+    private boolean esEspacioSeleccionado = false;
+
     // ════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ════════════════════════════════════════════════════════════════
@@ -157,6 +161,9 @@ public class MapManager {
             restaurarPinesOcultos();
             // Verifica si no hay pisos BUG SOLUCIONADO
             cargarPisos(lugarActualId);
+
+            elementoSeleccionadoId = data.get("id_lugar").getAsInt();
+            esEspacioSeleccionado = false;
 
             if (modoEdicion) {
                 // Crud
@@ -225,6 +232,10 @@ public class MapManager {
             redireccionPin(punto);
             JsonObject data = (JsonObject) annotation.getData();
 
+            // Guardar seleccion
+            elementoSeleccionadoId = data.get("id_espacio").getAsInt();
+            esEspacioSeleccionado = true;
+
             if (modoEdicion) {
                 // Espacios
                 mostrarBottomSheetCRUD(data, true); // true = espacio
@@ -258,6 +269,10 @@ public class MapManager {
         // Limpiar espacios anteriores
         limpiarEspacios();
         restaurarPinesOcultos();
+
+        // ✅ GUARDAR ESTADO DE SELECCIÓN
+        elementoSeleccionadoId = idLugar;
+        esEspacioSeleccionado = false;
 
         // Cargar pisos del lugar
         cargarPisos(lugarActualId);
@@ -306,6 +321,10 @@ public class MapManager {
 
         // 2. OCULTAR EL PIN DEL LUGAR
         ocultarPinLugar(idLugar);
+
+        // ✅ GUARDAR ESTADO DE SELECCIÓN
+        elementoSeleccionadoId = idEspacio;
+        esEspacioSeleccionado = true;
 
         // 3. CARGAR Y SELECCIONAR EL PISO CORRECTO EN EL SPINNER
         lugarSeleccionado = idLugar;
@@ -2851,22 +2870,17 @@ public class MapManager {
         double zoomMinimoPines = 18.5;    // Mostrar pines de espacios a partir de zoom 18.5
 
         // Actualizar visibilidad de pines de LUGARES
+        // ✅ ACTUALIZAR LUGARES (respetando elemento seleccionado)
         if (zoomActual >= zoomMinimoLugares) {
-            if (managerLugares.getAnnotations().isEmpty()) {
-                Log.d("ZOOM_PINS", "✓ Mostrando pines de LUGARES (zoom: " + zoomActual + ")");
-            }
             mostrarPinesLugaresZoom();
         } else {
-            Log.d("ZOOM_PINS", "✗ Ocultando pines de LUGARES (zoom: " + zoomActual + ")");
             ocultarPinesLugaresZoom();
         }
 
-        // Actualizar visibilidad de pines de ESPACIOS
+        // ✅ ACTUALIZAR ESPACIOS (respetando elemento seleccionado)
         if (zoomActual >= zoomMinimoPines && managerEspacios.getAnnotations().size() > 0) {
-            Log.d("ZOOM_PINS", "✓ Mostrando pines de ESPACIOS (zoom: " + zoomActual + ")");
             mostrarPinesEspaciosZoom();
         } else if (zoomActual < zoomMinimoPines) {
-            Log.d("ZOOM_PINS", "✗ Ocultando pines de ESPACIOS (zoom: " + zoomActual + ")");
             ocultarPinesEspaciosZoom();
         }
     }
@@ -2892,11 +2906,26 @@ public class MapManager {
      */
     private void ocultarPinesLugaresZoom() {
         try {
-            // RECUERDA HACERLO VIA ANOTATION O ALMENOS IR POR LOS DATA
             List<PointAnnotation> pines = managerLugares.getAnnotations();
             for (PointAnnotation pin : pines) {
-                pin.setIconSize(0.0);
-                pin.setTextOpacity(0.0);
+                // ✅ Verificar si es el elemento seleccionado
+                boolean esSeleccionado = false;
+                if (!esEspacioSeleccionado) {
+                    JsonObject data = (JsonObject) pin.getData();
+                    if (data != null && data.has("id_lugar")) {
+                        int idLugar = data.get("id_lugar").getAsInt();
+                        esSeleccionado = (idLugar == elementoSeleccionadoId);
+                    }
+                }
+
+                // ✅ Si es seleccionado, mantener visible
+                if (esSeleccionado) {
+                    pin.setIconSize(0.9);
+                    pin.setTextOpacity(1.0);
+                } else {
+                    pin.setIconSize(0.0);
+                    pin.setTextOpacity(0.0);
+                }
                 managerLugares.update(pin);
             }
         } catch (Exception e) {
@@ -2927,8 +2956,24 @@ public class MapManager {
         try {
             List<PointAnnotation> pines = managerEspacios.getAnnotations();
             for (PointAnnotation pin : pines) {
-                pin.setIconSize(0.0);
-                pin.setTextOpacity(0.0);
+                // ✅ Verificar si es el elemento seleccionado
+                boolean esSeleccionado = false;
+                if (esEspacioSeleccionado) {
+                    JsonObject data = (JsonObject) pin.getData();
+                    if (data != null && data.has("id_espacio")) {
+                        int idEspacio = data.get("id_espacio").getAsInt();
+                        esSeleccionado = (idEspacio == elementoSeleccionadoId);
+                    }
+                }
+
+                // ✅ Si es seleccionado, mantener visible
+                if (esSeleccionado && elementoSeleccionadoId != -1) {
+                    pin.setIconSize(0.9);
+                    pin.setTextOpacity(1.0);
+                } else {
+                    pin.setIconSize(0.0);
+                    pin.setTextOpacity(0.0);
+                }
                 managerEspacios.update(pin);
             }
         } catch (Exception e) {

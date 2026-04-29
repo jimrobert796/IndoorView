@@ -103,6 +103,9 @@ public class MapaFragment extends Fragment {
     long idLugar;
     long pisoId;
 
+    // CARGADOR DE DATOS PROCESADOS YA GUARDADOS EN BD PARA SINCRONIZCION AUTOMATICA DE MAPA
+    private ObtenerProcesarDatos.OnDatosCargatosListener listener;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -125,22 +128,124 @@ public class MapaFragment extends Fragment {
         btnLimpiarBusqueda = view.findViewById(R.id.btnLimpiarBusqueda);
         rvResultados = view.findViewById(R.id.rvResultados);
 
-
         // Inicaliza el mapa e eventos
         inicializarLaunchers();
 
         mapManager.verificarConexionBD();
         searchManager = new SearchManager(db);
-
-
         spinnerPisos.setVisibility(View.GONE);
 
         // Se inicializa la busqueda que es algo que si o si debe estar
         configurarBusqueda();
 
+        // Cargar datos automáticamente al abrir la app
+        new android.os.Handler().postDelayed(() -> {
+            cargarDatosDelServidor();
+        }, 1000); // Esperar 1 segundo a que cargue
 
         return view;
     }
+
+    /**
+     * Cargar datos desde CouchDB
+     * Llamar esta función cuando quieras sincronizar
+     */
+    public void cargarDatosDelServidor() {
+
+        // Verificar conexión a internet
+        DetectarInternet detectorInternet = new DetectarInternet(getContext());
+        if (!detectorInternet.hayConexionInternet()) {
+            Toast.makeText(getContext(), "No hay conexión a internet", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        Log.d("SYNC", "════════════════════════════════════════════");
+        Log.d("SYNC", "INICIANDO SINCRONIZACIÓN CON COUCHDB");
+        Log.d("SYNC", "════════════════════════════════════════════");
+
+        // Crear el AsyncTask
+        ObtenerProcesarDatos tarea = new ObtenerProcesarDatos(
+                getContext(),
+                db,
+                Utilidades.url_consulta
+        );
+
+        // Configurar listener para notificaciones
+        tarea.setOnDatosCargatosListener(new ObtenerProcesarDatos.OnDatosCargatosListener() {
+            @Override
+            public void onDatosEnCarga() {
+                Log.d("SYNC", "📡 Conectando con servidor...");
+                mostrarProgressDialog("Cargando datos...");
+            }
+
+            @Override
+            public void onDatosCargados(boolean exitoso, String mensaje) {
+                Log.d("SYNC", "════════════════════════════════════════════");
+
+                if (exitoso) {
+                    Log.d("SYNC", "✅ SINCRONIZACIÓN EXITOSA");
+                    Log.d("SYNC", mensaje);
+
+                    /*
+                    // Mostrar cantidad de datos cargados
+                    int cantidadLugares = db.obtenerCantidadLugares();
+                    int cantidadEspacios = db.obtenerCantidadEspacios();
+
+                    Log.d("SYNC", "  📍 Lugares en BD: " + cantidadLugares);
+                    Log.d("SYNC", "  🚪 Espacios en BD: " + cantidadEspacios);
+
+                    Toast.makeText(getContext(),
+                            "✅ Datos cargados\n" +
+                                    "Lugares: " + cantidadLugares + "\n" +
+                                    "Espacios: " + cantidadEspacios,
+                            Toast.LENGTH_LONG).show();
+
+                     */
+
+                    // IMPORTANTE: Recargar polígonos en el mapa
+                    reInicarMapa();
+
+                } else {
+                    Log.d("SYNC", "❌ ERROR EN SINCRONIZACIÓN");
+                    Log.d("SYNC", "Mensaje: " + mensaje);
+
+                    Toast.makeText(getContext(),
+                            "❌ Error cargando datos: " + mensaje,
+                            Toast.LENGTH_LONG).show();
+                }
+
+                Log.d("SYNC", "════════════════════════════════════════════");
+                cerrarProgressDialog();
+            }
+        });
+
+        // Ejecutar en background
+        tarea.execute();
+    }
+
+    /**
+     * Mostrar un progress dialog (opcional)
+     */
+    private android.app.ProgressDialog progressDialog;
+
+    private void mostrarProgressDialog(String mensaje) {
+        if (progressDialog == null) {
+            progressDialog = new android.app.ProgressDialog(getContext());
+            progressDialog.setTitle("Sincronizando");
+            progressDialog.setProgressStyle(android.app.ProgressDialog.STYLE_SPINNER);
+            progressDialog.setCancelable(false);
+        }
+
+        progressDialog.setMessage(mensaje);
+        progressDialog.show();
+    }
+
+    private void cerrarProgressDialog() {
+        if (progressDialog != null && progressDialog.isShowing()) {
+            progressDialog.dismiss();
+        }
+    }
+
     private void inicializarLaunchers() {
         // Launcher para la cámara
         camaraLauncher = registerForActivityResult(
