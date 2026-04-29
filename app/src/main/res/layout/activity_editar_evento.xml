@@ -3,7 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/fond">
+    android:background="@drawable/fond"
+    android:fitsSystemWindows="true">
 
     <!-- Botón Regresar -->
     <ImageView
@@ -13,6 +14,9 @@
         android:layout_margin="30dp"
         android:padding="5dp"
         android:src="@drawable/ic_regreso"
+        android:clickable="true"
+        android:focusable="true"
+        android:elevation="10dp"
         android:contentDescription="Regresar" />
 
     <!-- ScrollView para pantallas pequeñas -->
@@ -23,7 +27,7 @@
 
         <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:padding="24dp">
 
             <!-- Contenedor centrado -->
@@ -40,6 +44,7 @@
                     android:layout_height="wrap_content"
                     android:text="Crear / Editar Evento"
                     android:textColor="#FFCC00"
+                    android:layout_marginTop="40dp"
                     android:textSize="20sp"
                     android:textStyle="bold"
                     android:gravity="center"
@@ -67,7 +72,8 @@
                             android:layout_height="wrap_content"
                             android:text="Título del evento"
                             android:textColor="#B3FFFFFF"
-                            android:textSize="12sp" />
+                            android:textSize="12sp"
+                            android:layout_marginBottom="4dp" />
 
                         <EditText
                             android:id="@+id/et_titulo_evento"
@@ -86,7 +92,8 @@
                             android:layout_height="wrap_content"
                             android:text="Información del evento"
                             android:textColor="#B3FFFFFF"
-                            android:textSize="12sp" />
+                            android:textSize="12sp"
+                            android:layout_marginBottom="4dp" />
 
                         <EditText
                             android:id="@+id/et_descripcion"
@@ -101,11 +108,141 @@
                             android:textColor="@android:color/white"
                             android:textColorHint="#B3FFFFFF" />
 
-                        <!-- Contenedor de horas -->
+                        <!-- Punto de referencia -->
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Punto de referencia"
+                            android:textColor="#B3FFFFFF"
+                            android:textSize="12sp"
+                            android:layout_marginBottom="8dp" />
+
+                        <Button
+                            android:id="@+id/btn_agregar_punto"
+                            android:layout_width="match_parent"
+                            android:layout_height="56dp"
+                            android:backgroundTint="#2196F3"
+                            android:text="Agregar punto"
+                            android:textColor="@android:color/white"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:layout_marginBottom="20dp" />
+
+                        <!-- Separador -->
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="#33FFFFFF"
+                            android:layout_marginBottom="20dp" />
+
+                        <!-- Título sección fecha/hora -->
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Fecha y hora del evento"
+                            android:textColor="#FFCC00"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:layout_marginBottom="16dp" />
+
+                        <!-- Fecha Inicio -->
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="horizontal"
+                            android:orientation="vertical"
+                            android:layout_marginBottom="16dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Fecha inicio"
+                                android:textColor="#B3FFFFFF"
+                                android:textSize="12sp"
+                                android:layout_marginBottom="4dp" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal">
+
+                                <EditText
+                                    android:id="@+id/et_fecha_inicio"
+                                    android:layout_width="0dp"
+                                    android:layout_height="56dp"
+                                    android:layout_weight="1"
+                                    android:background="@drawable/bg_campo_perfil"
+                                    android:hint="dd/mm/aaaa"
+                                    android:padding="12dp"
+                                    android:focusable="false"
+                                    android:clickable="true"
+                                    android:inputType="none"
+                                    android:textColor="@android:color/white"
+                                    android:textColorHint="#B3FFFFFF" />
+
+                                <ImageButton
+                                    android:id="@+id/btn_fecha_inicio"
+                                    android:layout_width="56dp"
+                                    android:layout_height="56dp"
+                                    android:layout_marginStart="8dp"
+                                    android:background="@drawable/bg_campo_perfil"
+                                    android:src="@android:drawable/ic_menu_today"
+                                    android:contentDescription="Seleccionar fecha"
+                                    android:padding="12dp"
+                                    android:tint="#FFFFFF" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <!-- Fecha Fin -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:layout_marginBottom="16dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Fecha fin"
+                                android:textColor="#B3FFFFFF"
+                                android:textSize="12sp"
+                                android:layout_marginBottom="4dp" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal">
+
+                                <EditText
+                                    android:id="@+id/et_fecha_fin"
+                                    android:layout_width="0dp"
+                                    android:layout_height="56dp"
+                                    android:layout_weight="1"
+                                    android:background="@drawable/bg_campo_perfil"
+                                    android:hint="dd/mm/aaaa"
+                                    android:padding="12dp"
+                                    android:focusable="false"
+                                    android:clickable="true"
+                                    android:inputType="none"
+                                    android:textColor="@android:color/white"
+                                    android:textColorHint="#B3FFFFFF" />
+
+                                <ImageButton
+                                    android:id="@+id/btn_fecha_fin"
+                                    android:layout_width="56dp"
+                                    android:layout_height="56dp"
+                                    android:layout_marginStart="8dp"
+                                    android:background="@drawable/bg_campo_perfil"
+                                    android:src="@android:drawable/ic_menu_today"
+                                    android:contentDescription="Seleccionar fecha fin"
+                                    android:padding="12dp"
+                                    android:tint="#FFFFFF" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <!-- Horas Inicio y Fin -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
                             android:layout_marginBottom="20dp">
 
                             <!-- Hora inicio -->
@@ -121,18 +258,39 @@
                                     android:layout_height="wrap_content"
                                     android:text="Hora inicio"
                                     android:textColor="#B3FFFFFF"
-                                    android:textSize="12sp" />
+                                    android:textSize="12sp"
+                                    android:layout_marginBottom="4dp" />
 
-                                <EditText
-                                    android:id="@+id/et_hora_inicio"
+                                <LinearLayout
                                     android:layout_width="match_parent"
-                                    android:layout_height="56dp"
-                                    android:background="@drawable/bg_campo_perfil"
-                                    android:hint="19:00"
-                                    android:inputType="time"
-                                    android:padding="12dp"
-                                    android:textColor="@android:color/white"
-                                    android:textColorHint="#B3FFFFFF" />
+                                    android:layout_height="wrap_content"
+                                    android:orientation="horizontal">
+
+                                    <EditText
+                                        android:id="@+id/et_hora_inicio"
+                                        android:layout_width="0dp"
+                                        android:layout_height="56dp"
+                                        android:layout_weight="1"
+                                        android:background="@drawable/bg_campo_perfil"
+                                        android:hint="hh:mm"
+                                        android:padding="12dp"
+                                        android:focusable="false"
+                                        android:clickable="true"
+                                        android:inputType="none"
+                                        android:textColor="@android:color/white"
+                                        android:textColorHint="#B3FFFFFF" />
+
+                                    <ImageButton
+                                        android:id="@+id/btn_hora_inicio"
+                                        android:layout_width="56dp"
+                                        android:layout_height="56dp"
+                                        android:layout_marginStart="8dp"
+                                        android:background="@drawable/bg_campo_perfil"
+                                        android:src="@android:drawable/ic_menu_recent_history"
+                                        android:contentDescription="Seleccionar hora inicio"
+                                        android:padding="12dp"
+                                        android:tint="#FFFFFF" />
+                                </LinearLayout>
                             </LinearLayout>
 
                             <!-- Hora fin -->
@@ -148,20 +306,40 @@
                                     android:layout_height="wrap_content"
                                     android:text="Hora fin"
                                     android:textColor="#B3FFFFFF"
-                                    android:textSize="12sp" />
+                                    android:textSize="12sp"
+                                    android:layout_marginBottom="4dp" />
 
-                                <EditText
-                                    android:id="@+id/et_hora_fin"
+                                <LinearLayout
                                     android:layout_width="match_parent"
-                                    android:layout_height="56dp"
-                                    android:background="@drawable/bg_campo_perfil"
-                                    android:hint="22:00"
-                                    android:inputType="time"
-                                    android:padding="12dp"
-                                    android:textColor="@android:color/white"
-                                    android:textColorHint="#B3FFFFFF" />
-                            </LinearLayout>
+                                    android:layout_height="wrap_content"
+                                    android:orientation="horizontal">
 
+                                    <EditText
+                                        android:id="@+id/et_hora_fin"
+                                        android:layout_width="0dp"
+                                        android:layout_height="56dp"
+                                        android:layout_weight="1"
+                                        android:background="@drawable/bg_campo_perfil"
+                                        android:hint="hh:mm"
+                                        android:padding="12dp"
+                                        android:focusable="false"
+                                        android:clickable="true"
+                                        android:inputType="none"
+                                        android:textColor="@android:color/white"
+                                        android:textColorHint="#B3FFFFFF" />
+
+                                    <ImageButton
+                                        android:id="@+id/btn_hora_fin"
+                                        android:layout_width="56dp"
+                                        android:layout_height="56dp"
+                                        android:layout_marginStart="8dp"
+                                        android:background="@drawable/bg_campo_perfil"
+                                        android:src="@android:drawable/ic_menu_recent_history"
+                                        android:contentDescription="Seleccionar hora fin"
+                                        android:padding="12dp"
+                                        android:tint="#FFFFFF" />
+                                </LinearLayout>
+                            </LinearLayout>
                         </LinearLayout>
 
                         <!-- Botón Guardar -->
@@ -169,6 +347,7 @@
                             android:id="@+id/btn_guardar_evento"
                             android:layout_width="match_parent"
                             android:layout_height="56dp"
+                            android:layout_marginTop="8dp"
                             android:backgroundTint="#2196F3"
                             android:text="Guardar Evento"
                             android:textColor="@android:color/white"

@@ -54,11 +54,10 @@
         android:layout_alignParentEnd="true"
         android:layout_alignParentBottom="true"
         android:layout_marginEnd="16dp"
-        android:layout_marginBottom="80dp"
+        android:layout_marginBottom="20dp"
         android:src="@drawable/ic_add"
         app:backgroundTint="#2196F3"
         app:tint="@android:color/white"
-        android:contentDescription="Agregar evento"
-        android:visibility="gone" />  <!-- oculto por defecto visible solo para admin -->
+        android:contentDescription="Agregar evento" />  <!-- oculto por defecto visible solo para admin -->
 
 </RelativeLayout>
