@@ -138,10 +138,14 @@ public class MapaFragment extends Fragment {
         // Se inicializa la busqueda que es algo que si o si debe estar
         configurarBusqueda();
 
+        /* AHORITA NO USAREMOS ESO
+
         // Cargar datos automáticamente al abrir la app
         new android.os.Handler().postDelayed(() -> {
             cargarDatosDelServidor();
         }, 1000); // Esperar 1 segundo a que cargue
+
+         */
 
         return view;
     }
@@ -535,34 +539,56 @@ public class MapaFragment extends Fragment {
     private void configurarMapa() {
         mapView.getMapboxMap().loadStyleUri(Style.MAPBOX_STREETS, style -> {
 
-            // Posicionar cámara
-            mapView.getMapboxMap().setCamera(
-                    new CameraOptions.Builder()
-                            .center(Point.fromLngLat(-88.41783453298294, 13.342296805328829))
-                            .zoom(17.0)
-                            .build()
-            );
+                    // Posicionar cámara
+                    mapView.getMapboxMap().setCamera(
+                            new CameraOptions.Builder()
+                                    .center(Point.fromLngLat(-88.41783453298294, 13.342296805328829))
+                                    .zoom(17.0)
+                                    .build()
+                    );
 
-            // Límites de zoom
-            mapView.getMapboxMap().setBounds(
-                    new CameraBoundsOptions.Builder()
-                            .minZoom(16.0)
-                            .maxZoom(20.0)
-                            .build()
-            );
+                    // Límites de zoom
+                    mapView.getMapboxMap().setBounds(
+                            new CameraBoundsOptions.Builder()
+                                    .minZoom(16.0)
+                                    .maxZoom(20.0)
+                                    .build()
+                    );
 
-            // Desactivar edificios por defecto de OpenStreetMap
-            style.setStyleLayerProperty(
-                    "building",
-                    "visibility",
-                    Value.valueOf("none")
-            );
+                    // Desactivar edificios por defecto de OpenStreetMap
+                    style.setStyleLayerProperty(
+                            "building",
+                            "visibility",
+                            Value.valueOf("none")
+                    );
+                    style.setStyleLayerProperty(
+                            "building-extrusion",
+                            "visibility",
+                            Value.valueOf("none")
+                    );
 
-            style.setStyleLayerProperty(
-                    "building-extrusion",
-                    "visibility",
-                    Value.valueOf("none")
-            );
+                    // Quitar lo que seria areas verdes e colores incecesarios del mapa en si
+                    style.setStyleLayerProperty(
+                            "landuse",
+                            "visibility",
+                            Value.valueOf("none")
+                    );
+                    style.setStyleLayerProperty(
+                            "landuse-overlay",
+                            "visibility",
+                            Value.valueOf("none")
+                    );style.setStyleLayerProperty(
+                            "pitch-outline",
+                            "visibility",
+                            Value.valueOf("none")
+                    );
+
+
+
+
+
+            // cargar el los detalles
+            mapManager.cargarLineStringDetalles();
 
             // Cargar polígonos de lugares
             mapManager.cargarPoligonosLugar();

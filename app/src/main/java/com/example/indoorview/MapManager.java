@@ -28,6 +28,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 
+import com.example.indoorview.models.Detalle;
 import com.example.indoorview.models.Espacio;
 import com.example.indoorview.models.Geometria;
 import com.example.indoorview.models.Lugar;
@@ -529,6 +530,21 @@ public class MapManager {
         }
     }
 
+    public void cargarLineStringDetalles() {
+        List<Detalle> detalles = db.getDetalles();
+
+        if (detalles.isEmpty()) {
+            Log.d("POLIGONOS", "No hay edificios");
+            return;
+        }
+
+        for (Detalle detalle : detalles) {
+            mapView.getMapboxMap().getStyle(style -> {
+                dibujarDetalle(style, detalle);
+            });
+        }
+    }
+
     public void dibujarPoligonoLugar(Style style, Lugar lugar) {
         String geojson = lugar.getGeojson();
 
@@ -575,7 +591,7 @@ public class MapManager {
 
             HashMap<String, Value> linePaint = new HashMap<>();
             linePaint.put("line-color", Value.valueOf(color));
-            linePaint.put("line-width", Value.valueOf(0.5));
+            linePaint.put("line-width", Value.valueOf(0.6));
             lineLayerProps.put("paint", new Value(linePaint));
             style.addStyleLayer(new Value(lineLayerProps), null);
 
@@ -590,6 +606,109 @@ public class MapManager {
             Log.e("POLIGONOS", "Error: " + e.getMessage());
         }
     }
+
+
+    public void dibujarDetalle(Style style, Detalle detalle) {
+        if (detalle == null) {
+            Log.e("DETALLE", "Detalle es null");
+            return;
+        }
+
+        String geojson = detalle.getGeojson();
+        if (geojson == null || geojson.isEmpty()) {
+            Log.e("DETALLE", "GeoJSON vacío para: " + detalle.getNombre());
+            return;
+        }
+
+        String color = detalle.getColor();
+        if (color == null || color.isEmpty()) {
+            color = "#FF0000"; // Color por defecto
+        }
+
+        String fillColor = detalle.getFill_color();
+        if (fillColor == null || fillColor.isEmpty()) {
+            fillColor = color; // Si no hay fill_color, usar el mismo color
+        }
+        Double fillOpacity = detalle.getFill_opacity();
+
+        String tipo = detalle.getTipo();
+        String id = "detalle-" + detalle.getId_detalle();
+        float ancho = 3.0f;
+
+        try {
+
+            String sourceId = "detalle-" + id;
+
+            if (tipo.equals("LineString")) {
+                // ========== DIBUJAR LINESTRING (solo línea) ==========
+                String geojsonCompleto = "{\"type\":\"LineString\",\"coordinates\":" + geojson + "}";
+
+                // Agregar fuente GeoJSON
+                HashMap<String, Value> sourceProps = new HashMap<>();
+                sourceProps.put("type", Value.valueOf("geojson"));
+                sourceProps.put("data", Value.valueOf(geojsonCompleto));
+                style.addStyleSource(sourceId, new Value(sourceProps));
+
+                // Crear capa de línea
+                HashMap<String, Value> lineLayerProps = new HashMap<>();
+                lineLayerProps.put("id", Value.valueOf(sourceId + "-line"));
+                lineLayerProps.put("type", Value.valueOf("line"));
+                lineLayerProps.put("source", Value.valueOf(sourceId));
+
+                HashMap<String, Value> linePaint = new HashMap<>();
+                linePaint.put("line-color", Value.valueOf(color));
+                linePaint.put("line-width", Value.valueOf(ancho));
+                lineLayerProps.put("paint", new Value(linePaint));
+
+                style.addStyleLayer(new Value(lineLayerProps), null);
+
+                Log.d("DETALLE", "✓ Línea dibujada: " + detalle.getNombre());
+
+            } else if (tipo.equals("Polygon") || tipo.equals("polygon")) {
+                // ========== DIBUJAR POLYGON (relleno + borde) ==========
+                String geojsonCompleto = "{\"type\":\"Polygon\",\"coordinates\":" + geojson + "}";
+
+                // Agregar fuente GeoJSON
+                HashMap<String, Value> sourceProps = new HashMap<>();
+                sourceProps.put("type", Value.valueOf("geojson"));
+                sourceProps.put("data", Value.valueOf(geojsonCompleto));
+                style.addStyleSource(sourceId, new Value(sourceProps));
+
+                // Capa de RELLENO
+                HashMap<String, Value> fillLayerProps = new HashMap<>();
+                fillLayerProps.put("id", Value.valueOf(sourceId + "-fill"));
+                fillLayerProps.put("type", Value.valueOf("fill"));
+                fillLayerProps.put("source", Value.valueOf(sourceId));
+
+                HashMap<String, Value> fillPaint = new HashMap<>();
+                fillPaint.put("fill-color", Value.valueOf(fillColor));
+                fillPaint.put("fill-opacity", Value.valueOf(fillOpacity)); // Opacidad del relleno
+                fillLayerProps.put("paint", new Value(fillPaint));
+                style.addStyleLayer(new Value(fillLayerProps), null);
+
+                // Capa de BORDE
+                HashMap<String, Value> lineLayerProps = new HashMap<>();
+                lineLayerProps.put("id", Value.valueOf(sourceId + "-line"));
+                lineLayerProps.put("type", Value.valueOf("line"));
+                lineLayerProps.put("source", Value.valueOf(sourceId));
+
+                HashMap<String, Value> linePaint = new HashMap<>();
+                linePaint.put("line-color", Value.valueOf(color));
+                //linePaint.put("line-width", Value.valueOf(0.5));
+                lineLayerProps.put("paint", new Value(linePaint));
+                style.addStyleLayer(new Value(lineLayerProps), null);
+
+                Log.d("DETALLE", "✓ Polígono dibujado: " + detalle.getNombre() +
+                        " (Relleno: " + fillColor + ")");
+            } else {
+                Log.e("DETALLE", "Tipo no soportado: " + tipo);
+            }
+
+        } catch (Exception e) {
+            Log.e("DETALLE", "Error dibujando '" + detalle.getNombre() + "': " + e.getMessage());
+        }
+    }
+
 
     public void dibujarTodosLosEspacios() {
         Log.d("ESPACIOS", "========== DIBUJANDO TODOS LOS ESPACIOS ==========");

@@ -7,6 +7,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
+import com.example.indoorview.models.Detalle;
 import com.example.indoorview.models.Espacio;
 import com.example.indoorview.models.Eventos;
 import com.example.indoorview.models.Geometria;
@@ -1004,7 +1005,209 @@ public class Database extends SQLiteOpenHelper {
     }
 
 
+    // ════════════════════════════════════════════════════════════════
+// MÉTODOS PARA DETALLES
+// ════════════════════════════════════════════════════════════════
 
+    /**
+     * Insertar un nuevo detalle
+     */
+    public long insertDetalle(Detalle detalle) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
 
+        values.put("nombre", detalle.getNombre());
+        values.put("tipo", detalle.getTipo());
+        values.put("geojson", detalle.getGeojson());
+        values.put("color", detalle.getColor());
+        values.put("fill_color", detalle.getFill_color());
+
+        long id = db.insert("detalles", null, values);
+        db.close();
+
+        Log.d("DB_DETALLE", "Detalle insertado: " + detalle.getNombre() + " (ID: " + id + ")");
+        return id;
+    }
+
+    /**
+     * Insertar detalle con parámetros directos
+     */
+
+    /**
+     * Obtener todos los detalles
+     */
+    public List<Detalle> getDetalles() {
+        List<Detalle> detalles = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        Cursor cursor = db.query("detalles", null, null, null, null, null, "id_detalle ASC");
+
+        if (cursor.moveToFirst()) {
+            do {
+                Detalle detalle = new Detalle(
+                        cursor.getInt(cursor.getColumnIndexOrThrow("id_detalle")),
+                        cursor.getString(cursor.getColumnIndexOrThrow("nombre")),
+                        cursor.getString(cursor.getColumnIndexOrThrow("tipo")),
+                        cursor.getString(cursor.getColumnIndexOrThrow("geojson")),
+                        cursor.getString(cursor.getColumnIndexOrThrow("color")),
+                        cursor.getString(cursor.getColumnIndexOrThrow("fill_color")),
+                        cursor.getDouble(cursor.getColumnIndexOrThrow("fill_opacity"))
+                );
+
+                detalles.add(detalle);
+            } while (cursor.moveToNext());
+        }
+
+        cursor.close();
+        db.close();
+
+        Log.d("DB_DETALLE", "Obtenidos " + detalles.size() + " detalles");
+        return detalles;
+    }
+
+    /**
+     * Obtener detalle por ID
+     */
+    public Detalle getDetalleById(int id) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Detalle detalle = null;
+
+        Cursor cursor = db.query("detalles", null, "id_detalle = ?",
+                new String[]{String.valueOf(id)}, null, null, null);
+
+        if (cursor.moveToFirst()) {
+            detalle = new Detalle(
+                    cursor.getInt(cursor.getColumnIndexOrThrow("id_detalle")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("nombre")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("tipo")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("geojson")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("color")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("fill_color")),
+                    cursor.getDouble(cursor.getColumnIndexOrThrow("fill_opacity"))
+            );
+        }
+
+        cursor.close();
+        db.close();
+
+        return detalle;
+    }
+
+    /**
+     * Obtener detalles por tipo
+     */
+    public List<Detalle> getDetallesByTipo(String tipo) {
+        List<Detalle> detalles = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        Cursor cursor = db.query("detalles", null, "tipo = ?",
+                new String[]{tipo}, null, null, "id_detalle ASC");
+
+        if (cursor.moveToFirst()) {
+            do {
+                Detalle detalle = new Detalle(
+                        cursor.getInt(cursor.getColumnIndexOrThrow("id_detalle")),
+                        cursor.getString(cursor.getColumnIndexOrThrow("nombre")),
+                        cursor.getString(cursor.getColumnIndexOrThrow("tipo")),
+                        cursor.getString(cursor.getColumnIndexOrThrow("geojson")),
+                        cursor.getString(cursor.getColumnIndexOrThrow("color")),
+                        cursor.getString(cursor.getColumnIndexOrThrow("fill_color")),
+                        cursor.getDouble(cursor.getColumnIndexOrThrow("fill_opacity"))
+                );
+
+                detalles.add(detalle);
+            } while (cursor.moveToNext());
+        }
+
+        cursor.close();
+        db.close();
+
+        Log.d("DB_DETALLE", "Obtenidos " + detalles.size() + " detalles de tipo: " + tipo);
+        return detalles;
+    }
+
+    /**
+     * Actualizar un detalle
+     */
+    public int updateDetalle(Detalle detalle) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+
+        values.put("nombre", detalle.getNombre());
+        values.put("tipo", detalle.getTipo());
+        values.put("geojson", detalle.getGeojson());
+        values.put("color", detalle.getColor());
+        values.put("fill_color", detalle.getFill_color());
+
+        int rowsAffected = db.update("detalles", values, "id_detalle = ?",
+                new String[]{String.valueOf(detalle.getId_detalle())});
+        db.close();
+
+        Log.d("DB_DETALLE", "Detalle actualizado: " + detalle.getNombre() + " (Filas: " + rowsAffected + ")");
+        return rowsAffected;
+    }
+
+    /**
+     * Actualizar solo el color de un detalle
+     */
+    public int updateDetalleColor(int id, String color, String fill_color) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+
+        values.put("color", color);
+        if (fill_color != null) {
+            values.put("fill_color", fill_color);
+        }
+
+        int rowsAffected = db.update("detalles", values, "id_detalle = ?",
+                new String[]{String.valueOf(id)});
+        db.close();
+
+        Log.d("DB_DETALLE", "Color actualizado para detalle ID: " + id);
+        return rowsAffected;
+    }
+
+    /**
+     * Eliminar un detalle por ID
+     */
+    public boolean deleteDetalle(int id) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        int rowsDeleted = db.delete("detalles", "id_detalle = ?", new String[]{String.valueOf(id)});
+        db.close();
+
+        boolean success = rowsDeleted > 0;
+        Log.d("DB_DETALLE", "Detalle eliminado ID: " + id + " (Éxito: " + success + ")");
+        return success;
+    }
+
+    /**
+     * Eliminar todos los detalles (limpiar tabla)
+     */
+    public int deleteAllDetalles() {
+        SQLiteDatabase db = this.getWritableDatabase();
+        int rowsDeleted = db.delete("detalles", null, null);
+        db.close();
+
+        Log.d("DB_DETALLE", "Eliminados " + rowsDeleted + " detalles");
+        return rowsDeleted;
+    }
+
+    /**
+     * Contar total de detalles
+     */
+    public int contarDetalles() {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM detalles", null);
+        int count = 0;
+
+        if (cursor.moveToFirst()) {
+            count = cursor.getInt(0);
+        }
+
+        cursor.close();
+        db.close();
+
+        return count;
+    }
 
 }
