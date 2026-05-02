@@ -37,6 +37,7 @@
             </intent-filter>
         </activity>
         <activity android:name=".AgregarEventoActivity" />
+        <activity android:name=".MapaEventoActivity" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

@@ -37,7 +37,7 @@ public class Database extends SQLiteOpenHelper {
         return instancia;
     }
 
-    private Database(Context context) {
+    public Database(Context context) {
         super(context, DB_NAME, null, DB_VERSION);
         this.context = context;
     }
@@ -741,7 +741,7 @@ public class Database extends SQLiteOpenHelper {
     }
 
     // 7. ACTUALIZAR evento
-    public int actualizarEvento(Eventos evento) {
+    public int updateEvento(Eventos evento) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
         cv.put("id_lugar", evento.getId_lugar());

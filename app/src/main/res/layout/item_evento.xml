@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/card_evento"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     app:cardCornerRadius="16dp"
@@ -9,8 +10,8 @@
 
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:padding="16dp">
+        android:layout_height="96dp"
+        android:padding="18dp">
 
         <!-- Título del evento (izquierda arriba) -->
         <TextView
@@ -29,8 +30,8 @@
             android:id="@+id/tv_hora_inicio"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentEnd="true"
             android:layout_alignParentTop="true"
+            android:layout_alignParentEnd="true"
             android:text="19:00"
             android:textColor="#60A5FA"
             android:textSize="14sp"
@@ -44,11 +45,11 @@
             android:layout_below="@id/tv_titulo_evento"
             android:layout_alignParentStart="true"
             android:layout_marginTop="8dp"
+            android:ellipsize="end"
+            android:maxLines="2"
             android:text="Evento sobre inteligencia artificial y más."
             android:textColor="#E0E0E0"
-            android:textSize="12sp"
-            android:maxLines="2"
-            android:ellipsize="end" />
+            android:textSize="12sp" />
 
         <!-- Hora de fin (derecha abajo) -->
         <TextView

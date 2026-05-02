@@ -3023,7 +3023,7 @@ public class MapManager {
     /**
      * Ocultar todos los pines de lugares
      */
-    private void ocultarPinesLugaresZoom() {
+    public void ocultarPinesLugaresZoom() {
         try {
             List<PointAnnotation> pines = managerLugares.getAnnotations();
             for (PointAnnotation pin : pines) {

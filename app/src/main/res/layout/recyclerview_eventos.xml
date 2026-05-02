@@ -7,15 +7,15 @@
 
     <!-- RecyclerView para lista de eventos -->
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_eventos"
+        android:id="@+id/recyclerview_eventos"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_above="@id/fab_agregar"
         android:padding="16dp"
         android:clipToPadding="false"
-        android:paddingBottom="80dp" />
+        android:scrollbars="vertical" />
 
-    <!-- Botón flotante (FAB) para agregar eventos -->
+    <!-- Botón flotante (FAB) para agregar eventos (solo admin) -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_agregar"
         android:layout_width="wrap_content"
