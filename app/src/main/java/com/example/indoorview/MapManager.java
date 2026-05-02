@@ -74,6 +74,8 @@ public class MapManager {
     private PointAnnotationManager managerTemporal;
     private PointAnnotationManager managerPermanente;
 
+    private PointAnnotationManager managerEventos;
+
     public int lugarSeleccionado = -1;
     public boolean modoEdicion = false;
 
@@ -148,6 +150,9 @@ public class MapManager {
                 plugin.createAnnotationManager(AnnotationType.PointAnnotation, null);
 
         managerPermanente = (PointAnnotationManager)
+                plugin.createAnnotationManager(AnnotationType.PointAnnotation, null);
+
+        managerEventos = (PointAnnotationManager)
                 plugin.createAnnotationManager(AnnotationType.PointAnnotation, null);
 
         // ════════════════════════════════════════════════════════════════
@@ -922,6 +927,24 @@ public class MapManager {
                 .withTextOffset(Arrays.asList(0.0, 1.5))
                 .withData(data);
         managerEspacios.create(op);
+    }
+
+    public void agregarPinEvento(Point punto, String texto, JsonObject data) {
+        Bitmap icono = crearPinBitmap("#FFCC00"); // Color amarillo
+
+        PointAnnotationOptions op = new PointAnnotationOptions()
+                .withPoint(punto)
+                .withIconImage(icono)
+                .withIconSize(0.9)
+                .withTextField(texto)
+                .withTextSize(11.0)
+                .withIconAnchor(IconAnchor.CENTER)
+                .withTextColor("#000000")
+                .withTextHaloColor("#ffffff")
+                .withTextHaloWidth(2.0)
+                .withTextOffset(Arrays.asList(0.0, 2.8))
+                .withData(data);
+        managerEventos.create(op);
     }
 
     // ════════════════════════════════════════════════════════════════

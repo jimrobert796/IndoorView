@@ -12,6 +12,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.gson.JsonObject;
 import com.mapbox.bindgen.Value;
 import com.mapbox.geojson.Point;
 import com.mapbox.maps.CameraBoundsOptions;
@@ -27,6 +28,19 @@ public class MapaEventoActivity extends AppCompatActivity {
     private ActivityResultLauncher<Intent> camaraLauncher;
     private ActivityResultLauncher<Intent> galeriaLauncher;
 
+
+    private int idEvento;
+    private String nombreEvento;
+    private String descripcionEvento;
+    private String fechaInicio;
+    private String horaInicio;
+    private String fechaFin;
+    private String horaFin;
+    private String latitudEvento;
+    private String longitudEvento;
+    private int idLugar;
+    private int idEspacio;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -39,11 +53,85 @@ public class MapaEventoActivity extends AppCompatActivity {
         // 2. Inicializar base de datos
         db = new Database(this);
 
+        recibirDatosEvento();
+
         // 3. Inicializar launchers PRIMERO
         inicializarLaunchers();
 
         // 4. Configurar el mapa (esto creará mapManager internamente)
         configurarMapa();
+    }
+
+    private void recibirDatosEvento() {
+        Bundle extras = getIntent().getExtras();
+        if (extras != null) {
+            idEvento = extras.getInt("id_evento", -1);
+            nombreEvento = extras.getString("nombre_evento", "");
+            descripcionEvento = extras.getString("descripcion_evento", "");
+            fechaInicio = extras.getString("fecha_inicio", "");
+            horaInicio = extras.getString("hora_inicio", "");
+            fechaFin = extras.getString("fecha_fin", "");
+            horaFin = extras.getString("hora_fin", "");
+            latitudEvento = extras.getString("latitud", "");
+            longitudEvento = extras.getString("longitud", "");
+            idLugar = extras.getInt("id_lugar", -1);
+            idEspacio = extras.getInt("id_espacio", -1);
+
+            // Log para depuración
+            Log.d("EVENTO_RECIBIDO", "=================================");
+            Log.d("EVENTO_RECIBIDO", "ID: " + idEvento);
+            Log.d("EVENTO_RECIBIDO", "Nombre: " + nombreEvento);
+            Log.d("EVENTO_RECIBIDO", "Descripción: " + descripcionEvento);
+            Log.d("EVENTO_RECIBIDO", "Fecha/Hora: " + fechaInicio + " " + horaInicio);
+            Log.d("EVENTO_RECIBIDO", "Coordenadas: " + latitudEvento + ", " + longitudEvento);
+            Log.d("EVENTO_RECIBIDO", "=================================");
+        }
+    }
+
+    private void cargarPinEvento() {
+        if (mapManager == null) {
+            Log.e("EVENTO", "mapManager es null");
+            return;
+        }
+
+        // Verificar que tenemos coordenadas válidas
+        if (latitudEvento == null || longitudEvento == null ||
+                latitudEvento.isEmpty() || longitudEvento.isEmpty() ||
+                latitudEvento.equals("0.0") || longitudEvento.equals("0.0")) {
+            Log.e("EVENTO", "Coordenadas inválidas para el evento");
+            Toast.makeText(this, "Este evento no tiene ubicación asignada", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        try {
+            // Crear el JsonObject con los datos del evento
+            JsonObject datosEvento = new JsonObject();
+            datosEvento.addProperty("id_evento", idEvento);
+            datosEvento.addProperty("nombre", nombreEvento);
+            datosEvento.addProperty("descripcion", descripcionEvento);
+            datosEvento.addProperty("fecha_inicio", fechaInicio);
+            datosEvento.addProperty("hora_inicio", horaInicio);
+            datosEvento.addProperty("fecha_fin", fechaFin);
+            datosEvento.addProperty("hora_fin", horaFin);
+            datosEvento.addProperty("id_lugar", idLugar);
+            datosEvento.addProperty("id_espacio", idEspacio);
+            datosEvento.addProperty("latitud", latitudEvento);
+            datosEvento.addProperty("longitud", longitudEvento);
+
+            // Convertir coordenadas a Point
+            Point punto = Point.fromLngLat(Double.parseDouble(latitudEvento), Double.parseDouble(longitudEvento));
+
+            // Agregar el pin del evento usando el MapManager
+            mapManager.agregarPinEvento(punto, nombreEvento, datosEvento);
+
+            // Centrar el mapa en el evento
+            //mapManager.redireccionPin(punto);
+            Toast.makeText(this, "📍 " + nombreEvento, Toast.LENGTH_SHORT).show();
+
+        } catch (NumberFormatException e) {
+            Log.e("EVENTO", "Error al parsear coordenadas: " + e.getMessage());
+            Toast.makeText(this, "Error al cargar la ubicación del evento", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void inicializarLaunchers() {
@@ -75,7 +163,7 @@ public class MapaEventoActivity extends AppCompatActivity {
                 }
         );
 
-        // ✅ IMPORTANTE: Si mapManager ya existe, actualizar sus launchers
+        // IMPORTANTE: Si mapManager ya existe, actualizar sus launchers
         if (mapManager != null) {
             // mapManager.setLaunchers(camaraLauncher, galeriaLauncher);
         }
@@ -112,7 +200,7 @@ public class MapaEventoActivity extends AppCompatActivity {
                 style.setStyleLayerProperty("landuse-overlay", "visibility", Value.valueOf("none"));
                 style.setStyleLayerProperty("pitch-outline", "visibility", Value.valueOf("none"));
 
-                // ✅ CREAR MapManager AQUÍ, después de que todo está listo
+                // CREAR MapManager AQUI, después de que todo está listo
                 if (mapManager == null) {
                     mapManager = new MapManager(
                             mapView,
@@ -124,14 +212,19 @@ public class MapaEventoActivity extends AppCompatActivity {
                     );
                 }
 
-                // ✅ Ahora sí, llamar a los métodos
+                // Ahora sí, llamar a los métodos
                 // Verificar que mapManager no sea null antes de usarlo
                 if (mapManager != null) {
                     mapManager.cargarLineStringDetalles();
                     mapManager.cargarPoligonosLugar(); // Descomentar cuando esté listo
+                    mapManager.limpiarTodo();
+
+
+                    // CARGAMOS LOS EL PIN DE EVENTO
+                    cargarPinEvento();
 
                     // NECESITAMOS ALGO QUE ELIMINE LOS PINES O QUITE SU FUNCIONALIDAD DE PIN
-                    mapManager.ocultarPinesLugaresZoom();
+                    //mapManager.limpiarTodo(); // Limpia los pines mienstras no poligonos
                 } else {
                     Toast.makeText(this, "Error: MapManager no inicializado", Toast.LENGTH_SHORT).show();
                 }

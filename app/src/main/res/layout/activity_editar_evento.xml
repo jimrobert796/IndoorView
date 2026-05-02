@@ -78,13 +78,17 @@
                         <EditText
                             android:id="@+id/et_titulo_evento"
                             android:layout_width="match_parent"
-                            android:layout_height="56dp"
+                            android:layout_height="76dp"
                             android:layout_marginBottom="16dp"
                             android:background="@drawable/bg_campo_perfil"
                             android:hint="Ej: Conferencia de Tecnología"
+                            android:textSize="14dp"
+                            android:gravity="top"
                             android:padding="12dp"
+                            android:inputType="textMultiLine"
                             android:textColor="@android:color/white"
-                            android:textColorHint="#B3FFFFFF" />
+                            android:textColorHint="#B3FFFFFF"
+                            android:scrollbarAlwaysDrawHorizontalTrack="true"/>
 
                         <!-- Información del evento -->
                         <TextView
@@ -103,10 +107,12 @@
                             android:background="@drawable/bg_campo_perfil"
                             android:hint="Descripción del evento..."
                             android:gravity="top"
+                            android:textSize="14dp"
                             android:padding="12dp"
                             android:inputType="textMultiLine"
                             android:textColor="@android:color/white"
-                            android:textColorHint="#B3FFFFFF" />
+                            android:textColorHint="#B3FFFFFF"
+                            android:scrollbarAlwaysDrawHorizontalTrack="true"/>
 
                         <!-- Punto de referencia -->
                         <TextView

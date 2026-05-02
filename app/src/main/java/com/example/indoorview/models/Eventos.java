@@ -9,10 +9,12 @@ public class Eventos {
     private String latitud;
     private String longitud;
     private String fecha_inicio;
+    private String hora_inicio;
     private String fecha_fin;
+    private String hora_fin;
     private int estado;
 
-    public Eventos(int id_evento, int id_lugar, int id_espacio, String nombre, String descripcion, String latitud, String longitud, String fecha_inicio, String fecha_fin, int estado) {
+    public Eventos(int id_evento, int id_lugar, int id_espacio, String nombre, String descripcion, String latitud, String longitud, String fecha_inicio,String hora_inicio, String fecha_fin,String hora_fin, int estado) {
         this.id_evento = id_evento;
         this.id_lugar = id_lugar;
         this.id_espacio = id_espacio;
@@ -21,7 +23,9 @@ public class Eventos {
         this.latitud = latitud;
         this.longitud = longitud;
         this.fecha_inicio = fecha_inicio;
+        this.hora_inicio = hora_inicio;
         this.fecha_fin = fecha_fin;
+        this.hora_fin = hora_fin;
         this.estado = estado;
     }
 
@@ -103,5 +107,21 @@ public class Eventos {
 
     public void setEstado(int estado) {
         this.estado = estado;
+    }
+
+    public String getHora_inicio() {
+        return hora_inicio;
+    }
+
+    public void setHora_inicio(String hora_inicio) {
+        this.hora_inicio = hora_inicio;
+    }
+
+    public String getHora_fin() {
+        return hora_fin;
+    }
+
+    public void setHora_fin(String hora_fin) {
+        this.hora_fin = hora_fin;
     }
 }

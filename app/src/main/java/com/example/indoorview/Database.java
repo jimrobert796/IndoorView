@@ -587,6 +587,10 @@ public class Database extends SQLiteOpenHelper {
 // ==========================================
 
     // 1. INSERTAR evento
+    // ===== INSERTAR EVENTO (MEJORADO) =====
+    // AGREGAR ESTOS MÉTODOS A TU CLASE BD_Eventos
+
+    // ===== INSERTAR EVENTO (MEJORADO) =====
     public long insertarEvento(Eventos evento) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
@@ -596,8 +600,10 @@ public class Database extends SQLiteOpenHelper {
         cv.put("descripcion", evento.getDescripcion());
         cv.put("latitud", evento.getLatitud());
         cv.put("longitud", evento.getLongitud());
-        cv.put("fecha_inicio", evento.getFecha_inicio());
-        cv.put("fecha_fin", evento.getFecha_fin());
+        cv.put("fecha_inicio", evento.getFecha_inicio());      // dd/mm/yyyy
+        cv.put("hora_inicio", evento.getHora_inicio());        // hh:mm
+        cv.put("fecha_fin", evento.getFecha_fin());            // dd/mm/yyyy
+        cv.put("hora_fin", evento.getHora_fin());              // hh:mm
         cv.put("estado", evento.getEstado());
 
         long id = db.insert("eventos", null, cv);
@@ -605,7 +611,7 @@ public class Database extends SQLiteOpenHelper {
         return id;
     }
 
-    // 2. OBTENER todos los eventos activos
+    // ===== OBTENER TODOS LOS EVENTOS (MEJORADO) =====
     public List<Eventos> getEventos() {
         List<Eventos> lista = new ArrayList<>();
         SQLiteDatabase db = getReadableDatabase();
@@ -621,7 +627,9 @@ public class Database extends SQLiteOpenHelper {
                     c.getString(c.getColumnIndexOrThrow("latitud")),
                     c.getString(c.getColumnIndexOrThrow("longitud")),
                     c.getString(c.getColumnIndexOrThrow("fecha_inicio")),
+                    c.getString(c.getColumnIndexOrThrow("hora_inicio")),
                     c.getString(c.getColumnIndexOrThrow("fecha_fin")),
+                    c.getString(c.getColumnIndexOrThrow("hora_fin")),
                     c.getInt(c.getColumnIndexOrThrow("estado"))
             );
             lista.add(e);
@@ -631,7 +639,7 @@ public class Database extends SQLiteOpenHelper {
         return lista;
     }
 
-    // 3. OBTENER evento por ID
+    // ===== OBTENER EVENTO POR ID (MEJORADO) =====
     public Eventos getEventoById(int id) {
         SQLiteDatabase db = getReadableDatabase();
         Cursor c = db.rawQuery("SELECT * FROM eventos WHERE id_evento = ?",
@@ -648,7 +656,9 @@ public class Database extends SQLiteOpenHelper {
                     c.getString(c.getColumnIndexOrThrow("latitud")),
                     c.getString(c.getColumnIndexOrThrow("longitud")),
                     c.getString(c.getColumnIndexOrThrow("fecha_inicio")),
+                    c.getString(c.getColumnIndexOrThrow("hora_inicio")),
                     c.getString(c.getColumnIndexOrThrow("fecha_fin")),
+                    c.getString(c.getColumnIndexOrThrow("hora_fin")),
                     c.getInt(c.getColumnIndexOrThrow("estado"))
             );
         }
@@ -657,7 +667,29 @@ public class Database extends SQLiteOpenHelper {
         return evento;
     }
 
-    // 4. OBTENER eventos por lugar (edificio)
+    // ===== ACTUALIZAR EVENTO (MEJORADO) =====
+    public int updateEvento(Eventos evento) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put("id_lugar", evento.getId_lugar());
+        cv.put("id_espacio", evento.getId_espacio());
+        cv.put("nombre", evento.getNombre());
+        cv.put("descripcion", evento.getDescripcion());
+        cv.put("latitud", evento.getLatitud());
+        cv.put("longitud", evento.getLongitud());
+        cv.put("fecha_inicio", evento.getFecha_inicio());      // dd/mm/yyyy
+        cv.put("hora_inicio", evento.getHora_inicio());        // hh:mm
+        cv.put("fecha_fin", evento.getFecha_fin());            // dd/mm/yyyy
+        cv.put("hora_fin", evento.getHora_fin());              // hh:mm
+        cv.put("estado", evento.getEstado());
+
+        int rows = db.update("eventos", cv, "id_evento = ?",
+                new String[]{String.valueOf(evento.getId_evento())});
+        db.close();
+        return rows;
+    }
+
+    // ===== OBTENER EVENTOS POR LUGAR (MEJORADO) =====
     public List<Eventos> getEventosByLugar(int idLugar) {
         List<Eventos> lista = new ArrayList<>();
         SQLiteDatabase db = getReadableDatabase();
@@ -674,7 +706,9 @@ public class Database extends SQLiteOpenHelper {
                     c.getString(c.getColumnIndexOrThrow("latitud")),
                     c.getString(c.getColumnIndexOrThrow("longitud")),
                     c.getString(c.getColumnIndexOrThrow("fecha_inicio")),
+                    c.getString(c.getColumnIndexOrThrow("hora_inicio")),
                     c.getString(c.getColumnIndexOrThrow("fecha_fin")),
+                    c.getString(c.getColumnIndexOrThrow("hora_fin")),
                     c.getInt(c.getColumnIndexOrThrow("estado"))
             );
             lista.add(e);
@@ -684,7 +718,7 @@ public class Database extends SQLiteOpenHelper {
         return lista;
     }
 
-    // 5. OBTENER eventos por espacio (aula)
+    // ===== OBTENER EVENTOS POR ESPACIO (MEJORADO) =====
     public List<Eventos> getEventosByEspacio(int idEspacio) {
         List<Eventos> lista = new ArrayList<>();
         SQLiteDatabase db = getReadableDatabase();
@@ -701,7 +735,9 @@ public class Database extends SQLiteOpenHelper {
                     c.getString(c.getColumnIndexOrThrow("latitud")),
                     c.getString(c.getColumnIndexOrThrow("longitud")),
                     c.getString(c.getColumnIndexOrThrow("fecha_inicio")),
+                    c.getString(c.getColumnIndexOrThrow("hora_inicio")),
                     c.getString(c.getColumnIndexOrThrow("fecha_fin")),
+                    c.getString(c.getColumnIndexOrThrow("hora_fin")),
                     c.getInt(c.getColumnIndexOrThrow("estado"))
             );
             lista.add(e);
@@ -711,55 +747,17 @@ public class Database extends SQLiteOpenHelper {
         return lista;
     }
 
-    // 6. OBTENER eventos actuales (fecha_inicio <= hoy <= fecha_fin)
-    public List<Eventos> getEventosActuales() {
-        List<Eventos> lista = new ArrayList<>();
-        SQLiteDatabase db = getReadableDatabase();
-        long hoy = System.currentTimeMillis();
-
-        Cursor c = db.rawQuery("SELECT * FROM eventos WHERE estado = 1 AND fecha_inicio <= ? AND fecha_fin >= ?",
-                new String[]{String.valueOf(hoy), String.valueOf(hoy)});
-
-        while (c.moveToNext()) {
-            Eventos e = new Eventos(
-                    c.getInt(c.getColumnIndexOrThrow("id_evento")),
-                    c.getInt(c.getColumnIndexOrThrow("id_lugar")),
-                    c.getInt(c.getColumnIndexOrThrow("id_espacio")),
-                    c.getString(c.getColumnIndexOrThrow("nombre")),
-                    c.getString(c.getColumnIndexOrThrow("descripcion")),
-                    c.getString(c.getColumnIndexOrThrow("latitud")),
-                    c.getString(c.getColumnIndexOrThrow("longitud")),
-                    c.getString(c.getColumnIndexOrThrow("fecha_inicio")),
-                    c.getString(c.getColumnIndexOrThrow("fecha_fin")),
-                    c.getInt(c.getColumnIndexOrThrow("estado"))
-            );
-            lista.add(e);
-        }
-        c.close();
-        db.close();
-        return lista;
-    }
-
-    // 7. ACTUALIZAR evento
-    public int updateEvento(Eventos evento) {
+    // ===== CAMBIAR ESTADO (ELIMINAR LÓGICAMENTE) =====
+    public int deleteEvento(int idEvento) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
-        cv.put("id_lugar", evento.getId_lugar());
-        cv.put("id_espacio", evento.getId_espacio());
-        cv.put("nombre", evento.getNombre());
-        cv.put("descripcion", evento.getDescripcion());
-        cv.put("latitud", evento.getLatitud());
-        cv.put("longitud", evento.getLongitud());
-        cv.put("fecha_inicio", evento.getFecha_inicio());
-        cv.put("fecha_fin", evento.getFecha_fin());
-        cv.put("estado", evento.getEstado());
+        cv.put("estado", 0);
 
         int rows = db.update("eventos", cv, "id_evento = ?",
-                new String[]{String.valueOf(evento.getId_evento())});
+                new String[]{String.valueOf(idEvento)});
         db.close();
         return rows;
     }
-
     // 8. ELIMINAR evento (soft delete - cambiar estado a 0)
     public void eliminarEvento(int id) {
         SQLiteDatabase db = getWritableDatabase();

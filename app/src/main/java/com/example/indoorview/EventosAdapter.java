@@ -59,8 +59,18 @@ public class EventosAdapter extends RecyclerView.Adapter<EventosAdapter.EventoVi
         // Establecer datos
         holder.tvTituloEvento.setText(evento.getNombre());
         holder.tvDescripcion.setText(evento.getDescripcion());
-        holder.tvHoraInicio.setText(evento.getFecha_inicio()); // O la hora si la guardas por separado
-        holder.tvHoraFin.setText("A " + evento.getFecha_fin());
+
+        // ===== MEJORADO: Mostrar fecha y hora correctamente =====
+        // Hora de inicio: mostrar solo la hora
+        String horaInicio = evento.getHora_inicio();
+        holder.tvHoraInicio.setText(horaInicio);
+
+        // Hora de fin: mostrar "A hh:mm"
+        String horaFin = evento.getHora_fin();
+        holder.tvHoraFin.setText("A " + horaFin);
+
+        // OPCIONAL: Si quieres mostrar también la fecha en el card:
+        // holder.tvFechaEvento.setText(evento.getFecha_inicio()); // dd/mm/yyyy
 
         // Click listener
         holder.cardEvento.setOnClickListener(v -> {

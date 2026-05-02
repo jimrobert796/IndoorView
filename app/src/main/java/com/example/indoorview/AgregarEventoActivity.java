@@ -11,14 +11,20 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TimePicker;
 import android.widget.Toast;
+import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
+
+import com.example.indoorview.models.Eventos;
+
 import java.util.Calendar;
 
 public class AgregarEventoActivity extends AppCompatActivity {
 
     // Componentes del layout
     private ImageView btnRegresar;
+    private TextView tvTituloFormulario;
+    private TextView tvModoEdicion;
     private EditText etTituloEvento;
     private EditText etDescripcion;
     private Button btnAgregarPunto;
@@ -34,19 +40,38 @@ public class AgregarEventoActivity extends AppCompatActivity {
     private ImageButton btnHoraInicio;
     private ImageButton btnHoraFin;
 
-    // Variables para almacenar fechas y horas
+    // Variables para almacenar fechas y horas (SEPARADAS)
     private Calendar calendarFechaInicio = Calendar.getInstance();
     private Calendar calendarFechaFin = Calendar.getInstance();
     private Calendar calendarHoraInicio = Calendar.getInstance();
     private Calendar calendarHoraFin = Calendar.getInstance();
+
+    // Variables de edición
+    private boolean esEdicion = false;
+    private int idEventoEditando = -1;
+    private String nombreEventoEditando = "";
+    private Database bdEventos;
+    private int idLugar = -1;
+    private int idEspacio = -1;
+    private String latitud = "";
+    private String longitud = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_editar_evento);
 
+        // Inicializar BD
+        bdEventos = new Database(this);
+
         // Inicializar vistas
         initViews();
+
+        // Verificar si es edición o creación
+        verificarIntentExtras();
+
+        // Actualizar título dinámicamente
+        actualizarTitulo();
 
         // Configurar listeners
         setupListeners();
@@ -54,6 +79,13 @@ public class AgregarEventoActivity extends AppCompatActivity {
 
     private void initViews() {
         btnRegresar = findViewById(R.id.btn_regresar);
+        tvTituloFormulario = findViewById(R.id.tv_titulo_formulario);
+        try {
+            tvModoEdicion = findViewById(R.id.tvModo);
+        } catch (Exception e) {
+            tvModoEdicion = null;
+        }
+
         etTituloEvento = findViewById(R.id.et_titulo_evento);
         etDescripcion = findViewById(R.id.et_descripcion);
         btnAgregarPunto = findViewById(R.id.btn_agregar_punto);
@@ -66,6 +98,60 @@ public class AgregarEventoActivity extends AppCompatActivity {
         btnFechaFin = findViewById(R.id.btn_fecha_fin);
         btnHoraInicio = findViewById(R.id.btn_hora_inicio);
         btnHoraFin = findViewById(R.id.btn_hora_fin);
+    }
+
+    /**
+     * Verificar si viene de edición y cargar datos
+     */
+    private void verificarIntentExtras() {
+        Bundle extras = getIntent().getExtras();
+        if (extras != null) {
+            esEdicion = extras.getBoolean("es_edicion", false);
+            if (esEdicion) {
+                idEventoEditando = extras.getInt("id_evento", -1);
+                idLugar = extras.getInt("id_lugar", -1);
+                idEspacio = extras.getInt("id_espacio", -1);
+                latitud = extras.getString("latitud", "");
+                longitud = extras.getString("longitud", "");
+                nombreEventoEditando = extras.getString("nombre", "");
+
+                // ===== MEJORADO: Cargar fecha y hora separadas =====
+                etTituloEvento.setText(extras.getString("nombre", ""));
+                etDescripcion.setText(extras.getString("descripcion", ""));
+
+                // Cargar fechas y horas separadas
+                etFechaInicio.setText(extras.getString("fecha_inicio", ""));
+                etHoraInicio.setText(extras.getString("hora_inicio", ""));
+                etFechaFin.setText(extras.getString("fecha_fin", ""));
+                etHoraFin.setText(extras.getString("hora_fin", ""));
+
+                // Cambiar texto del botón guardar
+                btnGuardarEvento.setText("Actualizar Evento");
+            }
+        }
+    }
+
+    /**
+     * Actualizar el título del formulario dinámicamente
+     */
+    private void actualizarTitulo() {
+        if (esEdicion) {
+            tvTituloFormulario.setText("Editar Evento");
+            tvTituloFormulario.setTextColor(getResources().getColor(android.R.color.holo_orange_light, null));
+
+            if (tvModoEdicion != null) {
+                tvModoEdicion.setVisibility(View.VISIBLE);
+                tvModoEdicion.setText("✎ Editando: " + nombreEventoEditando);
+                tvModoEdicion.setTextColor(getResources().getColor(android.R.color.holo_orange_light, null));
+            }
+        } else {
+            tvTituloFormulario.setText("Agregar Evento");
+            tvTituloFormulario.setTextColor(getResources().getColor(android.R.color.holo_green_light, null));
+
+            if (tvModoEdicion != null) {
+                tvModoEdicion.setVisibility(View.GONE);
+            }
+        }
     }
 
     private void setupListeners() {
@@ -81,7 +167,6 @@ public class AgregarEventoActivity extends AppCompatActivity {
         btnAgregarPunto.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // Aquí puedes implementar la selección de punto en el mapa
                 Toast.makeText(AgregarEventoActivity.this,
                         "Funcionalidad de agregar punto en desarrollo", Toast.LENGTH_SHORT).show();
             }
@@ -154,7 +239,6 @@ public class AgregarEventoActivity extends AppCompatActivity {
                 guardarEvento();
             }
         });
-
     }
 
     private void showDatePicker(final boolean isFechaInicio) {
@@ -178,17 +262,6 @@ public class AgregarEventoActivity extends AppCompatActivity {
                                 etFechaFin.setText(fecha);
                             }
                         } else {
-                            // Validar que fecha fin no sea menor que fecha inicio
-                            if (calendarFechaInicio.after(Calendar.getInstance())) {
-                                calendarFechaInicio.set(year, month, dayOfMonth);
-                            }
-                            if (calendarFechaInicio.getTimeInMillis() >
-                                    Calendar.getInstance().getTimeInMillis()) {
-                                Toast.makeText(AgregarEventoActivity.this,
-                                        "La fecha fin no puede ser menor a la fecha inicio",
-                                        Toast.LENGTH_SHORT).show();
-                                return;
-                            }
                             etFechaFin.setText(fecha);
                             calendarFechaFin.set(year, month, dayOfMonth);
                         }
@@ -237,12 +310,12 @@ public class AgregarEventoActivity extends AppCompatActivity {
     }
 
     private void guardarEvento() {
-        // Obtener datos
+        // Obtener datos (SEPARADOS)
         String titulo = etTituloEvento.getText().toString().trim();
         String descripcion = etDescripcion.getText().toString().trim();
         String fechaInicio = etFechaInicio.getText().toString().trim();
-        String fechaFin = etFechaFin.getText().toString().trim();
         String horaInicio = etHoraInicio.getText().toString().trim();
+        String fechaFin = etFechaFin.getText().toString().trim();
         String horaFin = etHoraFin.getText().toString().trim();
 
         // Validaciones
@@ -257,13 +330,13 @@ public class AgregarEventoActivity extends AppCompatActivity {
             return;
         }
 
-        if (fechaFin.isEmpty()) {
-            Toast.makeText(this, "Seleccione la fecha de fin", Toast.LENGTH_SHORT).show();
+        if (horaInicio.isEmpty()) {
+            Toast.makeText(this, "Seleccione la hora de inicio", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        if (horaInicio.isEmpty()) {
-            Toast.makeText(this, "Seleccione la hora de inicio", Toast.LENGTH_SHORT).show();
+        if (fechaFin.isEmpty()) {
+            Toast.makeText(this, "Seleccione la fecha de fin", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -272,28 +345,55 @@ public class AgregarEventoActivity extends AppCompatActivity {
             return;
         }
 
-        // Aquí puedes guardar el evento en tu base de datos o enviarlo de vuelta
-        String mensaje = "Evento creado exitosamente:\n\n" +
-                "Título: " + titulo + "\n" +
-                "Descripción: " + descripcion + "\n" +
-                "Fecha inicio: " + fechaInicio + " " + horaInicio + "\n" +
-                "Fecha fin: " + fechaFin + " " + horaFin;
+        // ===== MEJORADO: Guardar fecha y hora SEPARADAS =====
+        if (esEdicion) {
+            // EDITAR evento existente
+            Eventos evento = new Eventos(
+                    idEventoEditando,
+                    idLugar != -1 ? idLugar : 1,
+                    idEspacio != -1 ? idEspacio : 1,
+                    titulo,
+                    descripcion,
+                    latitud.isEmpty() ? "0.0" : latitud,
+                    longitud.isEmpty() ? "0.0" : longitud,
+                    fechaInicio,      // dd/mm/yyyy
+                    horaInicio,        // hh:mm
+                    fechaFin,          // dd/mm/yyyy
+                    horaFin,           // hh:mm
+                    1 // estado activo
+            );
 
-        Toast.makeText(this, "Evento guardado correctamente", Toast.LENGTH_LONG).show();
+            int filasActualizadas = bdEventos.updateEvento(evento);
+            if (filasActualizadas > 0) {
+                Toast.makeText(this, "✓ Evento actualizado correctamente", Toast.LENGTH_LONG).show();
+                finish();
+            } else {
+                Toast.makeText(this, "✗ Error al actualizar el evento", Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            // CREAR nuevo evento
+            Eventos evento = new Eventos(
+                    0, // id será generado por la BD
+                    idLugar != -1 ? idLugar : 1,
+                    idEspacio != -1 ? idEspacio : 1,
+                    titulo,
+                    descripcion,
+                    latitud.isEmpty() ? "0.0" : latitud,
+                    longitud.isEmpty() ? "0.0" : longitud,
+                    fechaInicio,      // dd/mm/yyyy
+                    horaInicio,        // hh:mm
+                    fechaFin,          // dd/mm/yyyy
+                    horaFin,           // hh:mm
+                    1 // estado activo
+            );
 
-        // Enviar resultado de vuelta si es necesario
-        /*
-        Intent resultIntent = new Intent();
-        resultIntent.putExtra("titulo", titulo);
-        resultIntent.putExtra("descripcion", descripcion);
-        resultIntent.putExtra("fecha_inicio", fechaInicio);
-        resultIntent.putExtra("fecha_fin", fechaFin);
-        resultIntent.putExtra("hora_inicio", horaInicio);
-        resultIntent.putExtra("hora_fin", horaFin);
-        setResult(RESULT_OK, resultIntent);
-        */
-
-        // Cerrar la actividad
-        finish();
+            long id = bdEventos.insertarEvento(evento);
+            if (id > 0) {
+                Toast.makeText(this, "✓ Evento creado correctamente", Toast.LENGTH_LONG).show();
+                finish();
+            } else {
+                Toast.makeText(this, "✗ Error al crear el evento", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 }

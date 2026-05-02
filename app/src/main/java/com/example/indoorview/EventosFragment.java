@@ -54,8 +54,22 @@ public class EventosFragment extends Fragment {
         });
 
         adapter.setOnEventoClickListener((evento, position) -> {
-            // Aquí puedes mostrar detalles del evento si lo deseas
+            // Crear Intent y pasar los datos del evento
             Intent intent = new Intent(getActivity(), MapaEventoActivity.class);
+
+            // Pasar toda la información del evento
+            intent.putExtra("id_evento", evento.getId_evento());
+            intent.putExtra("nombre_evento", evento.getNombre());
+            intent.putExtra("descripcion_evento", evento.getDescripcion());
+            intent.putExtra("fecha_inicio", evento.getFecha_inicio());
+            intent.putExtra("hora_inicio", evento.getHora_inicio());
+            intent.putExtra("fecha_fin", evento.getFecha_fin());
+            intent.putExtra("hora_fin", evento.getHora_fin());
+            intent.putExtra("latitud", evento.getLatitud());
+            intent.putExtra("longitud", evento.getLongitud());
+            intent.putExtra("id_lugar", evento.getId_lugar());
+            intent.putExtra("id_espacio", evento.getId_espacio());
+
             startActivity(intent);
             Toast.makeText(getContext(), "Evento: " + evento.getNombre(), Toast.LENGTH_SHORT).show();
         });
@@ -104,14 +118,16 @@ public class EventosFragment extends Fragment {
         Intent intent = new Intent(getActivity(), AgregarEventoActivity.class);
         intent.putExtra("es_edicion", true);
         intent.putExtra("id_evento", evento.getId_evento());
+        intent.putExtra("id_lugar", evento.getId_lugar());
+        intent.putExtra("id_espacio", evento.getId_espacio());
         intent.putExtra("nombre", evento.getNombre());
         intent.putExtra("descripcion", evento.getDescripcion());
         intent.putExtra("fecha_inicio", evento.getFecha_inicio());
+        intent.putExtra("hora_inicio", evento.getHora_inicio());
         intent.putExtra("fecha_fin", evento.getFecha_fin());
+        intent.putExtra("hora_fin", evento.getHora_fin());
         intent.putExtra("latitud", evento.getLatitud());
         intent.putExtra("longitud", evento.getLongitud());
-        intent.putExtra("id_lugar", evento.getId_lugar());
-        intent.putExtra("id_espacio", evento.getId_espacio());
         startActivity(intent);
     }
 
