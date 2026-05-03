@@ -16,7 +16,7 @@
         android:src="@drawable/ic_regreso"
         android:contentDescription="Regresar" />
 
-    <!-- ScrollView para pantallas pequeñas -->
+    <!-- ScrollView -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -27,7 +27,7 @@
             android:layout_height="wrap_content"
             android:padding="16dp">
 
-            <!-- Card del formulario (ocupa todo el ancho) -->
+            <!-- Card del formulario -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/card_formulario_usuario"
                 android:layout_width="match_parent"
@@ -35,7 +35,7 @@
                 android:layout_marginTop="60dp"
                 app:cardCornerRadius="24dp"
                 app:cardElevation="8dp"
-                app:cardBackgroundColor="#80000000"> <!-- si se puede quitar o no se ve bien, quitalo maje ya sea jimmy o vos, y hola a quien lea esto jejejejej -->
+                app:cardBackgroundColor="#80000000">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -43,7 +43,7 @@
                     android:orientation="vertical"
                     android:padding="20dp">
 
-                    <!-- Imagen de perfil (circular) -->
+                    <!-- Imagen de perfil -->
                     <FrameLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -125,7 +125,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Correo"
+                        android:text="Correo Electrónico"
                         android:textColor="#B3FFFFFF"
                         android:textSize="12sp" />
 
@@ -135,11 +135,29 @@
                         android:layout_height="56dp"
                         android:layout_marginBottom="16dp"
                         android:background="@drawable/bg_campo_perfil"
-                        android:hint="Ej: usuario@ugb.edu.sv"
+                        android:hint="Ej: usuario@ejemplo.com"
                         android:inputType="textEmailAddress"
                         android:padding="12dp"
                         android:textColor="@android:color/white"
                         android:textColorHint="#B3FFFFFF" />
+
+                    <!-- Spinner: Tipo de Usuario -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Tipo de Usuario"
+                        android:textColor="#B3FFFFFF"
+                        android:textSize="12sp" />
+
+                    <Spinner
+                        android:id="@+id/spinner_tipo_usuario"
+                        android:layout_width="match_parent"
+                        android:layout_height="56dp"
+                        android:layout_marginBottom="16dp"
+                        android:background="@drawable/bg_campo_perfil"
+                        android:entries="@array/tipos_usuario"
+                        android:padding="12dp"
+                        android:popupBackground="#333333" />
 
                     <!-- Campo: Contraseña -->
                     <TextView
@@ -149,25 +167,38 @@
                         android:textColor="#B3FFFFFF"
                         android:textSize="12sp" />
 
-                    <EditText
-                        android:id="@+id/et_password"
+                    <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
-                        android:layout_height="56dp"
+                        android:layout_height="wrap_content"
                         android:layout_marginBottom="24dp"
                         android:background="@drawable/bg_campo_perfil"
-                        android:hint="Ingrese contraseña"
-                        android:inputType="textPassword"
-                        android:padding="12dp"
-                        android:textColor="@android:color/white"
-                        android:textColorHint="#B3FFFFFF" />
+                        app:hintEnabled="false"
+                        app:endIconMode="password_toggle"
+                        app:endIconTint="#FFFFFF"
+                        app:boxBackgroundColor="#33FFFFFF"
+                        app:boxStrokeColor="#FFFFFF"
+                        app:hintTextColor="#B3FFFFFF">
 
-                    <!-- Botones (horizontal) -->
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/et_password"
+                            android:layout_width="match_parent"
+                            android:layout_height="56dp"
+                            android:hint="Ingrese contraseña"
+                            android:inputType="textPassword"
+                            android:background="@android:color/transparent"
+                            android:padding="12dp"
+                            android:textColor="@android:color/white"
+                            android:textColorHint="#B3FFFFFF"
+                            android:textCursorDrawable="@null" />  <!-- Esto hace que el cursor herede el color del texto -->
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- Botones -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal">
 
-                        <!-- Botón Cancelar -->
                         <Button
                             android:id="@+id/btn_cancelar"
                             android:layout_width="0dp"
@@ -180,7 +211,6 @@
                             android:textSize="14sp"
                             android:textStyle="bold" />
 
-                        <!-- Botón Guardar -->
                         <Button
                             android:id="@+id/btn_guardar_usuario"
                             android:layout_width="0dp"

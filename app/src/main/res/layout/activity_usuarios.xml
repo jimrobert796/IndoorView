@@ -16,7 +16,7 @@
         android:src="@drawable/ic_regreso"
         android:contentDescription="Regresar" />
 
-    <!-- titulo -->
+    <!-- Título -->
     <TextView
         android:id="@+id/tv_titulo_usuarios"
         android:layout_width="wrap_content"
@@ -28,30 +28,59 @@
         android:textSize="18sp"
         android:textStyle="bold" />
 
-    <!-- Buscador -->
-    <EditText
-        android:id="@+id/et_buscador"
+    <!-- Contenedor horizontal para buscador y filtro -->
+    <LinearLayout
+        android:id="@+id/ll_contenedor_filtros"
         android:layout_width="match_parent"
-        android:layout_height="56dp"
+        android:layout_height="wrap_content"
         android:layout_below="@id/tv_titulo_usuarios"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
         android:layout_marginTop="16dp"
-        android:background="@drawable/bg_campo_perfil"
-        android:drawableStart="@drawable/ic_search"
-        android:drawablePadding="12dp"
-        android:hint="Buscar por nombre o carnet"
-        android:padding="12dp"
-        android:textColor="@android:color/white"
-        android:textColorHint="#B3FFFFFF"
-        android:inputType="text" />
+        android:orientation="horizontal"
+        android:baselineAligned="false">
 
-    <!-- Lista de usuarios (ScrollView) -->
+        <!-- Buscador -->
+        <EditText
+            android:id="@+id/et_buscador"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1.8"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/bg_campo_perfil"
+            android:drawableStart="@drawable/ic_search"
+            android:drawablePadding="12dp"
+            android:hint="Nombre o carnet"
+            android:padding="12dp"
+            android:textColor="@android:color/white"
+            android:textColorHint="#B3FFFFFF"
+            android:inputType="text"
+            android:singleLine="true"
+            android:ellipsize="end" />
+
+        <!-- Spinner Filtro -->
+        <Spinner
+            android:id="@+id/spinner_filtro_tipo"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_campo_perfil"
+            android:entries="@array/tipos_usuario"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:popupBackground="#333333"
+            android:spinnerMode="dropdown"
+            android:gravity="center"
+            android:textSize="10sp" />
+
+    </LinearLayout>
+
+    <!-- Lista de usuarios -->
     <ScrollView
         android:id="@+id/scroll_usuarios"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/et_buscador"
+        android:layout_below="@id/ll_contenedor_filtros"
         android:layout_marginTop="16dp"
         android:paddingHorizontal="16dp"
         android:paddingBottom="80dp">
@@ -60,33 +89,11 @@
             android:id="@+id/ll_contenedor_usuarios"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical" />
 
-            <!-- Ejemplo de usuario 1 -->
-            <include
-                layout="@layout/item_usuario"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp" />
-
-            <!-- Ejemplo de usuario 2 -->
-            <include
-                layout="@layout/item_usuario"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp" />
-
-            <!-- Ejemplo de usuario 3 -->
-            <include
-                layout="@layout/item_usuario"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp" />
-
-        </LinearLayout>
     </ScrollView>
 
-    <!-- Boton flotante para agregar usuario (solo admin) wacha el gone en visibility -->
+    <!-- Botón flotante para agregar usuario -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_agregar_usuario"
         android:layout_width="wrap_content"
@@ -98,7 +105,6 @@
         android:src="@drawable/ic_add"
         app:backgroundTint="#2196F3"
         app:tint="@android:color/white"
-        android:contentDescription="Agregar usuario"
-        />  <!-- Oculto por defecto, visible solo para admin -->
+        android:contentDescription="Agregar usuario" />
 
 </RelativeLayout>
