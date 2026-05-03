@@ -594,12 +594,10 @@ public class Database extends SQLiteOpenHelper {
     public long insertarEvento(Eventos evento) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
-        cv.put("id_lugar", evento.getId_lugar());
-        cv.put("id_espacio", evento.getId_espacio());
         cv.put("nombre", evento.getNombre());
         cv.put("descripcion", evento.getDescripcion());
-        cv.put("latitud", evento.getLatitud());
         cv.put("longitud", evento.getLongitud());
+        cv.put("latitud", evento.getLatitud());
         cv.put("fecha_inicio", evento.getFecha_inicio());      // dd/mm/yyyy
         cv.put("hora_inicio", evento.getHora_inicio());        // hh:mm
         cv.put("fecha_fin", evento.getFecha_fin());            // dd/mm/yyyy
@@ -620,12 +618,10 @@ public class Database extends SQLiteOpenHelper {
         while (c.moveToNext()) {
             Eventos e = new Eventos(
                     c.getInt(c.getColumnIndexOrThrow("id_evento")),
-                    c.getInt(c.getColumnIndexOrThrow("id_lugar")),
-                    c.getInt(c.getColumnIndexOrThrow("id_espacio")),
                     c.getString(c.getColumnIndexOrThrow("nombre")),
                     c.getString(c.getColumnIndexOrThrow("descripcion")),
-                    c.getString(c.getColumnIndexOrThrow("latitud")),
                     c.getString(c.getColumnIndexOrThrow("longitud")),
+                    c.getString(c.getColumnIndexOrThrow("latitud")),
                     c.getString(c.getColumnIndexOrThrow("fecha_inicio")),
                     c.getString(c.getColumnIndexOrThrow("hora_inicio")),
                     c.getString(c.getColumnIndexOrThrow("fecha_fin")),
@@ -649,12 +645,10 @@ public class Database extends SQLiteOpenHelper {
         if (c.moveToFirst()) {
             evento = new Eventos(
                     c.getInt(c.getColumnIndexOrThrow("id_evento")),
-                    c.getInt(c.getColumnIndexOrThrow("id_lugar")),
-                    c.getInt(c.getColumnIndexOrThrow("id_espacio")),
                     c.getString(c.getColumnIndexOrThrow("nombre")),
                     c.getString(c.getColumnIndexOrThrow("descripcion")),
-                    c.getString(c.getColumnIndexOrThrow("latitud")),
                     c.getString(c.getColumnIndexOrThrow("longitud")),
+                    c.getString(c.getColumnIndexOrThrow("latitud")),
                     c.getString(c.getColumnIndexOrThrow("fecha_inicio")),
                     c.getString(c.getColumnIndexOrThrow("hora_inicio")),
                     c.getString(c.getColumnIndexOrThrow("fecha_fin")),
@@ -671,12 +665,10 @@ public class Database extends SQLiteOpenHelper {
     public int updateEvento(Eventos evento) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
-        cv.put("id_lugar", evento.getId_lugar());
-        cv.put("id_espacio", evento.getId_espacio());
         cv.put("nombre", evento.getNombre());
         cv.put("descripcion", evento.getDescripcion());
-        cv.put("latitud", evento.getLatitud());
         cv.put("longitud", evento.getLongitud());
+        cv.put("latitud", evento.getLatitud());
         cv.put("fecha_inicio", evento.getFecha_inicio());      // dd/mm/yyyy
         cv.put("hora_inicio", evento.getHora_inicio());        // hh:mm
         cv.put("fecha_fin", evento.getFecha_fin());            // dd/mm/yyyy
@@ -699,12 +691,10 @@ public class Database extends SQLiteOpenHelper {
         while (c.moveToNext()) {
             Eventos e = new Eventos(
                     c.getInt(c.getColumnIndexOrThrow("id_evento")),
-                    c.getInt(c.getColumnIndexOrThrow("id_lugar")),
-                    c.getInt(c.getColumnIndexOrThrow("id_espacio")),
                     c.getString(c.getColumnIndexOrThrow("nombre")),
                     c.getString(c.getColumnIndexOrThrow("descripcion")),
-                    c.getString(c.getColumnIndexOrThrow("latitud")),
                     c.getString(c.getColumnIndexOrThrow("longitud")),
+                    c.getString(c.getColumnIndexOrThrow("latitud")),
                     c.getString(c.getColumnIndexOrThrow("fecha_inicio")),
                     c.getString(c.getColumnIndexOrThrow("hora_inicio")),
                     c.getString(c.getColumnIndexOrThrow("fecha_fin")),
@@ -728,8 +718,6 @@ public class Database extends SQLiteOpenHelper {
         while (c.moveToNext()) {
             Eventos e = new Eventos(
                     c.getInt(c.getColumnIndexOrThrow("id_evento")),
-                    c.getInt(c.getColumnIndexOrThrow("id_lugar")),
-                    c.getInt(c.getColumnIndexOrThrow("id_espacio")),
                     c.getString(c.getColumnIndexOrThrow("nombre")),
                     c.getString(c.getColumnIndexOrThrow("descripcion")),
                     c.getString(c.getColumnIndexOrThrow("latitud")),

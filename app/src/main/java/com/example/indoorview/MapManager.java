@@ -947,6 +947,27 @@ public class MapManager {
         managerEventos.create(op);
     }
 
+    public void agregarPinEventoTemp(Point punto, String texto) {
+        Bitmap icono = crearPinBitmap("#FFCC00"); // Color amarillo
+
+        PointAnnotationOptions op = new PointAnnotationOptions()
+                .withPoint(punto)
+                .withIconImage(icono)
+                .withIconSize(0.9)
+                .withTextField(texto)
+                .withTextSize(11.0)
+                .withIconAnchor(IconAnchor.CENTER)
+                .withTextColor("#000000")
+                .withTextHaloColor("#ffffff")
+                .withTextHaloWidth(2.0)
+                .withTextOffset(Arrays.asList(0.0, 2.8));
+        managerEventos.create(op);
+    }
+
+    public void limpiarPinEvento() {
+        managerEventos.deleteAll();
+    }
+
     // ════════════════════════════════════════════════════════════════
     // LIMPIEZA DE ELEMENTOS DEL MAPA
     // ════════════════════════════════════════════════════════════════

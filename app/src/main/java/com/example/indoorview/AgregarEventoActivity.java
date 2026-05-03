@@ -2,7 +2,9 @@ package com.example.indoorview;
 
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
+import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.DatePicker;
@@ -13,7 +15,8 @@ import android.widget.TimePicker;
 import android.widget.Toast;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.cardview.widget.CardView;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 
 import com.example.indoorview.models.Eventos;
 
@@ -25,6 +28,7 @@ public class AgregarEventoActivity extends AppCompatActivity {
     private ImageView btnRegresar;
     private TextView tvTituloFormulario;
     private TextView tvModoEdicion;
+    private TextView tvUbicacionSeleccionada;
     private EditText etTituloEvento;
     private EditText etDescripcion;
     private Button btnAgregarPunto;
@@ -40,7 +44,7 @@ public class AgregarEventoActivity extends AppCompatActivity {
     private ImageButton btnHoraInicio;
     private ImageButton btnHoraFin;
 
-    // Variables para almacenar fechas y horas (SEPARADAS)
+    // Variables para almacenar fechas y horas
     private Calendar calendarFechaInicio = Calendar.getInstance();
     private Calendar calendarFechaFin = Calendar.getInstance();
     private Calendar calendarHoraInicio = Calendar.getInstance();
@@ -51,10 +55,11 @@ public class AgregarEventoActivity extends AppCompatActivity {
     private int idEventoEditando = -1;
     private String nombreEventoEditando = "";
     private Database bdEventos;
-    private int idLugar = -1;
-    private int idEspacio = -1;
-    private String latitud = "";
-    private String longitud = "";
+    private String latitud = "0.0";
+    private String longitud = "0.0";
+
+    // ===== LAUNCHER PARA MAPA EN MODO SELECCIÓN
+    private ActivityResultLauncher<Intent> mapaLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,6 +71,9 @@ public class AgregarEventoActivity extends AppCompatActivity {
 
         // Inicializar vistas
         initViews();
+
+        // ===== INICIALIZAR LAUNCHER PARA MAPA
+        inicializarMapaLauncher();
 
         // Verificar si es edición o creación
         verificarIntentExtras();
@@ -80,11 +88,21 @@ public class AgregarEventoActivity extends AppCompatActivity {
     private void initViews() {
         btnRegresar = findViewById(R.id.btn_regresar);
         tvTituloFormulario = findViewById(R.id.tv_titulo_formulario);
+
         try {
             tvModoEdicion = findViewById(R.id.tvModo);
         } catch (Exception e) {
             tvModoEdicion = null;
         }
+        /*
+        // ===== INICIALIZAR TEXTVIEW DE UBICACIÓN (si existe en el layout)
+        try {
+            tvUbicacionSeleccionada = findViewById(R.id.tv_ubicacion_seleccionada);
+        } catch (Exception e) {
+            tvUbicacionSeleccionada = null;
+        }
+
+         */
 
         etTituloEvento = findViewById(R.id.et_titulo_evento);
         etDescripcion = findViewById(R.id.et_descripcion);
@@ -101,6 +119,39 @@ public class AgregarEventoActivity extends AppCompatActivity {
     }
 
     /**
+     * ===== INICIALIZAR LAUNCHER PARA MAPA
+     */
+    private void inicializarMapaLauncher() {
+        mapaLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        // Recuperar las coordenadas seleccionadas
+                        latitud = result.getData().getStringExtra("latitud");
+                        longitud = result.getData().getStringExtra("longitud");
+
+                        // Actualizar UI
+                        actualizarUbicacionUI(latitud, longitud);
+
+                        Toast.makeText(this, "✓ Ubicación guardada", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(this, "⚠️ Selección cancelada", Toast.LENGTH_SHORT).show();
+                    }
+                }
+        );
+    }
+
+    /**
+     * ===== ACTUALIZAR UI CON UBICACIÓN SELECCIONADA
+     */
+    private void actualizarUbicacionUI(String lat, String lng) {
+        if (tvUbicacionSeleccionada != null) {
+            tvUbicacionSeleccionada.setText("📍 Ubicación: " + lat + ", " + lng);
+            tvUbicacionSeleccionada.setVisibility(View.VISIBLE);
+        }
+    }
+
+    /**
      * Verificar si viene de edición y cargar datos
      */
     private void verificarIntentExtras() {
@@ -109,13 +160,11 @@ public class AgregarEventoActivity extends AppCompatActivity {
             esEdicion = extras.getBoolean("es_edicion", false);
             if (esEdicion) {
                 idEventoEditando = extras.getInt("id_evento", -1);
-                idLugar = extras.getInt("id_lugar", -1);
-                idEspacio = extras.getInt("id_espacio", -1);
-                latitud = extras.getString("latitud", "");
-                longitud = extras.getString("longitud", "");
+                latitud = extras.getString("latitud", "0.0");
+                longitud = extras.getString("longitud", "0.0");
                 nombreEventoEditando = extras.getString("nombre", "");
 
-                // ===== MEJORADO: Cargar fecha y hora separadas =====
+                // Cargar datos en los campos
                 etTituloEvento.setText(extras.getString("nombre", ""));
                 etDescripcion.setText(extras.getString("descripcion", ""));
 
@@ -124,6 +173,11 @@ public class AgregarEventoActivity extends AppCompatActivity {
                 etHoraInicio.setText(extras.getString("hora_inicio", ""));
                 etFechaFin.setText(extras.getString("fecha_fin", ""));
                 etHoraFin.setText(extras.getString("hora_fin", ""));
+
+                // Actualizar ubicación en UI
+                if (!latitud.equals("0.0") && !longitud.equals("0.0")) {
+                    actualizarUbicacionUI(latitud, longitud);
+                }
 
                 // Cambiar texto del botón guardar
                 btnGuardarEvento.setText("Actualizar Evento");
@@ -138,6 +192,8 @@ public class AgregarEventoActivity extends AppCompatActivity {
         if (esEdicion) {
             tvTituloFormulario.setText("Editar Evento");
             tvTituloFormulario.setTextColor(getResources().getColor(android.R.color.holo_orange_light, null));
+
+            btnAgregarPunto.setText("Cambiar punto");
 
             if (tvModoEdicion != null) {
                 tvModoEdicion.setVisibility(View.VISIBLE);
@@ -163,12 +219,11 @@ public class AgregarEventoActivity extends AppCompatActivity {
             }
         });
 
-        // Botón agregar punto de referencia
+        // ===== BOTÓN AGREGAR PUNTO - ABRE MAPA EN MODO SELECCIÓN
         btnAgregarPunto.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(AgregarEventoActivity.this,
-                        "Funcionalidad de agregar punto en desarrollo", Toast.LENGTH_SHORT).show();
+                abrirMapaSeleccionUbicacion();
             }
         });
 
@@ -239,6 +294,38 @@ public class AgregarEventoActivity extends AppCompatActivity {
                 guardarEvento();
             }
         });
+    }
+
+    /**
+     * ===== ABRIR MAPA EN MODO SELECCIÓN DE UBICACIÓN
+     */
+    private void abrirMapaSeleccionUbicacion() {
+        Intent intent = new Intent(this, MapaEventoActivity.class);
+        intent.putExtra("modo_seleccion", true);  // Activar modo selección
+
+        // Enviar nombre del evento (si existe)
+        String nombre = etTituloEvento.getText().toString().trim();
+        if (!nombre.isEmpty()) {
+            intent.putExtra("nombre_evento", nombre);
+        }
+
+        // Enviar coordenadas actuales (si existen)
+        if (latitud != null && !latitud.isEmpty() && !latitud.equals("0.0")) {
+            intent.putExtra("latitud", latitud);
+        } else {
+            intent.putExtra("latitud", "");
+        }
+
+        if (longitud != null && !longitud.isEmpty() && !longitud.equals("0.0")) {
+            intent.putExtra("longitud", longitud);
+        } else {
+            intent.putExtra("longitud", "");
+        }
+
+        // Opcional: enviar modo edición si aplica
+        intent.putExtra("es_edicion", esEdicion);
+
+        mapaLauncher.launch(intent);
     }
 
     private void showDatePicker(final boolean isFechaInicio) {
@@ -345,23 +432,34 @@ public class AgregarEventoActivity extends AppCompatActivity {
             return;
         }
 
-        // ===== MEJORADO: Guardar fecha y hora SEPARADAS =====
+        // ===== GUARDAR FECHA Y HORA SEPARADAS =====
         if (esEdicion) {
             // EDITAR evento existente
             Eventos evento = new Eventos(
                     idEventoEditando,
-                    idLugar != -1 ? idLugar : 1,
-                    idEspacio != -1 ? idEspacio : 1,
                     titulo,
                     descripcion,
-                    latitud.isEmpty() ? "0.0" : latitud,
-                    longitud.isEmpty() ? "0.0" : longitud,
+                    longitud,
+                    latitud,
                     fechaInicio,      // dd/mm/yyyy
                     horaInicio,        // hh:mm
                     fechaFin,          // dd/mm/yyyy
                     horaFin,           // hh:mm
-                    1 // estado activo
+                    1                  // estado activo
             );
+
+            // ===== LOGS DE PRUEBA - VALORES OBTENIDOS =====
+            Log.d("GUARDAR_EVENTO", "═══════════════════════════════════════");
+            Log.d("GUARDAR_EVENTO", " Título: " + titulo);
+            Log.d("GUARDAR_EVENTO", " Descripción: " + descripcion);
+            Log.d("GUARDAR_EVENTO", " Fecha Inicio: " + fechaInicio);
+            Log.d("GUARDAR_EVENTO", " Hora Inicio: " + horaInicio);
+            Log.d("GUARDAR_EVENTO", " Fecha Fin: " + fechaFin);
+            Log.d("GUARDAR_EVENTO", " Hora Fin: " + horaFin);
+            Log.d("GUARDAR_EVENTO", " Latitud: " + latitud);
+            Log.d("GUARDAR_EVENTO", " Longitud: " + longitud);
+            Log.d("GUARDAR_EVENTO", " Modo Edición: " + esEdicion);
+            Log.d("GUARDAR_EVENTO", "═══════════════════════════════════════");
 
             int filasActualizadas = bdEventos.updateEvento(evento);
             if (filasActualizadas > 0) {
@@ -373,18 +471,16 @@ public class AgregarEventoActivity extends AppCompatActivity {
         } else {
             // CREAR nuevo evento
             Eventos evento = new Eventos(
-                    0, // id será generado por la BD
-                    idLugar != -1 ? idLugar : 1,
-                    idEspacio != -1 ? idEspacio : 1,
+                    0,                 // id será generado por la BD
                     titulo,
                     descripcion,
-                    latitud.isEmpty() ? "0.0" : latitud,
-                    longitud.isEmpty() ? "0.0" : longitud,
+                    longitud,
+                    latitud,
                     fechaInicio,      // dd/mm/yyyy
                     horaInicio,        // hh:mm
                     fechaFin,          // dd/mm/yyyy
                     horaFin,           // hh:mm
-                    1 // estado activo
+                    1                  // estado activo
             );
 
             long id = bdEventos.insertarEvento(evento);

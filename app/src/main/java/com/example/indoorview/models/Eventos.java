@@ -2,26 +2,22 @@ package com.example.indoorview.models;
 
 public class Eventos {
     private int id_evento;
-    private int id_lugar;
-    private int id_espacio;
     private String nombre;
     private String descripcion;
-    private String latitud;
     private String longitud;
+    private String latitud;
     private String fecha_inicio;
     private String hora_inicio;
     private String fecha_fin;
     private String hora_fin;
     private int estado;
 
-    public Eventos(int id_evento, int id_lugar, int id_espacio, String nombre, String descripcion, String latitud, String longitud, String fecha_inicio,String hora_inicio, String fecha_fin,String hora_fin, int estado) {
+    public Eventos(int id_evento, String nombre, String descripcion, String longitud, String latitud, String fecha_inicio,String hora_inicio, String fecha_fin,String hora_fin, int estado) {
         this.id_evento = id_evento;
-        this.id_lugar = id_lugar;
-        this.id_espacio = id_espacio;
         this.nombre = nombre;
         this.descripcion = descripcion;
-        this.latitud = latitud;
         this.longitud = longitud;
+        this.latitud = latitud;
         this.fecha_inicio = fecha_inicio;
         this.hora_inicio = hora_inicio;
         this.fecha_fin = fecha_fin;
@@ -37,21 +33,6 @@ public class Eventos {
         this.id_evento = id_evento;
     }
 
-    public int getId_lugar() {
-        return id_lugar;
-    }
-
-    public void setId_lugar(int id_lugar) {
-        this.id_lugar = id_lugar;
-    }
-
-    public int getId_espacio() {
-        return id_espacio;
-    }
-
-    public void setId_espacio(int id_espacio) {
-        this.id_espacio = id_espacio;
-    }
 
     public String getNombre() {
         return nombre;
