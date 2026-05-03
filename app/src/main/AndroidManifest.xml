@@ -38,6 +38,8 @@
         </activity>
         <activity android:name=".AgregarEventoActivity" />
         <activity android:name=".MapaEventoActivity" />
+        <activity android:name=".ListarUsuariosActivity" />
+        <activity android:name=".AgregarUsuarioActivity" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

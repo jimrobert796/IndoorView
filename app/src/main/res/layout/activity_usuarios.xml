@@ -3,7 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/fond">
+    android:background="@drawable/fond"
+    android:fitsSystemWindows="true">
 
     <!-- Botón Regresar -->
     <ImageView
@@ -98,6 +99,6 @@
         app:backgroundTint="#2196F3"
         app:tint="@android:color/white"
         android:contentDescription="Agregar usuario"
-        android:visibility="gone" />  <!-- Oculto por defecto, visible solo para admin -->
+        />  <!-- Oculto por defecto, visible solo para admin -->
 
 </RelativeLayout>
