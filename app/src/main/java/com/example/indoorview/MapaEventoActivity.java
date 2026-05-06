@@ -88,7 +88,7 @@ public class MapaEventoActivity extends AppCompatActivity {
             if (modoSeleccion) {
                 // Modo selección: no cargar datos de evento
                 Log.d("MAPA", "Modo SELECCIÓN activado");
-                Toast.makeText(this, "👆 Toca en el mapa para seleccionar la ubicación", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Toca en el mapa para seleccionar la ubicación", Toast.LENGTH_LONG).show();
 
                 recibirDatosEvento();
 
@@ -248,118 +248,108 @@ public class MapaEventoActivity extends AppCompatActivity {
             mapboxMap = mapView.getMapboxMap();
 
             mapboxMap.loadStyleUri(Style.MAPBOX_STREETS, style -> {
-                mapboxMap.setCamera(
-                        new CameraOptions.Builder()
-                                .center(Point.fromLngLat(-88.41783453298294, 13.342296805328829))
-                                .zoom(17.0)
-                                .build()
-                );
+                // Configurar cámara y límites
+                mapboxMap.setCamera(new CameraOptions.Builder()
+                        .center(Point.fromLngLat(-88.41783453298294, 13.342296805328829))
+                        .zoom(17.0)
+                        .build());
 
-                mapboxMap.setBounds(
-                        new CameraBoundsOptions.Builder()
-                                .minZoom(16.0)
-                                .maxZoom(20.0)
-                                .build()
-                );
+                mapboxMap.setBounds(new CameraBoundsOptions.Builder()
+                        .minZoom(16.0)
+                        .maxZoom(20.0)
+                        .build());
 
+                // Ocultar capas no deseadas
                 style.setStyleLayerProperty("building", "visibility", Value.valueOf("none"));
                 style.setStyleLayerProperty("building-extrusion", "visibility", Value.valueOf("none"));
                 style.setStyleLayerProperty("landuse", "visibility", Value.valueOf("none"));
                 style.setStyleLayerProperty("landuse-overlay", "visibility", Value.valueOf("none"));
                 style.setStyleLayerProperty("pitch-outline", "visibility", Value.valueOf("none"));
 
-                // Cargamos el estilo de mapa con todo y los poligonos SOLO VISTA
-                mapManager = new MapManager(
-                        mapView,
-                        db,
-                        this,
-                        spinnerPisos,
-                        camaraLauncher,
-                        galeriaLauncher
-                );
-                // Solo cargar elementos en modo visualización
-                mapManager.cargarLineStringDetalles();
-                mapManager.cargarPoligonosLugar();
-                mapManager.limpiarTodo();
-
-                // Mostrar el pin que se supone tiene
-                Point punto = Point.fromLngLat(Double.parseDouble(longitudEvento), Double.parseDouble(latitudEvento));
-                mapManager.agregarPinEventoTemp(punto, nombreEvento);
-
-
-                // ===== CONFIGURAR CLICK EN MAPA DIRECTAMENTE =====
-                try {
-
-                    GesturesPlugin gesturesPlugin = GesturesUtils.getGestures(mapView);
-                    if (gesturesPlugin != null) {
-                        // Crear listener de clicks
-                        OnMapClickListener mapClickListener = point -> {
-                            if (modoSeleccion) {
-
-
-
-                                mapManager.limpiarPinEvento();
-
-
-                                // Modo selección: capturar el click
-                                puntoSeleccionado = point;
-                                mapManager.agregarPinEventoTemp(puntoSeleccionado, nombreEvento);
-                                btnFinalizar.setEnabled(true);
-                                btnFinalizar.setBackgroundTintList(
-                                        android.content.res.ColorStateList.valueOf(
-                                                getResources().getColor(android.R.color.holo_green_light, null)
-                                        )
-                                );
-                                Toast.makeText(MapaEventoActivity.this,
-                                        "✓ Ubicación seleccionada: " + point.latitude() +
-                                                ", " + point.longitude(),
-                                        Toast.LENGTH_SHORT).show();
-                                Log.d("MAPA_SELECCION", "Punto seleccionado: " + point.latitude() + ", " + point.longitude());
-                                return true;
-                            }
-                            return false;
-                        };
-
-                        gesturesPlugin.addOnMapClickListener(mapClickListener);
-                    }
-                } catch (Exception e) {
-                    Log.e("MAPA_ERROR", "Error al configurar gestos: " + e.getMessage());
-                }
-
-                // Crear MapManager para modo visualización
+                // CREAR UNA SOLA INSTANCIA de MapManager
                 if (mapManager == null) {
-                    mapManager = new MapManager(
-                            mapView,
-                            db,
-                            this,
-                            spinnerPisos,
-                            camaraLauncher,
-                            galeriaLauncher
-                    );
+                    mapManager = new MapManager(mapView, db, this, spinnerPisos, camaraLauncher, galeriaLauncher);
                 }
 
-                // Cargar elementos del mapa (solo en modo visualización)
-                if (mapManager != null) {
-                    if (!modoSeleccion) {
+                // Configurar según el modo
+                if (modoSeleccion) {
+                    // SOLO mostrar pin si hay coordenadas VÁLIDAS (no 0.0 ni vacío)
+                    if (latitudEvento != null && longitudEvento != null &&
+                            !latitudEvento.isEmpty() && !longitudEvento.isEmpty() &&
+                            !latitudEvento.equals("0.0") && !longitudEvento.equals("0.0")) {
 
-                        // Necesitamos que este boton no aparezca solo es vista
-                        btnFinalizar.setVisibility(View.GONE);
+                        try {
+                            Point punto = Point.fromLngLat(Double.parseDouble(longitudEvento), Double.parseDouble(latitudEvento));
+                            mapManager.agregarPinEventoTemp(punto, nombreEvento);
 
-                        // Solo cargar elementos en modo visualización
-                        mapManager.cargarLineStringDetalles();
-                        mapManager.cargarPoligonosLugar();
-                        mapManager.limpiarTodo();
-                        cargarPinEvento();
+                        } catch (NumberFormatException e) {
+                            Log.e("MAPA", "Error al parsear coordenadas: " + e.getMessage());
+                        }
                     }
-                } else {
 
-                    Toast.makeText(this, "Error: MapManager no inicializado", Toast.LENGTH_SHORT).show();
+                        // Modo selección: configurar click en mapa
+                    configurarClickEnMapa(style);
+                    mapManager.cargarLineStringDetalles();
+                    mapManager.cargarPoligonosLugar();
+                    mapManager.limpiarTodo();
+                    btnFinalizar.setVisibility(View.VISIBLE);
+                    btnFinalizar.setEnabled(false);
+                    btnFinalizar.setText("Confirmar Ubicación");
+                } else {
+                    // Modo visualización: cargar elementos existentes
+                    btnFinalizar.setVisibility(View.GONE);
+                    mapManager.cargarLineStringDetalles();
+                    mapManager.cargarPoligonosLugar();
+                    mapManager.limpiarTodo();
+                    cargarPinEvento(); // Cargar pin después de que mapManager existe
                 }
             });
         } catch (Exception e) {
             Log.e("MAPA_ERROR", "Error configurando mapa: " + e.getMessage());
             e.printStackTrace();
             Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    /**
+     * Configurar click en mapa para modo selección
+     */
+    private void configurarClickEnMapa(Style style) {
+        try {
+            GesturesPlugin gesturesPlugin = GesturesUtils.getGestures(mapView);
+            if (gesturesPlugin != null) {
+                OnMapClickListener mapClickListener = point -> {
+                    if (modoSeleccion && mapManager != null) {
+                        // Limpiar pin anterior
+                        mapManager.limpiarPinEvento();
+
+                        // Guardar punto seleccionado
+                        puntoSeleccionado = point;
+
+                        // Mostrar pin temporal
+                        mapManager.agregarPinEventoTemp(puntoSeleccionado,
+                                nombreEvento != null ? nombreEvento : "Nuevo evento");
+
+                        // Habilitar botón finalizar
+                        btnFinalizar.setEnabled(true);
+                        btnFinalizar.setBackgroundTintList(
+                                android.content.res.ColorStateList.valueOf(
+                                        getResources().getColor(android.R.color.holo_green_light)
+                                )
+                        );
+
+                        Toast.makeText(MapaEventoActivity.this,
+                                "✓ Ubicación seleccionada: " + String.format("%.6f", point.latitude()) +
+                                        ", " + String.format("%.6f", point.longitude()),
+                                Toast.LENGTH_SHORT).show();
+                        return true;
+                    }
+                    return false;
+                };
+                gesturesPlugin.addOnMapClickListener(mapClickListener);
+            }
+        } catch (Exception e) {
+            Log.e("MAPA_ERROR", "Error configurar click: " + e.getMessage());
         }
     }
 

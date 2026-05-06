@@ -1,12 +1,14 @@
 package com.example.indoorview;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Spinner;
@@ -257,16 +259,16 @@ public class ListarUsuariosActivity extends AppCompatActivity implements Usuario
      */
     @Override
     public void onEliminarClick(Usuarios usuario) {
-        new AlertDialog.Builder(this)
-                .setTitle("Eliminar Usuario")
-                .setMessage("¿Estás seguro que deseas eliminar a " + usuario.getNombres() + "?")
-                .setPositiveButton("Eliminar", (dialog, which) -> {
+        mostrarDialogoConfirmacion(
+                "Eliminar Usuario",
+                "¿Estás seguro que deseas eliminar a " + usuario.getNombres() + "?",
+                "Eliminar",
+                ()->{
                     db.eliminarUsuario(usuario.getId_usuario());
                     Toast.makeText(this, "Usuario eliminado", Toast.LENGTH_SHORT).show();
                     recargarLista();
-                })
-                .setNegativeButton("Cancelar", null)
-                .show();
+                }
+                );
     }
 
     /**
@@ -290,6 +292,34 @@ public class ListarUsuariosActivity extends AppCompatActivity implements Usuario
         if (requestCode == 1 && resultCode == RESULT_OK) {
             recargarLista();
         }
+    }
+
+    public void mostrarDialogoConfirmacion(
+            String titulo,
+            String mensaje,
+            String textoPositivo,
+            Runnable onConfirm
+    ) {
+        android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
+                .setTitle(titulo)
+                .setMessage(mensaje)
+                .setPositiveButton(textoPositivo, (d, w) -> {
+                    if (onConfirm != null) {
+                        onConfirm.run();
+                    }
+                })
+                .setNegativeButton("Cancelar", null)
+                .create();
+
+        dialog.show();
+
+        // Cambiar color del botón positivo a #2196F3
+        Button positiveButton = dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE);
+        positiveButton.setTextColor(Color.parseColor("#2196F3"));
+
+        // Opcional: También cambiar el botón negativo si quieres
+        Button negativeButton = dialog.getButton(android.app.AlertDialog.BUTTON_NEGATIVE);
+        negativeButton.setTextColor(Color.parseColor("#2196F3"));
     }
 
     /**

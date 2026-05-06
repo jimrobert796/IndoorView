@@ -32,7 +32,7 @@ public class Utilidades {
     }
 
     // Verificar contraseña
-    public boolean verifyPassword(String password, String hashedPassword) {
+    public static boolean verifyPassword(String password, String hashedPassword) {
         return BCrypt.verifyer().verify(password.toCharArray(), hashedPassword).verified;
     }
 

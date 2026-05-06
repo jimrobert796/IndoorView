@@ -1026,28 +1026,6 @@ public class Database extends SQLiteOpenHelper {
     }
 
     // 6. OBTENER usuario por carnet
-    public Usuarios getUsuarioByCarnet(String carnet) {
-        SQLiteDatabase db = getReadableDatabase();
-        Cursor c = db.rawQuery("SELECT * FROM usuarios WHERE carnet = ? AND estado = 1",
-                new String[]{carnet});
-
-        Usuarios usuario = null;
-        if (c.moveToFirst()) {
-            usuario = new Usuarios(
-                    c.getInt(c.getColumnIndexOrThrow("id_usuario")),
-                    c.getInt(c.getColumnIndexOrThrow("id_tipo")),
-                    c.getString(c.getColumnIndexOrThrow("nombres")),
-                    c.getString(c.getColumnIndexOrThrow("apellidos")),
-                    c.getString(c.getColumnIndexOrThrow("correo")),
-                    c.getString(c.getColumnIndexOrThrow("carnet")),
-                    c.getString(c.getColumnIndexOrThrow("contraseña")),
-                    c.getInt(c.getColumnIndexOrThrow("estado"))
-            );
-        }
-        c.close();
-        db.close();
-        return usuario;
-    }
 
     // 7. OBTENER usuarios por tipo (admin, estudiante, etc.)
     public List<Usuarios> getUsuariosByTipo(int idTipo) {
@@ -1108,6 +1086,33 @@ public class Database extends SQLiteOpenHelper {
         cv.put("estado", 1);
         db.update("usuarios", cv, "id_usuario = ?", new String[]{String.valueOf(id)});
         db.close();
+    }
+
+    // Agregar este
+    public Usuarios getUsuarioByCarnet(String carnet) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Usuarios usuario = null;
+
+        Cursor cursor = db.query("usuarios",
+                new String[]{"id_usuario", "id_tipo", "nombres", "apellidos", "correo", "carnet", "contraseña", "estado"},
+                "carnet = ? AND estado = 1",
+                new String[]{carnet},
+                null, null, null);
+
+        if (cursor.moveToFirst()) {
+            usuario = new Usuarios(
+                    cursor.getInt(0),  // id_usuario
+                    cursor.getInt(1),  // id_tipo
+                    cursor.getString(2), // nombres
+                    cursor.getString(3), // apellidos
+                    cursor.getString(4), // correo
+                    cursor.getString(5), // carnet
+                    cursor.getString(6), // contraseña
+                    cursor.getInt(7)   // activo
+            );
+        }
+        cursor.close();
+        return usuario;
     }
 
     // 11. VERIFICAR login (email + contraseña) CONCEPTO NO FINAL

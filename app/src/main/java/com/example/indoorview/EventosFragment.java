@@ -1,11 +1,17 @@
 package com.example.indoorview;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.PopupMenu;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -26,15 +32,37 @@ public class EventosFragment extends Fragment {
     private Database bdEventos;
     private List<Eventos> eventosList;
 
+
+    // Variables para datos de sesión
+    private boolean usuarioLog;
+    private int usuarioId;
+    private String usuarioNombre;
+    private String usuarioApellidos;
+    private int usuarioTipo;
+    private String usuarioCarnet;
+    private String usuarioCorreo;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
 
         View view = inflater.inflate(R.layout.fragment_eventos, container, false);
 
+
+        // Obtener los datos de usuario
+        obtenerDatosSesion();
+
+
         // Inicializar vistas
         rvEventos = view.findViewById(R.id.rv_eventos);
         fab = view.findViewById(R.id.fab_agregar);
+
+        // Controlar visibilidad del FAB según tipo de usuario
+        if (usuarioTipo == 1) {  // Estudiante
+            fab.setVisibility(View.GONE);  // Ocultar botón de agregar
+        } else {  // Administrador
+            fab.setVisibility(View.VISIBLE);  // Mostrar botón de agregar
+        }
 
         // Inicializar BD
         bdEventos = new Database(getContext());
@@ -48,10 +76,16 @@ public class EventosFragment extends Fragment {
         // Cargar eventos
         cargarEventos();
 
-        // Configurar listeners del adaptador
-        adapter.setOnEventoLongClickListener((evento, position) -> {
-            mostrarDialogoOpciones(evento, position);
-        });
+
+        // Configurar listeners - SOLO para administrador
+        if (usuarioTipo == 2) {
+            adapter.setOnEventoLongClickListener((evento, position, view1) -> {
+                mostrarMenuOpciones(view1, evento, position);
+            });
+        } else {
+            // Estudiante: deshabilitar long click (no mostrar menú)
+            adapter.setOnEventoLongClickListener(null);
+        }
 
         adapter.setOnEventoClickListener((evento, position) -> {
             // Crear Intent y pasar los datos del evento
@@ -90,23 +124,26 @@ public class EventosFragment extends Fragment {
         adapter.notifyDataSetChanged();
     }
 
-    /**
-     * Mostrar diálogo con opciones de editar y eliminar
-     */
-    private void mostrarDialogoOpciones(Eventos evento, int position) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-        builder.setTitle("Opciones del evento")
-                .setMessage(evento.getNombre())
-                .setPositiveButton("Editar", (dialog, which) -> {
-                    editarEvento(evento);
-                })
-                .setNegativeButton("Eliminar", (dialog, which) -> {
-                    confirmarEliminar(evento, position);
-                })
-                .setNeutralButton("Cancelar", (dialog, which) -> {
-                    dialog.dismiss();
-                })
-                .show();
+    private void mostrarMenuOpciones(View view, Eventos evento, int position) {
+        PopupMenu popupMenu = new PopupMenu(getContext(), view);  // ✅ Usa la vista del item
+        popupMenu.inflate(R.menu.menu_usuario);  // Crea tu propio menu_eventos.xml
+        popupMenu.setGravity(Gravity.END);
+
+        popupMenu.setOnMenuItemClickListener(menuItem -> {
+            int itemId = menuItem.getItemId();
+            if (itemId == R.id.action_editar) {
+                editarEvento(evento);
+                return true;
+            } else if (itemId == R.id.action_eliminar) {
+                mostrarDialogoConfirmacion("Confirmar eliminación", "Está seguro de que desea eliminar: \n\n" + evento.getNombre(), "Sí, eliminar", ()->{
+                    eliminarEvento(evento, position);
+                });
+                return true;
+            }
+            return false;
+        });
+
+        popupMenu.show();
     }
 
     /**
@@ -157,6 +194,49 @@ public class EventosFragment extends Fragment {
         } else {
             Toast.makeText(getContext(), "Error al eliminar el evento", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    public void mostrarDialogoConfirmacion(
+            String titulo,
+            String mensaje,
+            String textoPositivo,
+            Runnable onConfirm
+    ) {
+        AlertDialog dialog = new AlertDialog.Builder(getContext())
+                .setTitle(titulo)
+                .setMessage(mensaje)
+                .setPositiveButton(textoPositivo, (d, w) -> {
+                    if (onConfirm != null) {
+                        onConfirm.run();
+                    }
+                })
+                .setNegativeButton("Cancelar", null)
+                .create();
+
+        dialog.show();
+
+        // Cambiar color del botón positivo a #2196F3
+        Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        positiveButton.setTextColor(Color.parseColor("#2196F3"));
+
+        // Opcional: También cambiar el botón negativo si quieres
+        Button negativeButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+        negativeButton.setTextColor(Color.parseColor("#2196F3"));
+    }
+
+    // Obtener datos de la sesion
+    private void obtenerDatosSesion() {
+        // CORRECCIÓN: Usar requireContext() en lugar de getActivity()
+        SharedPreferences prefs = requireContext().getSharedPreferences("sesion", Context.MODE_PRIVATE);
+        // O también: getActivity().getSharedPreferences("sesion", Context.MODE_PRIVATE);
+
+        usuarioLog = prefs.getBoolean("isLoggedIn", false);
+        usuarioId = prefs.getInt("usuario_id", -1);
+        usuarioNombre = prefs.getString("usuario_nombre", "");
+        usuarioApellidos = prefs.getString("usuario_apellidos", "");
+        usuarioTipo = prefs.getInt("usuario_tipo", 1);
+        usuarioCarnet = prefs.getString("usuario_carnet", "");
+        usuarioCorreo = prefs.getString("usuario_correo", "");
     }
 
     @Override

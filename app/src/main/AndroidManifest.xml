@@ -45,6 +45,7 @@
         <activity android:name=".AgregarUsuarioActivity" />
         <activity android:name=".OlvidoContraActivity" />
         <activity android:name=".CodigoVerificacionActivity" />
+        <activity android:name=".NuevaContraActivity" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

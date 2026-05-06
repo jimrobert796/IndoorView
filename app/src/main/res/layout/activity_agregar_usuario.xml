@@ -77,7 +77,6 @@
                         android:layout_marginBottom="16dp"
                         android:background="@drawable/bg_campo_perfil"
                         android:hint="Ej: 20240001"
-                        android:inputType="number"
                         android:padding="12dp"
                         android:textColor="@android:color/white"
                         android:textColorHint="#B3FFFFFF" />

@@ -1,11 +1,20 @@
 package com.example.indoorview;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public class MainActivity extends AppCompatActivity {
+
+    private boolean usuarioLog;
+    private int usuarioId;
+    private String usuarioNombre;
+    private String usuarioApellidos;
+    private int usuarioTipo;
+    private String usuarioCarnet;
+    private String usuarioCorreo;
 
     private BottomNavigationView bottomNavigationView;
 
@@ -15,6 +24,9 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         bottomNavigationView = findViewById(R.id.bottom_navigation);
+
+        // Obtener los datos de sesion
+        obtenerDatosSesion();
 
         // Cargar el mapa al iniciar
         if (savedInstanceState == null) {
@@ -44,5 +56,17 @@ public class MainActivity extends AppCompatActivity {
             }
             return false;
         });
+    }
+
+    // Obtener los datos de sesion
+    private void obtenerDatosSesion() {
+        SharedPreferences prefs = getSharedPreferences("sesion", MODE_PRIVATE);
+        usuarioLog = prefs.getBoolean("isLoggedIn", true);
+        usuarioId = prefs.getInt("usuario_id", -1);
+        usuarioNombre = prefs.getString("usuario_nombre", "");
+        usuarioApellidos = prefs.getString("usuario_apellidos", "");
+        usuarioTipo = prefs.getInt("usuario_tipo", 1);
+        usuarioCarnet = prefs.getString("usuario_carnet", "");
+        usuarioCorreo = prefs.getString("usuario_correo", "");
     }
 }

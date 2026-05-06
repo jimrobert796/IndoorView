@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -106,6 +107,16 @@ public class MapaFragment extends Fragment {
     // CARGADOR DE DATOS PROCESADOS YA GUARDADOS EN BD PARA SINCRONIZCION AUTOMATICA DE MAPA
     private ObtenerProcesarDatos.OnDatosCargatosListener listener;
 
+    // Variables para datos de sesión
+    private boolean usuarioLog;
+    private int usuarioId;
+    private String usuarioNombre;
+    private String usuarioApellidos;
+    private int usuarioTipo;
+    private String usuarioCarnet;
+    private String usuarioCorreo;
+
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -127,6 +138,27 @@ public class MapaFragment extends Fragment {
         etBuscar = view.findViewById(R.id.etBuscar);
         btnLimpiarBusqueda = view.findViewById(R.id.btnLimpiarBusqueda);
         rvResultados = view.findViewById(R.id.rvResultados);
+
+
+        // OBTENER DATOS DE SESIÓN
+        obtenerDatosSesion();
+
+        // CONTROLAR VISIBILIDAD SEGÚN TIPO DE USUARIO
+        if (usuarioTipo == 1) {  // Estudiante
+            // Ocultar botones de edición
+            btnHabilitar.setVisibility(View.GONE);
+            btnLugar.setVisibility(View.GONE);
+            btnEspacios.setVisibility(View.GONE);
+            btnCerrar.setVisibility(View.GONE);
+            btnDeshacer.setVisibility(View.GONE);
+            btnFinalizar.setVisibility(View.GONE);
+            tvModo.setVisibility(View.GONE);
+        } else {  // Administrador
+            btnHabilitar.setVisibility(View.VISIBLE);
+            // Los demás botones se mostrarán según el flujo normal
+        }
+
+
 
         // Inicaliza el mapa e eventos
         inicializarLaunchers();
@@ -210,11 +242,11 @@ public class MapaFragment extends Fragment {
                     reInicarMapa();
 
                 } else {
-                    Log.d("SYNC", "❌ ERROR EN SINCRONIZACIÓN");
+                    Log.d("SYNC", "ERROR EN SINCRONIZACIÓN");
                     Log.d("SYNC", "Mensaje: " + mensaje);
 
                     Toast.makeText(getContext(),
-                            "❌ Error cargando datos: " + mensaje,
+                            "Error cargando datos: " + mensaje,
                             Toast.LENGTH_LONG).show();
                 }
 
@@ -676,6 +708,12 @@ public class MapaFragment extends Fragment {
      * Botón HABILITAR - Activar/Desactivar modo edición
      */
     private void configurarBtnHabilitar() {
+        if (usuarioTipo != 2) {
+            btnHabilitar.setVisibility(View.GONE);
+            return;
+        }
+
+
         btnHabilitar.setOnClickListener(v -> {
             if (modoEdicionActivo && mapManager.isModoEdicion()) {
                 mapManager.mostrarDialogoConfirmacion(
@@ -714,6 +752,13 @@ public class MapaFragment extends Fragment {
      * Botón LUGAR - Iniciar dibujo de lugar
      */
     private void configurarBtnLugar() {
+
+        if (usuarioTipo != 2) {
+            btnLugar.setVisibility(View.GONE);
+            return;
+        }
+
+
         btnLugar.setOnClickListener(v -> {
             if (modoActual == MODO_LUGAR) {
                 // Cancelar modo lugar - con confirmación si hay puntos
@@ -793,6 +838,12 @@ public class MapaFragment extends Fragment {
      * Botón ESPACIOS - Iniciar dibujo de espacios
      */
     private void configurarBtnEspacios() {
+        if (usuarioTipo != 2) {
+            btnLugar.setVisibility(View.GONE);
+            return;
+        }
+
+
         btnEspacios.setOnClickListener(v -> {
             if (modoActual == MODO_ESPACIO) {
                 // Cancelar modo espacios
@@ -951,7 +1002,7 @@ public class MapaFragment extends Fragment {
         btnCerrar.setVisibility(View.GONE);
         btnDeshacer.setVisibility(View.GONE);
 
-        // 👇 IMPORTANTE: Mantener visible Finalizar si estamos en modo edición
+        // IMPORTANTE: Mantener visible Finalizar si estamos en modo edición
         if (!modoEdicionActivo) {
             btnFinalizar.setVisibility(View.GONE);
         }
@@ -1274,6 +1325,21 @@ public class MapaFragment extends Fragment {
         mapManager.cargarPoligonosLugar();
     }
 
+
+    // Obtener datos de la sesion
+    private void obtenerDatosSesion() {
+        // CORRECCIÓN: Usar requireContext() en lugar de getActivity()
+        SharedPreferences prefs = requireContext().getSharedPreferences("sesion", Context.MODE_PRIVATE);
+        // O también: getActivity().getSharedPreferences("sesion", Context.MODE_PRIVATE);
+
+        usuarioLog = prefs.getBoolean("isLoggedIn", false);
+        usuarioId = prefs.getInt("usuario_id", -1);
+        usuarioNombre = prefs.getString("usuario_nombre", "");
+        usuarioApellidos = prefs.getString("usuario_apellidos", "");
+        usuarioTipo = prefs.getInt("usuario_tipo", 1);
+        usuarioCarnet = prefs.getString("usuario_carnet", "");
+        usuarioCorreo = prefs.getString("usuario_correo", "");
+    }
 
     /*
     // Lifecycle methods (descomentar si necesitas)

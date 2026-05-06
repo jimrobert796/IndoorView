@@ -82,7 +82,6 @@
                         android:layout_marginTop="8dp"
                         android:background="@android:drawable/editbox_background"
                         android:hint="Ej: 20240001"
-                        android:inputType="number"
                         android:padding="12dp"
                         android:textColor="@android:color/black"
                         android:textColorHint="#B3FFFFFF" />

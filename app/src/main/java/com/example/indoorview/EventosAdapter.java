@@ -22,7 +22,7 @@ public class EventosAdapter extends RecyclerView.Adapter<EventosAdapter.EventoVi
 
     // Interfaz para manejar long click
     public interface OnEventoLongClickListener {
-        void onEventoLongClick(Eventos evento, int position);
+        void onEventoLongClick(Eventos evento, int position, View view); // Agregar View
     }
 
     // Interfaz para manejar click normal
@@ -85,7 +85,7 @@ public class EventosAdapter extends RecyclerView.Adapter<EventosAdapter.EventoVi
         // Long click listener
         holder.cardEvento.setOnLongClickListener(v -> {
             if (onEventoLongClickListener != null) {
-                onEventoLongClickListener.onEventoLongClick(evento, position);
+                onEventoLongClickListener.onEventoLongClick(evento, position, v); // ✅ Pasar v
                 return true;
             }
             return false;

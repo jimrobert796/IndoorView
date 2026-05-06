@@ -18,7 +18,8 @@ public class CodigoVerificacionActivity extends AppCompatActivity {
         btnConfirmarCodigo = findViewById(R.id.btn_confirmar_codigo);
 
         btnConfirmarCodigo.setOnClickListener(v->{
-            finish();
+            Intent intent = new Intent(CodigoVerificacionActivity.this, NuevaContraActivity.class);
+            startActivity(intent);
         });
 
 

@@ -1,8 +1,10 @@
 package com.example.indoorview;
 
+import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -193,16 +195,15 @@ public class AgregarEventoActivity extends AppCompatActivity {
             tvTituloFormulario.setText("Editar Evento");
             tvTituloFormulario.setTextColor(getResources().getColor(android.R.color.holo_orange_light, null));
 
-            btnAgregarPunto.setText("Cambiar punto");
+            btnAgregarPunto.setText("Actualizar punto");
 
             if (tvModoEdicion != null) {
                 tvModoEdicion.setVisibility(View.VISIBLE);
-                tvModoEdicion.setText("✎ Editando: " + nombreEventoEditando);
+                tvModoEdicion.setText("Editando: " + nombreEventoEditando);
                 tvModoEdicion.setTextColor(getResources().getColor(android.R.color.holo_orange_light, null));
             }
         } else {
             tvTituloFormulario.setText("Agregar Evento");
-            tvTituloFormulario.setTextColor(getResources().getColor(android.R.color.holo_green_light, null));
 
             if (tvModoEdicion != null) {
                 tvModoEdicion.setVisibility(View.GONE);
@@ -223,7 +224,16 @@ public class AgregarEventoActivity extends AppCompatActivity {
         btnAgregarPunto.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                abrirMapaSeleccionUbicacion();
+                if (esEdicion) {
+                    mostrarDialogoConfirmacion(
+                            "Actualizar Punto",
+                            "¿Estás en modo edición. Deseas actualizar el punto del mapa?",
+                            "Si, actualizar",
+                            () -> abrirMapaSeleccionUbicacion()
+                    );
+                } else {
+                    abrirMapaSeleccionUbicacion();
+                }
             }
         });
 
@@ -291,7 +301,17 @@ public class AgregarEventoActivity extends AppCompatActivity {
         btnGuardarEvento.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                guardarEvento();
+                String titulo = esEdicion ? "Actualizar Evento" : "Crear Evento";
+                String mensaje = esEdicion
+                        ? "¿Deseas guardar los cambios realizados?"
+                        : "¿Deseas guardar el nuevo evento?";
+
+                mostrarDialogoConfirmacion(
+                        titulo,
+                        mensaje,
+                        esEdicion ? "Sí, actualizar" : "Sí, crear",
+                        () -> guardarEvento()
+                );
             }
         });
     }
@@ -406,6 +426,9 @@ public class AgregarEventoActivity extends AppCompatActivity {
         String horaFin = etHoraFin.getText().toString().trim();
 
         // Validaciones
+
+
+
         if (titulo.isEmpty()) {
             etTituloEvento.setError("El título es requerido");
             etTituloEvento.requestFocus();
@@ -413,22 +436,26 @@ public class AgregarEventoActivity extends AppCompatActivity {
         }
 
         if (fechaInicio.isEmpty()) {
-            Toast.makeText(this, "Seleccione la fecha de inicio", Toast.LENGTH_SHORT).show();
+            etFechaInicio.setError("Fecha de inicio requerida");
+            etFechaInicio.requestFocus();
             return;
         }
 
         if (horaInicio.isEmpty()) {
-            Toast.makeText(this, "Seleccione la hora de inicio", Toast.LENGTH_SHORT).show();
+            etHoraInicio.setError("Hora de inicio requerida");
+            etHoraInicio.requestFocus();
             return;
         }
 
         if (fechaFin.isEmpty()) {
-            Toast.makeText(this, "Seleccione la fecha de fin", Toast.LENGTH_SHORT).show();
+            etFechaFin.setError("Fecha de fin requerida");
+            etFechaFin.requestFocus();
             return;
         }
 
         if (horaFin.isEmpty()) {
-            Toast.makeText(this, "Seleccione la hora de fin", Toast.LENGTH_SHORT).show();
+            etHoraFin.setError("Hora de fin requerida");
+            etHoraFin.requestFocus();
             return;
         }
 
@@ -491,5 +518,34 @@ public class AgregarEventoActivity extends AppCompatActivity {
                 Toast.makeText(this, "✗ Error al crear el evento", Toast.LENGTH_SHORT).show();
             }
         }
+    }
+
+
+    public void mostrarDialogoConfirmacion(
+            String titulo,
+            String mensaje,
+            String textoPositivo,
+            Runnable onConfirm
+    ) {
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle(titulo)
+                .setMessage(mensaje)
+                .setPositiveButton(textoPositivo, (d, w) -> {
+                    if (onConfirm != null) {
+                        onConfirm.run();
+                    }
+                })
+                .setNegativeButton("Cancelar", null)
+                .create();
+
+        dialog.show();
+
+        // Cambiar color del botón positivo a #2196F3
+        Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        positiveButton.setTextColor(Color.parseColor("#2196F3"));
+
+        // Opcional: También cambiar el botón negativo si quieres
+        Button negativeButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+        negativeButton.setTextColor(Color.parseColor("#2196F3"));
     }
 }
