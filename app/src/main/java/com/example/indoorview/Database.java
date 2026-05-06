@@ -785,6 +785,70 @@ public class Database extends SQLiteOpenHelper {
         return id;
     }
 
+    /// Paginacion de ususarios con su limite
+
+    private static final int PAGE_SIZE = 20;
+
+    // Obtener usuarios paginados
+    public List<Usuarios> getUsuariosPaginados(int page) {
+        List<Usuarios> listaUsuarios = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        int offset = page * PAGE_SIZE;
+        String query = "SELECT * FROM usuarios WHERE activo = 1 ORDER BY id_usuario DESC LIMIT ? OFFSET ?";
+        Cursor cursor = db.rawQuery(query, new String[]{String.valueOf(PAGE_SIZE), String.valueOf(offset)});
+
+        if (cursor.moveToFirst()) {
+            do {
+                Usuarios usuario = new Usuarios(
+                        cursor.getInt(0), cursor.getInt(1), cursor.getString(2),
+                        cursor.getString(3), cursor.getString(4), cursor.getString(5),
+                        cursor.getString(6), cursor.getInt(7)
+                );
+                listaUsuarios.add(usuario);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return listaUsuarios;
+    }
+
+    // Contar total de usuarios
+    public int getTotalUsuarios() {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM usuarios WHERE activo = 1", null);
+        cursor.moveToFirst();
+        int total = cursor.getInt(0);
+        cursor.close();
+        return total;
+    }
+
+    // Buscar usuarios paginados
+    public List<Usuarios> buscarUsuariosPaginados(String busqueda, int page) {
+        List<Usuarios> listaUsuarios = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        int offset = page * PAGE_SIZE;
+        String likePattern = "%" + busqueda + "%";
+        String query = "SELECT * FROM usuarios WHERE activo = 1 AND (nombres LIKE ? OR carnet LIKE ?) ORDER BY id_usuario DESC LIMIT ? OFFSET ?";
+        Cursor cursor = db.rawQuery(query, new String[]{likePattern, likePattern, String.valueOf(PAGE_SIZE), String.valueOf(offset)});
+
+        if (cursor.moveToFirst()) {
+            do {
+                Usuarios usuario = new Usuarios(
+                        cursor.getInt(0), cursor.getInt(1), cursor.getString(2),
+                        cursor.getString(3), cursor.getString(4), cursor.getString(5),
+                        cursor.getString(6), cursor.getInt(7)
+                );
+                listaUsuarios.add(usuario);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return listaUsuarios;
+    }
+
+
+
+
     // 2. OBTENER todos los usuarios activos (estado = 1)
     public List<Usuarios> getUsuarios() {
         List<Usuarios> lista = new ArrayList<>();

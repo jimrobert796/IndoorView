@@ -2,9 +2,17 @@ package com.example.indoorview;
 
 import java.util.Base64;
 
+import at.favre.lib.crypto.bcrypt.BCrypt;
+
 public class Utilidades {
-    static String url_consulta = "http://192.168.1.8:5984/indoor_view/_design/lugar_espacio/_view/lugar_espacio";
-    static String url_mantenimiento = "http://192.168.1.8:5984/indoor_view"; // CRUD Insertar, Actualizar, Borrar y Buscar
+
+    /***
+     * Clase encargada de utilidades minimas pero poderosas
+     */
+
+
+    static String url_consulta = "";
+    static String url_mantenimiento = ""; // CRUD Insertar, Actualizar, Borrar y Buscar
 
     static String user = "jimbo";
     static String passwd = "070906";
@@ -13,4 +21,20 @@ public class Utilidades {
     public String generarUnicoId() {
         return java.util.UUID.randomUUID().toString();
     }
+
+    /*
+    Metodos para Hasheo de contraseñas unicamente Con BCrypt -> con licencia APACHE
+     */
+
+    // Hashear contraseña (costo 10 = balance seguridad/rendimiento)
+    public static String hashPassword(String password) {
+        return BCrypt.withDefaults().hashToString(10, password.toCharArray());
+    }
+
+    // Verificar contraseña
+    public boolean verifyPassword(String password, String hashedPassword) {
+        return BCrypt.verifyer().verify(password.toCharArray(), hashedPassword).verified;
+    }
+
+
 }

@@ -1,8 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string-array name="tipos_usuario">
+        <item>Estudiante</item>
+        <item>Administrador</item>
+    </string-array>
+
+    <string-array name="tipos_usuario_filtro">
         <item>Selecione</item>
         <item>Estudiante</item>
         <item>Administrador</item>
+    </string-array>
+
+    <string-array name="tipos_usuario_valores">
+        <item>1</item>
+        <item>2</item>
     </string-array>
 </resources>

@@ -41,6 +41,11 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+
+
+    // BCrypt para hashear contraseñas
+    implementation("at.favre.lib:bcrypt:0.10.2")
+
     // Mapbox ver 11.21.0
     implementation("com.mapbox.maps:android-ndk27:11.21.0")
     // Turf para validar punto dentro del polígono
