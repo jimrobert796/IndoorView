@@ -785,68 +785,148 @@ public class Database extends SQLiteOpenHelper {
         return id;
     }
 
-    /// Paginacion de ususarios con su limite
 
-    private static final int PAGE_SIZE = 20;
 
-    // Obtener usuarios paginados
-    public List<Usuarios> getUsuariosPaginados(int page) {
-        List<Usuarios> listaUsuarios = new ArrayList<>();
-        SQLiteDatabase db = this.getReadableDatabase();
+    /**
+     * Obtener usuarios paginados
+     * @param pagina Número de página (comienza en 1)
+     * @param usuariosPorPagina Cantidad de usuarios por página (usualmente 20)
+     */
+    public List<Usuarios> getUsuariosPaginados(int pagina, int usuariosPorPagina) {
+        List<Usuarios> lista = new ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
 
-        int offset = page * PAGE_SIZE;
-        String query = "SELECT * FROM usuarios WHERE activo = 1 ORDER BY id_usuario DESC LIMIT ? OFFSET ?";
-        Cursor cursor = db.rawQuery(query, new String[]{String.valueOf(PAGE_SIZE), String.valueOf(offset)});
+        // Calcular offset (cuántos registros saltar)
+        int offset = (pagina - 1) * usuariosPorPagina;
 
-        if (cursor.moveToFirst()) {
-            do {
-                Usuarios usuario = new Usuarios(
-                        cursor.getInt(0), cursor.getInt(1), cursor.getString(2),
-                        cursor.getString(3), cursor.getString(4), cursor.getString(5),
-                        cursor.getString(6), cursor.getInt(7)
-                );
-                listaUsuarios.add(usuario);
-            } while (cursor.moveToNext());
+        // Query con LIMIT y OFFSET
+        Cursor c = db.rawQuery(
+                "SELECT * FROM usuarios WHERE estado = 1 LIMIT ? OFFSET ?",
+                new String[]{
+                        String.valueOf(usuariosPorPagina),
+                        String.valueOf(offset)
+                }
+        );
+
+        while (c.moveToNext()) {
+            Usuarios u = new Usuarios(
+                    c.getInt(c.getColumnIndexOrThrow("id_usuario")),
+                    c.getInt(c.getColumnIndexOrThrow("id_tipo")),
+                    c.getString(c.getColumnIndexOrThrow("nombres")),
+                    c.getString(c.getColumnIndexOrThrow("apellidos")),
+                    c.getString(c.getColumnIndexOrThrow("correo")),
+                    c.getString(c.getColumnIndexOrThrow("carnet")),
+                    c.getString(c.getColumnIndexOrThrow("contraseña")),
+                    c.getInt(c.getColumnIndexOrThrow("estado"))
+            );
+            lista.add(u);
         }
-        cursor.close();
-        return listaUsuarios;
+        c.close();
+        db.close();
+        return lista;
     }
 
-    // Contar total de usuarios
+    /**
+     * Obtener TOTAL de usuarios (para calcular páginas)
+     */
     public int getTotalUsuarios() {
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM usuarios WHERE activo = 1", null);
-        cursor.moveToFirst();
-        int total = cursor.getInt(0);
-        cursor.close();
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor c = db.rawQuery(
+                "SELECT COUNT(*) FROM usuarios WHERE estado = 1",
+                null
+        );
+
+        c.moveToFirst();
+        int total = c.getInt(0);
+
+        c.close();
+        db.close();
         return total;
     }
 
-    // Buscar usuarios paginados
-    public List<Usuarios> buscarUsuariosPaginados(String busqueda, int page) {
-        List<Usuarios> listaUsuarios = new ArrayList<>();
-        SQLiteDatabase db = this.getReadableDatabase();
+    /**
+     * Obtener usuarios paginados CON FILTRO
+     */
+    public List<Usuarios> getUsuariosPaginadosFiltrados(int pagina,
+                                                        int usuariosPorPagina,
+                                                        String textoBusqueda,
+                                                        int tipoFiltro) {
+        List<Usuarios> lista = new ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
 
-        int offset = page * PAGE_SIZE;
-        String likePattern = "%" + busqueda + "%";
-        String query = "SELECT * FROM usuarios WHERE activo = 1 AND (nombres LIKE ? OR carnet LIKE ?) ORDER BY id_usuario DESC LIMIT ? OFFSET ?";
-        Cursor cursor = db.rawQuery(query, new String[]{likePattern, likePattern, String.valueOf(PAGE_SIZE), String.valueOf(offset)});
+        int offset = (pagina - 1) * usuariosPorPagina;
 
-        if (cursor.moveToFirst()) {
-            do {
-                Usuarios usuario = new Usuarios(
-                        cursor.getInt(0), cursor.getInt(1), cursor.getString(2),
-                        cursor.getString(3), cursor.getString(4), cursor.getString(5),
-                        cursor.getString(6), cursor.getInt(7)
-                );
-                listaUsuarios.add(usuario);
-            } while (cursor.moveToNext());
+        String where = "estado = 1";
+        ArrayList<String> args = new ArrayList<>();
+
+        // Filtro por texto (nombre o carnet)
+        if (!textoBusqueda.isEmpty()) {
+            where += " AND (nombres LIKE ? OR carnet LIKE ?)";
+            String busqueda = "%" + textoBusqueda + "%";
+            args.add(busqueda);
+            args.add(busqueda);
         }
-        cursor.close();
-        return listaUsuarios;
+
+        // Filtro por tipo
+        if (tipoFiltro != -1) {
+            where += " AND id_tipo = ?";
+            args.add(String.valueOf(tipoFiltro));
+        }
+
+        String query = "SELECT * FROM usuarios WHERE " + where +
+                " LIMIT " + usuariosPorPagina + " OFFSET " + offset;
+
+        Cursor c = db.rawQuery(query, args.toArray(new String[0]));
+
+        while (c.moveToNext()) {
+            Usuarios u = new Usuarios(
+                    c.getInt(c.getColumnIndexOrThrow("id_usuario")),
+                    c.getInt(c.getColumnIndexOrThrow("id_tipo")),
+                    c.getString(c.getColumnIndexOrThrow("nombres")),
+                    c.getString(c.getColumnIndexOrThrow("apellidos")),
+                    c.getString(c.getColumnIndexOrThrow("correo")),
+                    c.getString(c.getColumnIndexOrThrow("carnet")),
+                    c.getString(c.getColumnIndexOrThrow("contraseña")),
+                    c.getInt(c.getColumnIndexOrThrow("estado"))
+            );
+            lista.add(u);
+        }
+        c.close();
+        db.close();
+        return lista;
     }
 
+    /**
+     * Obtener TOTAL de usuarios con filtro
+     */
+    public int getTotalUsuariosFiltrados(String textoBusqueda, int tipoFiltro) {
+        SQLiteDatabase db = getReadableDatabase();
 
+        String where = "estado = 1";
+        ArrayList<String> args = new ArrayList<>();
+
+        if (!textoBusqueda.isEmpty()) {
+            where += " AND (nombres LIKE ? OR carnet LIKE ?)";
+            String busqueda = "%" + textoBusqueda + "%";
+            args.add(busqueda);
+            args.add(busqueda);
+        }
+
+        if (tipoFiltro != -1) {
+            where += " AND id_tipo = ?";
+            args.add(String.valueOf(tipoFiltro));
+        }
+
+        String query = "SELECT COUNT(*) FROM usuarios WHERE " + where;
+        Cursor c = db.rawQuery(query, args.toArray(new String[0]));
+
+        c.moveToFirst();
+        int total = c.getInt(0);
+
+        c.close();
+        db.close();
+        return total;
+    }
 
 
     // 2. OBTENER todos los usuarios activos (estado = 1)
