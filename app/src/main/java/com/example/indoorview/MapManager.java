@@ -2678,28 +2678,81 @@ public class MapManager {
     }
 
     public void procesarResultadoCamara(Intent data) {
-        // Foto tomada con cámara
         String urlFoto = obtenerUrlFoto(imagenActual);
         if (!urlFoto.isEmpty() && tempImageView != null) {
+            // COMPRIMIR (las fotos de cámara siempre son grandes)
+            File imagenFile = new File(urlFoto);
+            long sizeBytes = imagenFile.length();
+
+            // Formatear tamaño original (KB o MB)
+            String tamanioOriginal = formatearTamanio(sizeBytes);
+
+            // Calidad 75% para fotos de cámara
+            boolean exito = ImageCompressionUtil.comprimirYRotarArchivoImagen(urlFoto, urlFoto, 90);
+
+            if (exito) {
+                long nuevoSizeBytes = new File(urlFoto).length();
+                String tamanioNuevo = formatearTamanio(nuevoSizeBytes);
+                mostrarMensaje("📷 Foto " + (imagenActual + 1) + " comprimida (" +
+                        tamanioOriginal + " → " + tamanioNuevo + ")");
+            } else {
+                mostrarMensaje("📷 Foto " + (imagenActual + 1) + " guardada (" + tamanioOriginal + ")");
+            }
+
             tempImageView.setImageURI(Uri.parse(urlFoto));
             tempImageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            mostrarMensaje("📷 Foto " + (imagenActual + 1) + " guardada");
         } else {
             mostrarMensaje("Error: No se pudo obtener la URL de la foto");
         }
     }
 
+    /**
+     * Formatear tamaño de bytes a KB o MB automáticamente
+     * @param bytes Tamaño en bytes
+     * @return String formateado (ej: "1.5 MB" o "850 KB")
+     */
+    private String formatearTamanio(long bytes) {
+        if (bytes <= 0) return "0 KB";
+
+        double kilobytes = (double) bytes / 1024;
+
+        if (kilobytes >= 1024) {
+            double megabytes = kilobytes / 1024;
+            return String.format("%.2f MB", megabytes);
+        } else {
+            return String.format("%.0f KB", kilobytes);
+        }
+    }
+
     public void procesarResultadoGaleria(Intent data) {
-        // Imagen seleccionada de galería
         if (data != null && data.getData() != null) {
             Uri selectedImageUri = data.getData();
             String nuevaUrl = guardarImagenDesdeGaleria(selectedImageUri);
+
             if (!nuevaUrl.isEmpty()) {
+                // COMPRIMIR SOLO SI ES GRANDE (más de 500KB)
+                File imagenFile = new File(nuevaUrl);
+                long sizeKB = imagenFile.length() / 1024;
+
+                if (sizeKB > 500) {  // Solo comprimir si supera 500KB
+                    // Calidad 80% para buena relación calidad/tamaño
+                    boolean exito = ImageCompressionUtil.comprimirArchivoImagen(nuevaUrl, nuevaUrl, 80);
+
+                    if (exito) {
+                        long nuevoSizeKB = new File(nuevaUrl).length() / 1024;
+                        mostrarMensaje("🖼️ Imagen " + (imagenActual + 1) + " comprimida (" +
+                                sizeKB + " KB → " + nuevoSizeKB + " KB)");
+                    } else {
+                        mostrarMensaje("🖼️ Imagen " + (imagenActual + 1) + " guardada (" + sizeKB + " KB)");
+                    }
+                } else {
+                    mostrarMensaje("🖼️ Imagen " + (imagenActual + 1) + " guardada (" + sizeKB + " KB) - sin compresión");
+                }
+
                 guardarUrlFoto(imagenActual, nuevaUrl);
                 if (tempImageView != null) {
                     tempImageView.setImageURI(Uri.parse(nuevaUrl));
                     tempImageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
-                    mostrarMensaje("🖼️ Imagen " + (imagenActual + 1) + " seleccionada");
                 }
             } else {
                 mostrarMensaje("Error al guardar la imagen");
