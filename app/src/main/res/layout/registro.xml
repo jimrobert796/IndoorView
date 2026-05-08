@@ -18,6 +18,7 @@
             android:layout_height="wrap_content"
             android:padding="16dp">
 
+
             <!-- Botón Regresar -->
             <ImageView
                 android:id="@+id/btn_regresar"
@@ -28,6 +29,7 @@
                 android:src="@drawable/ic_regreso"
                 android:contentDescription="Regresar"
                 android:scaleType="centerInside" />
+
 
             <!-- Card del formulario -->
             <androidx.cardview.widget.CardView
@@ -142,24 +144,6 @@
                         android:textColor="@android:color/white"
                         android:textColorHint="#B3FFFFFF" />
 
-                    <!-- Spinner: Tipo de Usuario -->
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Tipo de Usuario"
-                        android:textColor="#B3FFFFFF"
-                        android:textSize="12sp" />
-
-                    <Spinner
-                        android:id="@+id/spinner_tipo_usuario"
-                        android:layout_width="match_parent"
-                        android:layout_height="56dp"
-                        android:layout_marginBottom="16dp"
-                        android:background="@drawable/bg_campo_perfil"
-                        android:entries="@array/tipos_usuario"
-                        android:padding="12dp"
-                        android:popupBackground="#333333" />
-
                     <!-- Campo: Contraseña -->
                     <TextView
                         android:layout_width="match_parent"
@@ -195,6 +179,41 @@
 
                     </com.google.android.material.textfield.TextInputLayout>
 
+                    <!-- Campo: Confirmar Contraseña -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Confirme contraseña"
+                        android:textColor="#B3FFFFFF"
+                        android:textSize="12sp" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/til_passwordConfirmar"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="24dp"
+                        android:background="@drawable/bg_campo_perfil"
+                        app:hintEnabled="false"
+                        app:endIconMode="password_toggle"
+                        app:endIconTint="#FFFFFF"
+                        app:boxBackgroundColor="#33FFFFFF"
+                        app:boxStrokeColor="#FFFFFF"
+                        app:hintTextColor="#B3FFFFFF">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/et_passwordConfirmar"
+                            android:layout_width="match_parent"
+                            android:layout_height="56dp"
+                            android:hint="Confirmar contraseña"
+                            android:inputType="textPassword"
+                            android:background="@android:color/transparent"
+                            android:padding="12dp"
+                            android:textColor="@android:color/white"
+                            android:textColorHint="#B3FFFFFF"
+                            android:textCursorDrawable="@null" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
                     <!-- Botones -->
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -202,25 +221,12 @@
                         android:orientation="horizontal">
 
                         <Button
-                            android:id="@+id/btn_cancelar"
+                            android:id="@+id/btn_registrar"
                             android:layout_width="0dp"
                             android:layout_height="56dp"
                             android:layout_weight="1"
-                            android:layout_marginEnd="8dp"
-                            android:backgroundTint="#757575"
-                            android:text="Cancelar"
-                            android:textColor="@android:color/white"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-
-                        <Button
-                            android:id="@+id/btn_guardar_usuario"
-                            android:layout_width="0dp"
-                            android:layout_height="56dp"
-                            android:layout_weight="1"
-                            android:layout_marginStart="8dp"
                             android:backgroundTint="#2196F3"
-                            android:text="Guardar"
+                            android:text="Registrar"
                             android:textColor="@android:color/white"
                             android:textSize="14sp"
                             android:textStyle="bold" />

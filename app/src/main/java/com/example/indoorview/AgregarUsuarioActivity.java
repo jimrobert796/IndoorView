@@ -8,6 +8,7 @@ import android.util.Log;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
@@ -22,7 +23,7 @@ public class AgregarUsuarioActivity extends AppCompatActivity {
 
     // ==================== VISTAS ====================
     private EditText etCarnet, etNombres, etApellidos, etCorreo, etPassword;
-
+    private ImageView btnRegresar;
     private TextInputLayout textInputLayout;
     private Spinner spinnerTipo;
     private Button btnCancelar, btnGuardar;
@@ -122,6 +123,7 @@ public class AgregarUsuarioActivity extends AppCompatActivity {
         spinnerTipo = findViewById(R.id.spinner_tipo_usuario);
         btnCancelar = findViewById(R.id.btn_cancelar);
         btnGuardar = findViewById(R.id.btn_guardar_usuario);
+        btnRegresar = findViewById(R.id.btn_regresar);
     }
 
     /**
@@ -188,7 +190,6 @@ public class AgregarUsuarioActivity extends AppCompatActivity {
                         "Confirmar",
                         () ->{
                             cambiarContraseña = false;
-
                             //mostrarDialogoCambioContraseña();
 
 
@@ -201,14 +202,15 @@ public class AgregarUsuarioActivity extends AppCompatActivity {
                         TextInputLayout tilPassword = findViewById(R.id.til_password);
                         tilPassword.setEndIconMode(TextInputLayout.END_ICON_PASSWORD_TOGGLE);
 
-
-
-
                         }
                 );
             }
 
         });
+
+
+        btnRegresar.setOnClickListener(v -> finish());
+
 
 
     }

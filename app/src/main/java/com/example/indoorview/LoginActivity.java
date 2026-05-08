@@ -16,6 +16,7 @@ public class LoginActivity extends AppCompatActivity {
 
     private Button btnLogin;
     private TextView olvidoContra;
+    private TextView registro;
     private EditText etCarnet, etPassword;
     private Database db;
 
@@ -27,6 +28,7 @@ public class LoginActivity extends AppCompatActivity {
         // Inicializar vistas
         btnLogin = findViewById(R.id.btn_login);
         olvidoContra = findViewById(R.id.tv_forgot_password);
+        registro = findViewById(R.id.tv_registrate);
         etCarnet = findViewById(R.id.input_carnet);
         etPassword = findViewById(R.id.input_password);
 
@@ -49,6 +51,12 @@ public class LoginActivity extends AppCompatActivity {
             Intent intent = new Intent(LoginActivity.this, OlvidoContraActivity.class);
             startActivity(intent);
         });
+
+        registro.setOnClickListener(v -> {
+            Intent intent = new Intent(LoginActivity.this, RegistroActivity.class);
+            startActivity(intent);
+        });
+
     }
 
     /**

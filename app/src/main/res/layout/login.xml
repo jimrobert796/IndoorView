@@ -32,16 +32,14 @@
                 android:layout_margin="24dp"
                 app:cardCornerRadius="24dp"
                 app:cardElevation="8dp"
-                app:cardBackgroundColor="@android:color/transparent">  <!-- 👈 Importante: transparente -->
+                app:cardBackgroundColor="@android:color/transparent">
 
-                <!-- El gradiente lo pones en un layout interno -->
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@drawable/gradiente_card"
                     android:padding="24dp">
 
-                    <!-- Todo tu contenido del login va aquí -->
                     <ImageView
                         android:id="@+id/logo_universidad"
                         android:layout_width="100dp"
@@ -110,7 +108,7 @@
                         android:textColor="@android:color/black"
                         android:textColorHint="#B3FFFFFF" />
 
-                    <!-- Botón -->
+                    <!-- Botón Login -->
                     <Button
                         android:id="@+id/btn_login"
                         android:layout_width="match_parent"
@@ -118,7 +116,7 @@
                         android:layout_below="@id/input_password"
                         android:layout_marginTop="32dp"
                         android:backgroundTint="#3B82F6"
-                        android:text="Inicia sesión"
+                        android:text="Iniciar sesión"
                         android:textColor="@android:color/white"
                         android:textSize="16sp"
                         android:textStyle="bold" />
@@ -130,12 +128,50 @@
                         android:layout_height="wrap_content"
                         android:layout_below="@id/btn_login"
                         android:layout_centerHorizontal="true"
-                        android:layout_marginTop="20dp"
-                        android:layout_marginBottom="20dp"
-                        android:text="Olvidó su contraseña?"
+                        android:layout_marginTop="16dp"
+                        android:text="¿Olvidó su contraseña?"
                         android:textColor="#60A5FA"
-                        android:textSize="14sp"
+                        android:textSize="13sp"
                         android:padding="8dp" />
+
+                    <!-- ✅ NUEVO: Línea divisoria -->
+                    <View
+                        android:id="@+id/divisor"
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_below="@id/tv_forgot_password"
+                        android:layout_marginTop="20dp"
+                        android:background="#33FFFFFF" />
+
+                    <!-- ✅ NUEVO: Enlace de registro -->
+                    <LinearLayout
+                        android:id="@+id/layout_registro"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_below="@id/divisor"
+                        android:layout_centerHorizontal="true"
+                        android:layout_marginTop="16dp"
+                        android:layout_marginBottom="20dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/tv_no_tienes_cuenta"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="¿No tienes una cuenta? "
+                            android:textColor="#B3FFFFFF"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/tv_registrate"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Regístrate"
+                            android:textColor="#60A5FA"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                    </LinearLayout>
 
                 </RelativeLayout>
             </androidx.cardview.widget.CardView>
