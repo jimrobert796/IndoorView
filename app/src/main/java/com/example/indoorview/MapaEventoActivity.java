@@ -158,8 +158,6 @@ public class MapaEventoActivity extends AppCompatActivity {
             Point punto = Point.fromLngLat(Double.parseDouble(longitudEvento), Double.parseDouble(latitudEvento));
             mapManager.agregarPinEvento(punto, nombreEvento, datosEvento);
 
-            Toast.makeText(this, "📍 " + nombreEvento, Toast.LENGTH_SHORT).show();
-
             Log.e("EVENTO_PRUEBA", "coordenadas: " + longitudEvento+", "+ latitudEvento);
 
         } catch (NumberFormatException e) {
@@ -196,6 +194,17 @@ public class MapaEventoActivity extends AppCompatActivity {
             Toast.makeText(this, "⚠️ Por favor selecciona una ubicación", Toast.LENGTH_SHORT).show();
             return;
         }
+
+        // VALIDACIÓN ADICIONAL: Double-check que esté dentro del UGB
+        if (!mapManager.puntoDentroDelUGB(puntoSeleccionado)) {
+            Toast.makeText(this,
+                    "La ubicación está fuera de los límites permitidos",
+                    Toast.LENGTH_LONG).show();
+            Log.e("EVENTO_CONFIRM", "Ubicación confirmada fuera del UGB");
+            return;
+        }
+
+        Log.d("EVENTO_CONFIRM", "✅ Ubicación confirmada dentro del UGB");
 
         // Preparar datos para devolver
         Intent resultIntent = new Intent();
@@ -320,6 +329,17 @@ public class MapaEventoActivity extends AppCompatActivity {
             if (gesturesPlugin != null) {
                 OnMapClickListener mapClickListener = point -> {
                     if (modoSeleccion && mapManager != null) {
+                        // VALIDACIÓN: Verificar que el punto esté dentro del UGB
+                        if (!mapManager.puntoDentroDelUGB(point)) {
+                            Toast.makeText(MapaEventoActivity.this,
+                                    "El evento está FUERA de los límites permitidos",
+                                    Toast.LENGTH_LONG).show();
+                            Log.e("EVENTO_UGB", "Punto fuera de UGB: [" + point.longitude() + ", " + point.latitude() + "]");
+                            return true;
+                        }
+
+                        Log.d("EVENTO_UGB", "Punto VÁLIDO dentro del UGB");
+
                         // Limpiar pin anterior
                         mapManager.limpiarPinEvento();
 

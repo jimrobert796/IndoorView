@@ -5,7 +5,6 @@
     android:layout_height="match_parent"
     android:background="@drawable/fond">
 
-    <!-- ScrollView para permitir desplazamiento en pantallas pequeñas -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -15,7 +14,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="30dp">
-
 
             <androidx.cardview.widget.CardView
                 android:id="@+id/card_perfil"
@@ -54,6 +52,19 @@
                         android:textColor="@android:color/white"
                         android:textSize="22sp"
                         android:textStyle="bold" />
+
+                    <!-- Botón EDITAR PERFIL (icono de lápiz) -->
+                    <ImageButton
+                        android:id="@+id/btn_editar_perfil"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:layout_alignParentEnd="true"
+                        android:layout_alignTop="@id/tv_titulo_perfil"
+                        android:layout_marginEnd="8dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@drawable/ic_edit"
+                        android:contentDescription="Editar perfil"
+                        android:tint="@android:color/white" />
 
                     <!-- Contenedor de datos del usuario -->
                     <LinearLayout

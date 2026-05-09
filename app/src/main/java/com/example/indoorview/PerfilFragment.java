@@ -11,6 +11,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -32,6 +33,8 @@ public class PerfilFragment extends Fragment {
     private String usuarioCarnet;
     private String usuarioCorreo;
 
+    private ImageView btnEditarPerfil;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -44,6 +47,7 @@ public class PerfilFragment extends Fragment {
         tvApellidosUsuario = view.findViewById(R.id.tv_apellidos);
         tvCarnetUsuario = view.findViewById(R.id.tv_carnet);
         tvCorreoUsuario = view.findViewById(R.id.tv_correo);
+        btnEditarPerfil = view.findViewById(R.id.btn_editar_perfil);
 
         // Obtener datos de sesión
         obtenerDatosSesion();
@@ -78,6 +82,12 @@ public class PerfilFragment extends Fragment {
                 requireActivity().finish();
             });
         });
+        btnEditarPerfil.setOnClickListener(v -> {
+            Intent intent = new Intent(getActivity(), EditarPerfilActivity.class);
+            startActivity(intent);
+        });
+
+
         return view;
     }
 

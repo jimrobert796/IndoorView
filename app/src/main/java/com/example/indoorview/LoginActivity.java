@@ -147,6 +147,7 @@ public class LoginActivity extends AppCompatActivity {
         editor.putInt("usuario_tipo", usuario.getId_tipo()); // 1=Estudiante, 2=Admin
         editor.putString("usuario_carnet", usuario.getCarnet());
         editor.putString("usuario_correo", usuario.getCorreo());
+        editor.putString("usuario_contra", usuario.getContraseña());
         editor.apply();
     }
 }

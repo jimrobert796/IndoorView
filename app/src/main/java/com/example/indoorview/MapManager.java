@@ -119,6 +119,10 @@ public class MapManager {
     private int elementoSeleccionadoId = -1;
     private boolean esEspacioSeleccionado = false;
 
+
+    private static final String GEOJSON_UGB_LIMITE = "[ [ [ -88.41874168089034, 13.342901971786262 ], [ -88.41889785945618, 13.341106898005307 ], [ -88.41839524199705, 13.34103443603474 ], [ -88.41831812517535, 13.34178386011384 ], [ -88.41741476994676, 13.341794104340593 ], [ -88.41730671679485, 13.34196510159082 ], [ -88.41720451599281, 13.34209255599397 ], [ -88.41706008360627, 13.342479282053095 ], [ -88.41704985341521, 13.342675370623276 ], [ -88.41796776139901, 13.34270376976529 ], [ -88.41796378795416, 13.342793041275973 ], [ -88.41812265682583, 13.342799003628858 ], [ -88.41811979305093, 13.342972147765815 ], [ -88.41837785201281, 13.342976948895853 ], [ -88.41834732427823, 13.344205429857794 ], [ -88.41803842734053, 13.344204010776519 ], [ -88.4180916851741, 13.344569482157176 ], [ -88.42024086628714, 13.343740562349211 ], [ -88.42023351324613, 13.342921366041821 ], [ -88.41874168089034, 13.342901971786262 ] ] ]";
+
+
     // ════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ════════════════════════════════════════════════════════════════
@@ -1758,6 +1762,24 @@ public class MapManager {
             return;
         }
 
+        // ✅ NUEVA VALIDACIÓN: Verificar que TODOS los puntos estén dentro del UGB
+        if (!lugarDentroDelUGB(puntosActuales)) {
+            Log.e("VALIDAR_LUGAR", "❌ LUGAR FUERA DE LÍMITES UGB");
+
+            Toast.makeText(context,
+                    "❌ ERROR: El lugar está FUERA de los límites permitidos (UGB)\n\n" +
+                            "Todos los puntos deben estar dentro del polígono UGB",
+                    Toast.LENGTH_LONG).show();
+
+            // NO continuar con el proceso
+            return;
+        }
+
+        Log.d("VALIDAR_LUGAR", "✅ LUGAR VALIDADO - Dentro del UGB");
+
+        // ════════════════════════════════════════════════════════════════
+        // CONTINUAR CON EL PROCESO ORIGINAL
+        // ════════════════════════════════════════════════════════════════
         lugarActualId++;
         puntosActuales.add(puntosActuales.get(0));
         puntosLugarActual = new ArrayList<>(puntosActuales);
@@ -1765,8 +1787,7 @@ public class MapManager {
         String geojson = generarGeoJsonDesdePuntos(puntosActuales,
                 "Lugar " + lugarActualId, "lugar", lugarActualId);
 
-        // ✅ CAMBIADO: Usar el nuevo CRUD en modo creación
-        mostrarCRUDCrearLugar(geojson);  // ← Esto muestra el BottomSheet CRUD
+        mostrarCRUDCrearLugar(geojson);
 
         dibujarPoligono(style, new ArrayList<>(puntosActuales),
                 "lugar-" + lugarActualId, "#2196F3", 0.1);
@@ -1776,8 +1797,6 @@ public class MapManager {
 
         puntosActuales.clear();
         managerTemporal.deleteAll();
-
-        // ✅ Notificar al Fragment (opcional, el CRUD ya maneja el flujo)
     }
 
 
@@ -1791,6 +1810,23 @@ public class MapManager {
             return;
         }
 
+        //  VALIDACIÓN: Verificar que TODOS los puntos estén dentro del UGB
+        if (!lugarDentroDelUGB(puntosActuales)) {
+            Log.e("VALIDAR_ESPACIO", " ESPACIO FUERA DE LÍMITES UGB");
+
+            Toast.makeText(context,
+                    " ERROR: El espacio está FUERA de los límites permitidos\n\n" +
+                            "Todos los puntos deben estar dentro del polígono UGB",
+                    Toast.LENGTH_LONG).show();
+
+            return;
+        }
+
+        Log.d("VALIDAR_ESPACIO", "✅ ESPACIO VALIDADO - Dentro del UGB");
+
+        // ════════════════════════════════════════════════════════════════
+        // CONTINUAR CON EL PROCESO ORIGINAL
+        // ════════════════════════════════════════════════════════════════
         espacioContador++;
         puntosActuales.add(puntosActuales.get(0));
         puntosEspacioActual = new ArrayList<>(puntosActuales);
@@ -1798,8 +1834,7 @@ public class MapManager {
         String geojson = generarGeoJsonDesdePuntos(puntosActuales,
                 "Espacio " + espacioContador, "espacio", espacioContador);
 
-        // ✅ CAMBIADO: Usar el nuevo CRUD en modo creación
-        mostrarCRUDCrearEspacio(geojson);  // ← Esto muestra el BottomSheet CRUD
+        mostrarCRUDCrearEspacio(geojson);
 
         String espacioId = "lugar-" + lugarActualId + "-espacio-" + espacioContador;
         dibujarPoligono(style, new ArrayList<>(puntosActuales),
@@ -1810,8 +1845,6 @@ public class MapManager {
 
         puntosActuales.clear();
         managerTemporal.deleteAll();
-
-        // ✅ Notificar al Fragment (opcional)
     }
 
     /**
@@ -3195,6 +3228,116 @@ public class MapManager {
         } catch (Exception e) {
             Log.e("ZOOM_PINS", "Error ocultando pines de espacios: " + e.getMessage());
         }
+    }
+
+    // ════════════════════════════════════════════════════════════════
+// VALIDACIÓN DE LÍMITES UGB
+// ════════════════════════════════════════════════════════════════
+
+    /**
+     * Verificar si un punto está dentro del límite UGB
+     * @param punto Punto a validar
+     * @return true si está dentro, false si está afuera
+     */
+    public boolean puntoDentroDelUGB(Point punto) {
+        return verificarPuntoEnPoligono(punto, extraerVerticesDelGeoJson(GEOJSON_UGB_LIMITE));
+    }
+
+    /**
+     * Verificar si TODOS los puntos de un lugar están dentro del UGB
+     * @param puntos Lista de puntos del lugar
+     * @return true si todos están dentro, false si al menos uno está afuera
+     */
+    public boolean lugarDentroDelUGB(List<Point> puntos) {
+        if (puntos == null || puntos.isEmpty()) {
+            return false;
+        }
+
+        List<Point> verticesUGB = extraerVerticesDelGeoJson(GEOJSON_UGB_LIMITE);
+
+        for (Point punto : puntos) {
+            if (!verificarPuntoEnPoligono(punto, verticesUGB)) {
+                Log.d("VALIDAR_UGB", "❌ Punto AFUERA: [" + punto.longitude() + ", " + punto.latitude() + "]");
+                return false; // Al menos un punto está afuera
+            }
+        }
+
+        Log.d("VALIDAR_UGB", "✅ Todos los puntos DENTRO del UGB");
+        return true;
+    }
+
+    /**
+     * Extraer vértices desde un GeoJSON string
+     */
+    private List<Point> extraerVerticesDelGeoJson(String geojson) {
+        List<Point> vertices = new ArrayList<>();
+
+        try {
+            // Limpiar formato: [[[lng, lat], [lng, lat], ...]]
+            String clean = geojson
+                    .replace("[[[", "")
+                    .replace("]]]", "")
+                    .replace("[[", "")
+                    .replace("]]", "")
+                    .trim();
+
+            // Dividir por ], [ para obtener cada punto
+            String[] puntosStr = clean.split("\\],\\s*\\[");
+
+            for (String punto : puntosStr) {
+                // Limpiar corchetes adicionales
+                punto = punto.replace("[", "").replace("]", "").trim();
+                String[] coords = punto.split(",");
+
+                if (coords.length == 2) {
+                    try {
+                        double lng = Double.parseDouble(coords[0].trim());
+                        double lat = Double.parseDouble(coords[1].trim());
+                        vertices.add(Point.fromLngLat(lng, lat));
+                    } catch (NumberFormatException e) {
+                        Log.e("GEOJSON_PARSE", "Error parseando coordenadas: " + punto);
+                    }
+                }
+            }
+
+            Log.d("GEOJSON_PARSE", "✓ Vértices UGB extraídos: " + vertices.size());
+
+        } catch (Exception e) {
+            Log.e("GEOJSON_PARSE", "Error en extraerVerticesDelGeoJson: " + e.getMessage());
+        }
+
+        return vertices;
+    }
+
+    /**
+     * Ray Casting: Verificar si un punto está dentro de un polígono
+     */
+    private boolean verificarPuntoEnPoligono(Point punto, List<Point> vertices) {
+        if (vertices.size() < 3) {
+            return false;
+        }
+
+        double x = punto.longitude();
+        double y = punto.latitude();
+        boolean inside = false;
+
+        int n = vertices.size();
+        for (int i = 0, j = n - 1; i < n; j = i++) {
+            Point pi = vertices.get(i);
+            Point pj = vertices.get(j);
+
+            double xi = pi.longitude();
+            double yi = pi.latitude();
+            double xj = pj.longitude();
+            double yj = pj.latitude();
+
+            if (((yi > y) != (yj > y)) &&
+                    (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) {
+                inside = !inside;
+            }
+        }
+
+        return inside;
     }
 
 

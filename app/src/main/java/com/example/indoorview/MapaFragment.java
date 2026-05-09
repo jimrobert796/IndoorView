@@ -104,9 +104,10 @@ public class MapaFragment extends Fragment {
     long idLugar;
     long pisoId;
 
+
+
     // CARGADOR DE DATOS PROCESADOS YA GUARDADOS EN BD PARA SINCRONIZCION AUTOMATICA DE MAPA
     private ObtenerProcesarDatos.OnDatosCargatosListener listener;
-
     // Variables para datos de sesión
     private boolean usuarioLog;
     private int usuarioId;
@@ -668,11 +669,28 @@ public class MapaFragment extends Fragment {
     private void configurarClickMapa(Style style) {
         GesturesUtils.getGestures(mapView).addOnMapClickListener(point -> {
             if (modoActual == MODO_LUGAR) {
+                // ✅ VALIDAR que el punto esté dentro del UGB
+                if (!mapManager.puntoDentroDelUGB(point)) {
+                    Toast.makeText(getContext(),
+                            "⚠️ Este punto está FUERA del límite UGB permitido",
+                            Toast.LENGTH_SHORT).show();
+                    return true;
+                }
+
                 mapManager.agregarPunto(point, style);
                 tvModo.setText("Puntos: " + mapManager.obtenerCantidadPuntos() +
                         " — toca Cerrar para terminar");
                 return true;
+
             } else if (modoActual == MODO_ESPACIO) {
+                // ✅ VALIDAR que el punto esté dentro del UGB
+                if (!mapManager.puntoDentroDelUGB(point)) {
+                    Toast.makeText(getContext(),
+                            "⚠️ Este punto está FUERA del límite UGB permitido",
+                            Toast.LENGTH_SHORT).show();
+                    return true;
+                }
+
                 if (mapManager.puntoDentroDeLugar(point)) {
                     mapManager.agregarPunto(point, style);
                     tvModo.setText("Puntos: " + mapManager.obtenerCantidadPuntos() +

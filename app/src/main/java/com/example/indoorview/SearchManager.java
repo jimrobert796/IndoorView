@@ -90,10 +90,9 @@ public class SearchManager {
 
         for (Lugar lugar : lugares) {
             String nombre = lugar.getNombre().toLowerCase();
-            String descripcion = lugar.getDescripcion().toLowerCase();
 
             // Búsqueda por nombre o descripción
-            if (nombre.contains(query) || descripcion.contains(query)) {
+            if (nombre.contains(query)) {
                 JsonObject data = new JsonObject();
                 data.addProperty("id_lugar", lugar.getId_lugar());
                 data.addProperty("nombre", lugar.getNombre());
@@ -132,10 +131,9 @@ public class SearchManager {
 
             for (Espacio espacio : espacios) {
                 String nombre = espacio.getNombre().toLowerCase();
-                String descripcion = espacio.getDescripcion().toLowerCase();
 
                 // Búsqueda por nombre o descripción
-                if (nombre.contains(query) || descripcion.contains(query)) {
+                if (nombre.contains(query)) {
 
                     // Obtener geometría para datos completos
                     com.example.indoorview.models.Geometria geo =

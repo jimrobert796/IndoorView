@@ -1,6 +1,8 @@
 package com.example.indoorview;
 
 import android.app.AlertDialog;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.text.InputType;
@@ -40,6 +42,16 @@ public class AgregarUsuarioActivity extends AppCompatActivity {
 
     private boolean cambiarContraseña = true;
     private String nuevaContraseñaHash = null;
+
+
+    // Variables para datos de sesión
+    private int usuarioId;
+    private String usuarioNombre;
+    private String usuarioApellidos;
+    private int usuarioTipo;
+    private String usuarioCarnet;
+    private String usuarioCorreo;
+    private String usuarioContraseñaHash;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -296,37 +308,102 @@ public class AgregarUsuarioActivity extends AppCompatActivity {
      * Validar que todos los campos estén llenos
      */
     private boolean validarCampos() {
-        String carnet = etCarnet.getText().toString().trim();
+        // Obtener valores
+        String carnet = etCarnet.getText().toString().toUpperCase().trim();
         String nombres = etNombres.getText().toString().trim();
         String apellidos = etApellidos.getText().toString().trim();
         String correo = etCorreo.getText().toString().trim();
         String password = etPassword.getText().toString().trim();
 
+        // 1. Validar Carnet (mínimo 8 dígitos, solo números)
         if (carnet.isEmpty()) {
-            etCarnet.setError("Ingresa el carnet");
+            etCarnet.setError("El carnet es requerido");
             etCarnet.requestFocus();
             return false;
         }
+        if (!carnet.matches("[A-Z]{2,}\\d{4,}")) {
+            etCarnet.setError("Formato inválido");
+            etCarnet.requestFocus();
+            return false;
+        }
+
+        // 2. Validar Nombres (solo letras y espacios, mínimo 3 caracteres)
         if (nombres.isEmpty()) {
-            etNombres.setError("Ingresa los nombres");
+            etNombres.setError("Los nombres son requeridos");
             etNombres.requestFocus();
             return false;
         }
+        if (nombres.length() < 3) {
+            etNombres.setError("Ingrese al menos 3 caracteres");
+            etNombres.requestFocus();
+            return false;
+        }
+        if (!nombres.matches("[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]+")) {
+            etNombres.setError("Solo se permiten letras");
+            etNombres.requestFocus();
+            return false;
+        }
+
+        // 3. Validar Apellidos (solo letras y espacios, mínimo 3 caracteres)
         if (apellidos.isEmpty()) {
-            etApellidos.setError("Ingresa los apellidos");
+            etApellidos.setError("Los apellidos son requeridos");
             etApellidos.requestFocus();
             return false;
         }
+        if (apellidos.length() < 3) {
+            etApellidos.setError("Ingrese al menos 3 caracteres");
+            etApellidos.requestFocus();
+            return false;
+        }
+        if (!apellidos.matches("[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]+")) {
+            etApellidos.setError("Solo se permiten letras");
+            etApellidos.requestFocus();
+            return false;
+        }
+
+        // 4. Validar Correo Electrónico
         if (correo.isEmpty()) {
-            etCorreo.setError("Ingresa el correo");
+            etCorreo.setError("El correo es requerido");
             etCorreo.requestFocus();
             return false;
         }
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(correo).matches()) {
+            etCorreo.setError("Ingrese un correo electrónico válido");
+            etCorreo.requestFocus();
+            return false;
+        }
+        // Validar dominio institucional (opcional)
+        if (!correo.endsWith("@ugb.edu.sv")) {
+            // Es solo advertencia, no error
+            Toast.makeText(this, "Sugerencia: Use correo institucional @ugb.edu.sv", Toast.LENGTH_LONG).show();
+        }
+
+        // 5. Validar Contraseña
         if (password.isEmpty()) {
-            etPassword.setError("Ingresa la contraseña");
+            etPassword.setError("La contraseña es requerida");
             etPassword.requestFocus();
             return false;
         }
+        if (password.length() < 6) {
+            etPassword.setError("La contraseña debe tener al menos 6 caracteres");
+            etPassword.requestFocus();
+            return false;
+        }
+
+        // Validar que la contraseña tenga al menos un número
+        if (!password.matches(".*\\d.*")) {
+            etPassword.setError("La contraseña debe contener al menos un número");
+            etPassword.requestFocus();
+            return false;
+        }
+
+        // Validar que la contraseña tenga al menos una letra mayúscula
+        if (!password.matches(".*[A-Z].*")) {
+            etPassword.setError("La contraseña debe contener al menos una mayúscula");
+            etPassword.requestFocus();
+            return false;
+        }
+
         return true;
     }
 
@@ -367,6 +444,19 @@ public class AgregarUsuarioActivity extends AppCompatActivity {
         // Opcional: También cambiar el botón negativo si quieres
         Button negativeButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
         negativeButton.setTextColor(Color.parseColor("#2196F3"));
+    }
+
+    private void obtenerDatosSesion() {
+        // CORRECCIÓN: Usar requireContext() en lugar de getActivity()
+        SharedPreferences prefs = this.getSharedPreferences("sesion", Context.MODE_PRIVATE);
+        // O también: getActivity().getSharedPreferences("sesion", Context.MODE_PRIVATE);
+        usuarioId = prefs.getInt("usuario_id", -1);
+        usuarioNombre = prefs.getString("usuario_nombre", "");
+        usuarioApellidos = prefs.getString("usuario_apellidos", "");
+        usuarioTipo = prefs.getInt("usuario_tipo", 1);
+        usuarioCarnet = prefs.getString("usuario_carnet", "");
+        usuarioCorreo = prefs.getString("usuario_correo", "");
+        usuarioCorreo = prefs.getString("usuario_contra", "");
     }
 
 

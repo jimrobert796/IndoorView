@@ -17,6 +17,8 @@
         android:clickable="true"
         android:focusable="true"
         android:elevation="10dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:tint="@android:color/white"
         android:contentDescription="Regresar" />
 
     <!-- ScrollView para pantallas pequeñas -->
