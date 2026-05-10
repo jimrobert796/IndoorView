@@ -332,6 +332,9 @@ public class MapManager {
         // 2. OCULTAR EL PIN DEL LUGAR
         ocultarPinLugar(idLugar);
 
+        // Para que sea segun spinner asi no da problemas a la hora de cargar los pisos
+        cargarPisos(idLugar);
+
         // ✅ GUARDAR ESTADO DE SELECCIÓN
         elementoSeleccionadoId = idEspacio;
         esEspacioSeleccionado = true;

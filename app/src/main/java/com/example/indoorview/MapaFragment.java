@@ -1006,6 +1006,9 @@ public class MapaFragment extends Fragment {
         btnDeshacer.setVisibility(View.VISIBLE);
         btnFinalizar.setVisibility(View.GONE);
         mapManager.limpiarVérticesTemporales();
+
+        mapManager.limpiarPinesTemporales();
+
         tvModo.setText("Dibuja ESPACIOS dentro del Lugar " + mapManager.obtenerLugarActualId());
     }
     /**

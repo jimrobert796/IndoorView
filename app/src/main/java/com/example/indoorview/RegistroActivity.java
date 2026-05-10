@@ -8,6 +8,11 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class RegistroActivity extends AppCompatActivity {
 
+    /// Usaremos lo que seria FIRESTORE y Storage para esto no hay problema
+    /// tenemos un mes completo para las pruebas como tal
+    /// por lo que el subir la informacion no seria un problema
+
+
     ImageView btnRegresar;
 
     @Override
