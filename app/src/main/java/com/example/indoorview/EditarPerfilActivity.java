@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -30,7 +31,7 @@ public class EditarPerfilActivity extends AppCompatActivity {
     private ImageView btnRegresar;
     private EditText etCarnet, etNombres, etApellidos, etCorreo, etPassword, etPasswordConfirmar;
     private TextInputLayout tilPassword, tilPasswordConfirmar;
-    private TextView tvPasswordConfirmar;
+    private TextView tvPasswordConfirmar,tvPassword;
     private Button btnCancelar, btnGuardar;
 
     // Base de datos
@@ -84,6 +85,7 @@ public class EditarPerfilActivity extends AppCompatActivity {
         tilPassword = findViewById(R.id.til_password);
         tilPasswordConfirmar = findViewById(R.id.til_passwordConfirmar);
         tvPasswordConfirmar = findViewById(R.id.tv_confirmar);
+        tvPassword = findViewById(R.id.tv_contraseña);
         btnCancelar = findViewById(R.id.btn_cancelar);
         btnGuardar = findViewById(R.id.btn_guardar_usuario);
     }
@@ -110,26 +112,36 @@ public class EditarPerfilActivity extends AppCompatActivity {
     private void cargarDatosUsuario() {
 
                 // Llenar los campos con los datos del usuario
-                etCarnet.setText(usuarioNombre);
+                etCarnet.setText(usuarioCarnet);
                 etNombres.setText(usuarioNombre);
                 etApellidos.setText(usuarioApellidos);
                 etCorreo.setText(usuarioCorreo);
                 etPassword.setText("12345678");
-
                 nuevaContraseñaHash = usuarioContraseñaHash;
 
-                etPassword.setFocusable(false);
-                etPassword.setFocusableInTouchMode(false);
+                if (usuarioTipo == 2){
+                    // Ocultar funcionamiento de contraseña
+                    etPassword.setFocusable(false);
+                    etPassword.setFocusableInTouchMode(false);
+                    tvPasswordConfirmar.setVisibility(View.GONE);
+                    tilPasswordConfirmar.setVisibility(View.GONE);
+                    // Deshabilitar el ícono de mostrar/ocultar (opcional)
+                    TextInputLayout textInputLayout = findViewById(R.id.til_password);
+                    textInputLayout.setEndIconMode(TextInputLayout.END_ICON_NONE);
+                }else {
 
+                    etCorreo.setEnabled(false);
+                    etCarnet.setEnabled(false);
 
-                tvPasswordConfirmar.setVisibility(View.GONE);
-                tilPasswordConfirmar.setVisibility(View.GONE);
-
-
-
-                // Deshabilitar el ícono de mostrar/ocultar (opcional)
-                TextInputLayout textInputLayout = findViewById(R.id.til_password);
-                textInputLayout.setEndIconMode(TextInputLayout.END_ICON_NONE);
+                    // Ocultar funcionamiento de contraseña
+                    etPassword.setFocusable(false);
+                    etPassword.setFocusableInTouchMode(false);
+                    tvPasswordConfirmar.setVisibility(View.GONE);
+                    tilPasswordConfirmar.setVisibility(View.GONE);
+                    // Deshabilitar el ícono de mostrar/ocultar (opcional)
+                    TextInputLayout textInputLayout = findViewById(R.id.til_password);
+                    textInputLayout.setEndIconMode(TextInputLayout.END_ICON_NONE);
+                }
 
     }
 
@@ -144,7 +156,11 @@ public class EditarPerfilActivity extends AppCompatActivity {
                     "Cancelar",
                     "¿Estás seguro que deseas cancelar? Los cambios no guardados se perderán.",
                     "Sí, cancelar",
-                    () -> finish()
+                    () -> {
+                        setResult(RESULT_CANCELED);  // Opcional
+                        finish();
+                    }
+
             );
         });
 
@@ -211,13 +227,17 @@ public class EditarPerfilActivity extends AppCompatActivity {
         String nombres = etNombres.getText().toString().trim();
         String apellidos = etApellidos.getText().toString().trim();
         String correo = etCorreo.getText().toString().trim();
+        String password = etPassword.getText().toString().trim();
+
 
         // Determinar la contraseña final
         String passwordFinal;
-        if (cambiarContraseña && nuevaContraseñaHash != null) {
-            passwordFinal = nuevaContraseñaHash;
+        if (cambiarContraseña == false) {
+            passwordFinal = Utilidades.hashPassword(password);  // Usar nueva contraseña hasheada
+            Log.d("CONTRASEÑA_HASH", "NUEVA CONTRASEÑA HASHED:"+ passwordFinal);
         } else {
-            passwordFinal = usuarioContraseñaHash; // Mantener la original
+            passwordFinal = usuarioContraseñaHash;  // Mantener la original
+            Log.d("CONTRASEÑA_HASH", "SE MANTIENE LA CONTRA HASHED:"+ passwordFinal);
         }
 
         // Crear objeto usuario (tipo 1 por defecto, se mantiene el original)
@@ -237,25 +257,36 @@ public class EditarPerfilActivity extends AppCompatActivity {
 
         if (resultado > 0) {
             // Actualizar SharedPreferences
-            actualizarSesion(nombres, apellidos, correo);
+            actualizarSesionAdmin(carnet,nombres, apellidos, correo,passwordFinal);
 
             Toast.makeText(this, "Perfil actualizado correctamente", Toast.LENGTH_SHORT).show();
             setResult(RESULT_OK);
             finish();
         } else {
             Toast.makeText(this, "Error al actualizar el perfil", Toast.LENGTH_SHORT).show();
+            setResult(RESULT_CANCELED);  // Opcional
         }
     }
-
     /**
      * Actualizar datos de sesión en SharedPreferences
      */
-    private void actualizarSesion(String nombres, String apellidos, String correo) {
+    private void actualizarSesionUsuario(String nombres, String apellidos, String contraseña) {
         SharedPreferences prefs = getSharedPreferences("sesion", MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
         editor.putString("usuario_nombre", nombres);
         editor.putString("usuario_apellidos", apellidos);
+        editor.putString("usuario_contraseña", contraseña);
+        editor.apply();
+    }
+
+    private void actualizarSesionAdmin( String carnet,String nombres, String apellidos,String correo, String contraseña) {
+        SharedPreferences prefs = getSharedPreferences("sesion", MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putString("usuario_carnet", carnet);
+        editor.putString("usuario_nombre", nombres);
+        editor.putString("usuario_apellidos", apellidos);
         editor.putString("usuario_correo", correo);
+        editor.putString("usuario_contraseña", contraseña);
         editor.apply();
     }
 
@@ -269,6 +300,93 @@ public class EditarPerfilActivity extends AppCompatActivity {
         String apellidos = etApellidos.getText().toString().trim();
         String correo = etCorreo.getText().toString().trim();
         String password = etPassword.getText().toString().trim();
+        String confirmarPassword = etPasswordConfirmar.getText().toString().trim();
+
+        // 1. Validar Carnet (mínimo 8 dígitos, solo números)
+        if (carnet.isEmpty()) {
+            etCarnet.setError("El carnet es requerido");
+            etCarnet.requestFocus();
+            return false;
+        }
+        if (!carnet.matches("[A-Z]{2,}\\d{4,}")) {
+            etCarnet.setError("Formato inválido");
+            etCarnet.requestFocus();
+            return false;
+        }
+
+        // 2. Validar Nombres (solo letras y espacios, mínimo 3 caracteres)
+        if (nombres.isEmpty()) {
+            etNombres.setError("Los nombres son requeridos");
+            etNombres.requestFocus();
+            return false;
+        }
+        if (nombres.length() < 3) {
+            etNombres.setError("Ingrese al menos 3 caracteres");
+            etNombres.requestFocus();
+            return false;
+        }
+        if (!nombres.matches("[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]+")) {
+            etNombres.setError("Solo se permiten letras");
+            etNombres.requestFocus();
+            return false;
+        }
+
+        // 3. Validar Apellidos (solo letras y espacios, mínimo 3 caracteres)
+        if (apellidos.isEmpty()) {
+            etApellidos.setError("Los apellidos son requeridos");
+            etApellidos.requestFocus();
+            return false;
+        }
+        if (apellidos.length() < 3) {
+            etApellidos.setError("Ingrese al menos 3 caracteres");
+            etApellidos.requestFocus();
+            return false;
+        }
+        if (!apellidos.matches("[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]+")) {
+            etApellidos.setError("Solo se permiten letras");
+            etApellidos.requestFocus();
+            return false;
+        }
+
+        // 4. Validar Correo Electrónico
+        if (correo.isEmpty()) {
+            etCorreo.setError("El correo es requerido");
+            etCorreo.requestFocus();
+            return false;
+        }
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(correo).matches()) {
+            etCorreo.setError("Ingrese un correo electrónico válido");
+            etCorreo.requestFocus();
+            return false;
+        }
+        // Validar dominio institucional (opcional)
+        if (!correo.endsWith("@ugb.edu.sv")) {
+            // Es solo advertencia, no error
+            Toast.makeText(this, "Sugerencia: Use correo institucional @ugb.edu.sv", Toast.LENGTH_LONG).show();
+        }
+
+
+        if (!cambiarContraseña) {
+            // Validar que no esté vacía
+            if (password.isEmpty()) {
+                etPassword.setError("Ingrese la nueva contraseña");
+                etPassword.requestFocus();
+                return false;
+            }
+
+            // VALIDAR QUE LAS CONTRASEÑAS COINCIDAN
+            if (confirmarPassword.isEmpty()) {
+                etPasswordConfirmar.setError("Confirme su nueva contraseña");
+                etPasswordConfirmar.requestFocus();
+                return false;
+            }
+
+            if (!password.equals(confirmarPassword)) {
+                etPasswordConfirmar.setError("Las contraseñas no coinciden");
+                etPasswordConfirmar.requestFocus();
+                return false;
+            }
+        }
 
 
 

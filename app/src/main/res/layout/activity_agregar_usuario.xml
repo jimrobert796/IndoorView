@@ -197,6 +197,41 @@
 
                     </com.google.android.material.textfield.TextInputLayout>
 
+                    <!-- Campo: Confirmar Contraseña -->
+                    <TextView
+                        android:id="@+id/tv_confirmar"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Confirme contraseña"
+                        android:textColor="#B3FFFFFF"
+                        android:textSize="12sp" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/til_passwordConfirmar"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="24dp"
+                        android:background="@drawable/bg_campo_perfil"
+                        app:hintEnabled="false"
+                        app:endIconMode="password_toggle"
+                        app:endIconTint="#FFFFFF"
+                        app:boxBackgroundColor="#33FFFFFF"
+                        app:boxStrokeColor="#FFFFFF"
+                        app:hintTextColor="#B3FFFFFF">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/et_passwordConfirmar"
+                            android:layout_width="match_parent"
+                            android:layout_height="56dp"
+                            android:hint="Confirmar contraseña"
+                            android:inputType="textPassword"
+                            android:background="@android:color/transparent"
+                            android:padding="12dp"
+                            android:textColor="@android:color/white"
+                            android:textColorHint="#B3FFFFFF"
+                            android:textCursorDrawable="@null" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
                     <!-- Botones -->
                     <LinearLayout
                         android:layout_width="match_parent"

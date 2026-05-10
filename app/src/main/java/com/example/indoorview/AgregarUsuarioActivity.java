@@ -7,11 +7,13 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.text.InputType;
 import android.util.Log;
+import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -24,11 +26,13 @@ import com.google.android.material.textfield.TextInputLayout;
 public class AgregarUsuarioActivity extends AppCompatActivity {
 
     // ==================== VISTAS ====================
-    private EditText etCarnet, etNombres, etApellidos, etCorreo, etPassword;
+    private EditText etCarnet, etNombres, etApellidos, etCorreo, etPassword, etPasswordConfirmar;
     private ImageView btnRegresar;
     private TextInputLayout textInputLayout;
     private Spinner spinnerTipo;
     private Button btnCancelar, btnGuardar;
+    private TextInputLayout tilPassword, tilPasswordConfirmar;
+    private TextView tvPasswordConfirmar,tvPassword;
 
     // ==================== BASE DE DATOS ====================
     private Database db;
@@ -131,17 +135,23 @@ public class AgregarUsuarioActivity extends AppCompatActivity {
         etApellidos = findViewById(R.id.et_apellidos);
         etCorreo = findViewById(R.id.et_correo);
         etPassword = findViewById(R.id.et_password);
+        etPasswordConfirmar = findViewById(R.id.et_passwordConfirmar);
         TextInputLayout textInputLayout = findViewById(R.id.til_password); // Dale un ID a tu TextInputLayout
         spinnerTipo = findViewById(R.id.spinner_tipo_usuario);
         btnCancelar = findViewById(R.id.btn_cancelar);
         btnGuardar = findViewById(R.id.btn_guardar_usuario);
         btnRegresar = findViewById(R.id.btn_regresar);
+
+        tilPasswordConfirmar = findViewById(R.id.til_passwordConfirmar);
+        tvPasswordConfirmar = findViewById(R.id.tv_confirmar);
     }
 
     /**
      * Cargar datos del usuario para edición
      */
     private void cargarDatosUsuario() {
+
+
         if (usuarioIdEdicion != -1) {
             Usuarios usuario = db.getUsuarioById(usuarioIdEdicion);
             if (usuario != null) {
@@ -156,6 +166,8 @@ public class AgregarUsuarioActivity extends AppCompatActivity {
 
                 etPassword.setFocusable(false);
                 etPassword.setFocusableInTouchMode(false);
+                tvPasswordConfirmar.setVisibility(View.GONE);
+                tilPasswordConfirmar.setVisibility(View.GONE);
 
 
                 // Deshabilitar el ícono de mostrar/ocultar (opcional)
@@ -204,6 +216,10 @@ public class AgregarUsuarioActivity extends AppCompatActivity {
                             cambiarContraseña = false;
                             //mostrarDialogoCambioContraseña();
 
+                            tvPasswordConfirmar.setVisibility(View.VISIBLE);
+                            tilPasswordConfirmar.setVisibility(View.VISIBLE);
+
+                            etPasswordConfirmar.setEnabled(true);
 
                         // Habilitar el campo de contraseña
                         etPassword.setEnabled(true);
@@ -237,7 +253,7 @@ public class AgregarUsuarioActivity extends AppCompatActivity {
         }
 
         // Obtener datos de los campos
-        String carnet = etCarnet.getText().toString().trim();
+        String carnet = etCarnet.getText().toString().toUpperCase().trim();
         String nombres = etNombres.getText().toString().trim();
         String apellidos = etApellidos.getText().toString().trim();
         String correo = etCorreo.getText().toString().trim();
@@ -314,6 +330,7 @@ public class AgregarUsuarioActivity extends AppCompatActivity {
         String apellidos = etApellidos.getText().toString().trim();
         String correo = etCorreo.getText().toString().trim();
         String password = etPassword.getText().toString().trim();
+        String confirmarPassword = etPasswordConfirmar.getText().toString().trim();
 
         // 1. Validar Carnet (mínimo 8 dígitos, solo números)
         if (carnet.isEmpty()) {
@@ -390,19 +407,29 @@ public class AgregarUsuarioActivity extends AppCompatActivity {
             return false;
         }
 
-        // Validar que la contraseña tenga al menos un número
-        if (!password.matches(".*\\d.*")) {
-            etPassword.setError("La contraseña debe contener al menos un número");
-            etPassword.requestFocus();
-            return false;
+        if (!cambiarContraseña) {
+            // Validar que no esté vacía
+            if (password.isEmpty()) {
+                etPassword.setError("Ingrese la nueva contraseña");
+                etPassword.requestFocus();
+                return false;
+            }
+
+            // VALIDAR QUE LAS CONTRASEÑAS COINCIDAN
+            if (confirmarPassword.isEmpty()) {
+                etPasswordConfirmar.setError("Confirme su nueva contraseña");
+                etPasswordConfirmar.requestFocus();
+                return false;
+            }
+
+            if (!password.equals(confirmarPassword)) {
+                etPasswordConfirmar.setError("Las contraseñas no coinciden");
+                etPasswordConfirmar.requestFocus();
+                return false;
+            }
         }
 
-        // Validar que la contraseña tenga al menos una letra mayúscula
-        if (!password.matches(".*[A-Z].*")) {
-            etPassword.setError("La contraseña debe contener al menos una mayúscula");
-            etPassword.requestFocus();
-            return false;
-        }
+
 
         return true;
     }

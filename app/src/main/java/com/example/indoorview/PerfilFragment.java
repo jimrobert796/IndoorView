@@ -84,11 +84,31 @@ public class PerfilFragment extends Fragment {
         });
         btnEditarPerfil.setOnClickListener(v -> {
             Intent intent = new Intent(getActivity(), EditarPerfilActivity.class);
-            startActivity(intent);
+            startActivityForResult(intent, 1);  //  Usar startActivityForResult
         });
 
-
         return view;
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == 1 && resultCode == getActivity().RESULT_OK) {
+            // ✅ Se ejecuta cuando EditarPerfilActivity se cierra con RESULT_OK
+            Log.d("PERFIL", "Regresando de editar perfil, recargando datos...");
+
+            // Recargar datos de sesión
+            obtenerDatosSesion();
+
+            // Actualizar UI
+            mostrarDatosUsuario();
+
+            // Recargar configuración de botones
+            configurarBotonesPorTipo();
+
+            Toast.makeText(getContext(), "Perfil actualizado", Toast.LENGTH_SHORT).show();
+        }
     }
 
     /**

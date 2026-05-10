@@ -39,7 +39,7 @@ public class LoginActivity extends AppCompatActivity {
         verificarSesion();
 
         btnLogin.setOnClickListener(v -> {
-            String carnet = etCarnet.getText().toString().trim();
+            String carnet = etCarnet.getText().toString().toUpperCase().trim();
             String password = etPassword.getText().toString().trim();
 
             if (validarCampos(carnet, password)) {
