@@ -2798,8 +2798,7 @@ public class MapManager {
 
     private File crearImgProducto() throws Exception {
         String fechaHoraMs = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String fileName = "producto_" + fechaHoraMs + "_img" + imagenActual;
-
+        String fileName = "camara_" + fechaHoraMs + "_img" + imagenActual;
         File dirAlmacenamiento;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             dirAlmacenamiento = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
@@ -2823,7 +2822,7 @@ public class MapManager {
     private String guardarImagenDesdeGaleria(Uri uri) {
         try {
             String fechaHoraMs = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-            String fileName = "producto_galeria_" + fechaHoraMs + "_img" + imagenActual + ".jpg";
+            String fileName = "galeria_" + fechaHoraMs + "_img" + imagenActual + ".jpg";
 
             File dirAlmacenamiento;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

@@ -69,4 +69,11 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore")
     // Cloud Storage
     implementation("com.google.firebase:firebase-storage")
+
+
+    // OkHttp para peticiones HTTP
+    implementation("com.squareup.okhttp3:okhttp:4.11.0")
+
+    // JSON parsing
+    implementation("com.google.code.gson:gson:2.10.1")
 }

@@ -59,6 +59,7 @@ import com.mapbox.maps.plugin.annotation.generated.PointAnnotationOptions;
 import com.mapbox.maps.plugin.gestures.GesturesUtils;
 import com.mapbox.maps.extension.style.layers.properties.generated.IconAnchor;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -74,6 +75,7 @@ public class MapaFragment extends Fragment {
     private MapManager mapManager;
     private Database db;
     private SearchManager searchManager;
+    private FirebaseHelper firebaseHelper;
 
     // UI Elements
     private Button btnLugar, btnEspacios, btnCerrar, btnDeshacer, btnFinalizar, btnHabilitar;
@@ -104,6 +106,10 @@ public class MapaFragment extends Fragment {
     long idLugar;
     long pisoId;
 
+    String NombLugar;
+    String NombPiso;
+    String NombEspacio;
+
 
 
     // CARGADOR DE DATOS PROCESADOS YA GUARDADOS EN BD PARA SINCRONIZCION AUTOMATICA DE MAPA
@@ -116,6 +122,11 @@ public class MapaFragment extends Fragment {
     private int usuarioTipo;
     private String usuarioCarnet;
     private String usuarioCorreo;
+
+
+    private CloudinaryHelper cloudinaryHelper;
+    private String imagenSubidaUrl = "";
+    private boolean imagenSubidaExitosa = false;
 
 
     @Nullable
@@ -284,6 +295,12 @@ public class MapaFragment extends Fragment {
     }
 
     private void inicializarLaunchers() {
+
+        cloudinaryHelper = new CloudinaryHelper();
+        firebaseHelper = new FirebaseHelper();  // ✅ Agregar esto
+
+
+
         // Launcher para la cámara
         camaraLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
@@ -319,48 +336,340 @@ public class MapaFragment extends Fragment {
         //  NUEVO: Conectar listener de CRUD
 
         mapManager.setFlujoCRUDListener(new MapManager.OnFlujoCRUDListener() {
+            // REEMPLAZA onLugarGuardado() en MapaFragment.java
+
+
             @Override
             public void onLugarGuardado(String nombre, String descripcion, String urlImagenes, String color) {
                 // Convertir puntos a GeoJSON
                 String geojson = obtenerGeojsonDePuntos(mapManager.puntosLugarActual);
 
-                // Guardar en BD
+                Log.d("FLUJO_CRUD", "════════════════════════════════════════════");
+                Log.d("FLUJO_CRUD", "📍 onLugarGuardado() INICIADO");
+                Log.d("FLUJO_CRUD", "  Nombre: " + nombre);
+                Log.d("FLUJO_CRUD", "════════════════════════════════════════════");
+
+                // ✅ 1. GUARDAR EN BD LOCAL
                 idLugar = db.insertLugar(nombre, descripcion, urlImagenes, geojson, color);
 
-                Log.d("FLUJO_CRUD", "✓ Lugar guardado en BD: " + nombre + "Id lugar "+ idLugar);
-                Log.d("FLUJO_CRUD", "Nombre: "+ nombre);
-                Log.d("FLUJO_CRUD", "Descripcion: "+ descripcion);
-                Log.d("FLUJO_CRUD", "Url: "+ urlImagenes);
-                Log.d("FLUJO_CRUD", "geojson: "+ geojson);
-                Log.d("FLUJO_CRUD", "color: "+ color);
+                Log.d("FLUJO_CRUD", "✓ Lugar guardado en BD: " + nombre + " (ID: " + idLugar + ")");
 
-                // Continuar flujo
-                flujoPostLugar();
+                // ✅ 2. SUBIR A CLOUDINARY SI HAY IMÁGENES
+                if (urlImagenes != null && !urlImagenes.isEmpty()) {
+                    Log.d("CLOUDINARY", "📸 Imágenes detectadas - Subiendo a Cloudinary...");
 
+                    subirImagenesACloudinary(urlImagenes, new CloudinaryUploadCallback() {
+                        @Override
+                        public void onCompletado(String urlsCloudinary) {
+                            Log.d("CLOUDINARY", "✅ Imágenes subidas exitosamente");
+                        }
+
+                        @Override
+                        public void onError(String error) {
+                            Log.e("CLOUDINARY", "❌ Error: " + error);
+                        }
+                    });
+                }
+
+                // ✅ 3. CONTINUAR FLUJO
                 crearPrimerPisoPorDefecto();
+                flujoPostLugar();
             }
 
+            private void crearPrimerPisoPorDefecto() {
+                String nombrePiso = "Primera Planta";
+                int numeroPiso = 1;
+
+                pisoId = db.insertPiso((int) idLugar, numeroPiso, nombrePiso);
+
+                if (pisoId != -1) {
+                    Log.d("FLUJO_PISO", "✓ Piso creado: " + nombrePiso + " (ID: " + pisoId + ")");
+                    Toast.makeText(getContext(), "✓ Piso creado: " + nombrePiso, Toast.LENGTH_SHORT).show();
+
+                    // ✅ CARGAR LOS PISOS EN EL SPINNER
+                    mapManager.cargarPisos((int) idLugar);
+
+                } else {
+                    Log.e("FLUJO_PISO", "❌ Error al crear el piso");
+                    Toast.makeText(getContext(), "Error al crear el piso", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            /*
             @Override
-            public void onEspacioGuardado(String nombre, String descripcion, String urlImagenes, String color) {
-                int id_creado = (int) idLugar;
-                int idPiso = 1;
+            public void onLugarGuardado(String nombre, String descripcion, String urlImagenes, String color) {
+                String geojson = obtenerGeojsonDePuntos(mapManager.puntosLugarActual);
+
+                // para saber en que id ir para firebase
+                NombLugar = nombre;
+
+                Log.d("FLUJO_LUGAR", "════════════════════════════════════════════");
+                Log.d("FLUJO_LUGAR", "📍 onLugarGuardado() INICIADO");
+                Log.d("FLUJO_LUGAR", "  Nombre: " + nombre);
+                Log.d("FLUJO_LUGAR", "  URL Imágenes: " + urlImagenes);
+                Log.d("FLUJO_LUGAR", "════════════════════════════════════════════");
+
+                // ✅ Verificar si hay imágenes para subir
+                if (true) {
+                    Log.d("FLUJO_LUGAR", "📸 Imágenes detectadas - Subiendo a Cloudinary");
+
+                    subirImagenesACloudinary(urlImagenes, new CloudinaryUploadCallback() {
+                        @Override
+                        public void onCompletado(String urlsCloudinary) {
+                            Log.d("FLUJO_LUGAR", "✅ Imágenes subidas a Cloudinary");
+                            Log.d("FLUJO_LUGAR", "  URLs: " + urlsCloudinary);
+
+                            // Guardar en BD
+                            guardarLugarEnBD(nombre, descripcion, urlImagenes, geojson, color);
+                            // hacer por default lo que seria bd
+                            //CREAR EL PRIMER PISO POR DEFECTO
+                            //crearPrimerPisoPorDefecto();
+
+                            // ✅ GUARDAR EN FIREBASE CON CALLBACK
+                            if (true) {
+                                Log.d("FLUJO_LUGAR", "🔥 Guardando en Firebase...");
+                                firebaseHelper.guardarLugarEnFirestore(
+                                        nombre,
+                                        descripcion,
+                                        urlsCloudinary,  // ✅ URLs de Cloudinary
+                                        color,
+                                        geojson,
+                                        nombre,
+                                        1,
+                                        new FirebaseHelper.FirebaseCallback() {
+                                            @Override
+                                            public void onSuccess(String mensaje) {
+                                                Log.d("FLUJO_LUGAR", "✅ FIREBASE: " + mensaje);
+                                                Toast.makeText(getContext(), "✅ Lugar guardado en Firebase", Toast.LENGTH_SHORT).show();
+                                            }
+
+                                            @Override
+                                            public void onError(String error) {
+                                                Log.e("FLUJO_LUGAR", "❌ FIREBASE ERROR: " + error);
+                                                Toast.makeText(getContext(), "⚠️ Firebase error: " + error, Toast.LENGTH_LONG).show();
+                                            }
+                                        }
+                                );
+                            } else {
+                                Log.e("FLUJO_LUGAR", "❌ firebaseHelper es NULL");
+                            }
+                        }
+
+                        @Override
+                        public void onError(String error) {
+                            Log.e("FLUJO_LUGAR", "❌ Error subiendo imágenes: " + error);
+                            Log.d("FLUJO_LUGAR", "  Guardando con URLs locales (respaldo)");
+
+                            // Guardar con URLs locales si falla Cloudinary
+                            guardarLugarEnBD(nombre, descripcion, urlImagenes, geojson, color);
+
+                            //CREAR EL PRIMER PISO POR DEFECTO
+
+                            //crearPrimerPisoPorDefecto();
+
+                            // ✅ INTENTAR GUARDAR EN FIREBASE DE TODAS FORMAS
+                            if (firebaseHelper != null) {
+                                Log.d("FLUJO_LUGAR", "🔥 Guardando en Firebase con respaldo local...");
+                                firebaseHelper.guardarLugarEnFirestore(
+                                        nombre,
+                                        descripcion,
+                                        urlImagenes,  // URLs locales como respaldo
+                                        color,
+                                        geojson,
+                                        nombre,
+                                        1,
+                                        new FirebaseHelper.FirebaseCallback() {
+                                            @Override
+                                            public void onSuccess(String mensaje) {
+                                                Log.d("FLUJO_LUGAR", "✅ FIREBASE (con respaldo): " + mensaje);
+                                            }
+
+                                            @Override
+                                            public void onError(String error) {
+                                                Log.e("FLUJO_LUGAR", "❌ FIREBASE ERROR (respaldo): " + error);
+                                            }
+                                        }
+                                );
+                            }
+
+                        }
 
 
+                    });
 
-                if (spinnerPisos.getVisibility() == View.VISIBLE) {
-                    List<Integer> pisosId = (List<Integer>) spinnerPisos.getTag();
-                    if (pisosId != null && spinnerPisos.getSelectedItemPosition() >= 0) {
-                        idPiso = pisosId.get(spinnerPisos.getSelectedItemPosition());
+                } else {
+                    Log.d("FLUJO_LUGAR", "⚠️ Sin imágenes - Guardando directamente");
+
+                    // Guardar en BD sin imágenes
+                    guardarLugarEnBD(nombre, descripcion, "", geojson, color);
+
+                    // ✅ GUARDAR EN FIREBASE SIN IMÁGENES
+                    if (firebaseHelper != null) {
+                        Log.d("FLUJO_LUGAR", "🔥 Guardando en Firebase (sin imágenes)...");
+                        firebaseHelper.guardarLugarEnFirestore(
+                                nombre,
+                                descripcion,
+                                "",  // Sin imágenes
+                                color,
+                                geojson,
+                                nombre,
+                                1,
+                                new FirebaseHelper.FirebaseCallback() {
+                                    @Override
+                                    public void onSuccess(String mensaje) {
+                                        Log.d("FLUJO_LUGAR", "✅ FIREBASE: " + mensaje);
+                                        Toast.makeText(getContext(), "✅ Lugar guardado en Firebase (sin imágenes)", Toast.LENGTH_SHORT).show();
+                                    }
+
+                                    @Override
+                                    public void onError(String error) {
+                                        Log.e("FLUJO_LUGAR", "❌ FIREBASE ERROR: " + error);
+                                        Toast.makeText(getContext(), "⚠️ Firebase error: " + error, Toast.LENGTH_LONG).show();
+                                    }
+                                }
+                        );
+                    } else {
+                        Log.e("FLUJO_LUGAR", "❌ firebaseHelper es NULL");
                     }
                 }
 
+                NombPiso = "Primer Piso";
+
+                crearPrimerPisoPorDefecto();
+
+
+                /*
+                // Enviar a firebase el primer piso por defecto
+                firebaseHelper.crearPisoEnFirestore(NombLugar, 1, NombPiso, 1, new FirebaseHelper.FirebaseCallback() {
+                    @Override
+                    public void onSuccess(String mensaje) {
+                        Log.d("FIREBASE_PISO", "✅ ÉXITO: " + mensaje);
+                        requireActivity().runOnUiThread(() -> {
+                            Toast.makeText(getContext(), "✅ Piso guardado en Firebase", Toast.LENGTH_SHORT).show();
+                        });
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        Log.e("FIREBASE_PISO", "❌ ERROR: " + error);
+                        requireActivity().runOnUiThread(() -> {
+                            Toast.makeText(getContext(), "⚠️ Error al guardar piso: " + error, Toast.LENGTH_LONG).show();
+                        });
+                    }
+                });
+
+
+
+                flujoPostLugar();
+
+                Log.d("FLUJO_LUGAR", "════════════════════════════════════════════");
+            }
+
+
+            // Método auxiliar para guardar en BD
+            private void guardarLugarEnBD(String nombre, String descripcion, String urlsImagenes,
+                                          String geojson, String color) {
+                idLugar = db.insertLugar(nombre, descripcion, urlsImagenes, geojson, color);
+
+                Log.d("FLUJO_CRUD", "✓ Lugar guardado en BD: " + nombre + " (ID: " + idLugar + ")");
+                Log.d("FLUJO_CRUD", "  Nombre: " + nombre);
+                Log.d("FLUJO_CRUD", "  Descripción: " + descripcion);
+                Log.d("FLUJO_CRUD", "  URLs imágenes: " + urlsImagenes);
+                Log.d("FLUJO_CRUD", "  GeoJSON: " + geojson);
+                Log.d("FLUJO_CRUD", "  Color: " + color);
+            }
+
+    */
+
+            @Override
+            public void onEspacioGuardado(String nombre, String descripcion, String urlImagenes, String color) {
+
+                int id_creado = (int) idLugar;
+                int tempIdPiso = (int) pisoId;
+
+
+                NombEspacio = nombre;
+
+                if (spinnerPisos.getVisibility() == View.VISIBLE) {
+                    List<Integer> pisosId = (List<Integer>) spinnerPisos.getTag();
+
+                    if (pisosId != null && spinnerPisos.getSelectedItemPosition() >= 0) {
+                        tempIdPiso = pisosId.get(spinnerPisos.getSelectedItemPosition());
+                    }
+                }
+
+                final int idPiso = tempIdPiso;
+
+                // ✅ Verificar si hay imágenes para subir a Cloudinary
+                if (urlImagenes != null &&
+                        !urlImagenes.isEmpty() &&
+                        !urlImagenes.startsWith("https://res.cloudinary.com")) {
+
+                    Log.d("CLOUDINARY_ESPACIO", "📸 Subiendo imágenes del espacio a Cloudinary");
+
+                    subirImagenesEspacioACloudinary(urlImagenes, nombre, new CloudinaryUploadCallback() {
+
+                        @Override
+                        public void onCompletado(String urlsCloudinary) {
+
+                            Log.d("CLOUDINARY_ESPACIO", "✅ Imágenes subidas");
+
+                            guardarEspacioEnBD(
+                                    nombre,
+                                    descripcion,
+                                    urlImagenes,
+                                    color,
+                                    id_creado,
+                                    idPiso
+                            );
+                        }
+
+                        @Override
+                        public void onError(String error) {
+
+                            Log.e("CLOUDINARY_ESPACIO", "❌ Error: " + error);
+
+                            guardarEspacioEnBD(
+                                    nombre,
+                                    descripcion,
+                                    urlImagenes,
+                                    color,
+                                    id_creado,
+                                    idPiso
+                            );
+                        }
+                    });
+
+                } else {
+
+                    guardarEspacioEnBD(
+                            nombre,
+                            descripcion,
+                            urlImagenes,
+                            color,
+                            id_creado,
+                            idPiso
+                    );
+                }
+
+                flujoPostEspacio();
+            }
+
+            // ✅ Método para guardar espacio en BD
+            private  void guardarEspacioEnBD(String nombre, String descripcion, String urlImagenes,
+                                            String color, int id_creado, int idPiso) {
                 try {
                     // ════════════════════════════════════════════════════════════════
                     // 1. CREAR ESPACIO
                     // ════════════════════════════════════════════════════════════════
 
-                    long espacioId = db.insertEspacio(id_creado, (int) pisoId, nombre, descripcion, urlImagenes);
-
+                    long espacioId = db.insertEspacio(
+                            id_creado,
+                            (int) pisoId,
+                            nombre,
+                            descripcion,
+                            urlImagenes
+                    );
                     if (espacioId == -1) {
                         Toast.makeText(getContext(), "Error al guardar espacio", Toast.LENGTH_SHORT).show();
                         Log.e("FLUJO_CRUD", "insertEspacio retornó -1");
@@ -372,6 +681,43 @@ public class MapaFragment extends Fragment {
                     Log.d("FLUJO_CRUD", "Descripcion: "+ descripcion);
                     Log.d("FLUJO_CRUD", "Url: "+ urlImagenes);
                     Log.d("FLUJO_CRUD", "color: "+ color);
+                    Log.d("FLUJO_CRUD", "ID_PISO: "+ (int) pisoId);
+
+
+                    /*
+
+                    //  Mandar a firebase probar si es posible gracias a los metodos
+                    firebaseHelper.crearEspacioEnFirestore(
+                            NombLugar,           // ej: "edificio_ingenieria"
+                            NombPiso,          // id del piso
+                            nombre,        // id del espacio
+                            nombre,        // nombre visible
+                            descripcion, // descripción
+                            "",      // URLs de Cloudinary
+                            1,
+                            new FirebaseHelper.FirebaseCallback() {
+                                @Override
+                                public void onSuccess(String mensaje) {
+                                    Log.d("FLUJO_ESPACIO", "✅ " + mensaje);
+                                    requireActivity().runOnUiThread(() -> {
+                                        Toast.makeText(getContext(), "✅ Espacio guardado en Firebase", Toast.LENGTH_SHORT).show();
+                                    });
+                                }
+
+                                @Override
+                                public void onError(String error) {
+                                    Log.e("FLUJO_ESPACIO", "❌ Error: " + error);
+                                    requireActivity().runOnUiThread(() -> {
+                                        Toast.makeText(getContext(), "⚠️ Error al guardar espacio: " + error, Toast.LENGTH_LONG).show();
+                                    });
+                                }
+                            }
+                    );
+
+                     */
+
+
+
 
                     // ════════════════════════════════════════════════════════════════
                     // 2. CREAR GEOMETRÍA
@@ -395,6 +741,40 @@ public class MapaFragment extends Fragment {
                     Log.d("FLUJO_CRUD", "vertices: "+ verticesJson);
                     Log.d("FLUJO_CRUD", "color: "+ color);
 
+                    /*
+                    // En tu MapaFragment
+                    firebaseHelper.guardarGeometriaEspacio(
+                            NombLugar,           // ej: "edificio_ingenieria"
+                            NombPiso,          // id del piso
+                            NombEspacio,        // id del espacio
+                            verticesJson,      // GeoJSON de los vértices
+                            color,         // color del espacio
+                            new FirebaseHelper.FirebaseCallback() {
+                                @Override
+                                public void onSuccess(String mensaje) {
+                                    Log.d("FLUJO_GEOMETRIA", "✅ " + mensaje);
+                                    requireActivity().runOnUiThread(() -> {
+                                        Toast.makeText(getContext(), "✅ Geometría guardada", Toast.LENGTH_SHORT).show();
+                                    });
+                                }
+
+                                @Override
+                                public void onError(String error) {
+                                    Log.e("FLUJO_GEOMETRIA", "❌ Error: " + error);
+                                    requireActivity().runOnUiThread(() -> {
+                                        Toast.makeText(getContext(), "⚠️ Error en geometría: " + error, Toast.LENGTH_LONG).show();
+                                    });
+                                }
+                            }
+                    );
+
+                     */
+
+
+
+
+
+
                     // ════════════════════════════════════════════════════════════════
                     // 3. LOG FINAL Y CONTINUAR
                     // ════════════════════════════════════════════════════════════════
@@ -409,7 +789,6 @@ public class MapaFragment extends Fragment {
 
                     Toast.makeText(getContext(), "✓ Espacio guardado: " + nombre, Toast.LENGTH_SHORT).show();
 
-                    flujoPostEspacio();
 
                 } catch (Exception e) {
                     Toast.makeText(getContext(), "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
@@ -433,6 +812,145 @@ public class MapaFragment extends Fragment {
     // 🔍 CONFIGURACIÓN DE BÚSQUEDA
     // ════════════════════════════════════════════════════════════════
 
+
+    // Interfaz para callback de Cloudinary
+    public interface CloudinaryUploadCallback {
+        void onCompletado(String urlsCloudinary);
+        void onError(String error);
+    }
+
+    private void subirImagenesEspacioACloudinary(String urlsLocales, String nombreEspacio,
+                                                 CloudinaryUploadCallback callback) {
+        if (urlsLocales == null || urlsLocales.isEmpty()) {
+            callback.onCompletado("");
+            return;
+        }
+
+        String[] urls = urlsLocales.split(",");
+        List<String> urlsSubidas = new ArrayList<>();
+        int[] contador = {0};
+
+        Log.d("CLOUDINARY_ESPACIO", "📤 Subiendo " + urls.length + " imágenes para: " + nombreEspacio);
+
+        for (int i = 0; i < urls.length; i++) {
+            final int index = i;
+            String rutaLocal = urls[i].trim();
+
+            if (rutaLocal.isEmpty()) {
+                contador[0]++;
+                if (contador[0] == urls.length) {
+                    callback.onCompletado(String.join(",", urlsSubidas));
+                }
+                continue;
+            }
+
+            File imagenFile = new File(rutaLocal);
+
+            if (!imagenFile.exists()) {
+                Log.e("CLOUDINARY_ESPACIO", "❌ Imagen " + (i+1) + " no existe: " + rutaLocal);
+                urlsSubidas.add(rutaLocal);
+                contador[0]++;
+                if (contador[0] == urls.length) {
+                    callback.onCompletado(String.join(",", urlsSubidas));
+                }
+                continue;
+            }
+
+            Log.d("CLOUDINARY_ESPACIO", "📤 Subiendo imagen " + (i+1) + "/" + urls.length);
+            Log.d("CLOUDINARY_ESPACIO", "  Archivo: " + imagenFile.getName());
+
+            final int imagenIndex = i;
+            cloudinaryHelper.subirImagen(imagenFile, new CloudinaryHelper.UploadCallback() {
+                @Override
+                public void onResult(boolean success, String url, String publicId) {
+                    if (success) {
+                        Log.d("CLOUDINARY_ESPACIO", "✅ Imagen " + (imagenIndex+1) + " subida");
+                        Log.d("CLOUDINARY_ESPACIO", "  URL: " + url);
+                        urlsSubidas.add(url);
+                    } else {
+                        Log.e("CLOUDINARY_ESPACIO", "❌ Error imagen " + (imagenIndex+1));
+                        urlsSubidas.add(rutaLocal); // Mantener local como respaldo
+                    }
+
+                    contador[0]++;
+
+                    if (contador[0] == urls.length) {
+                        String resultado = String.join(",", urlsSubidas);
+                        Log.d("CLOUDINARY_ESPACIO", "════════════════════════════════════════════");
+                        Log.d("CLOUDINARY_ESPACIO", "📦 RESUMEN SUBIDA ESPACIO: " + nombreEspacio);
+                        Log.d("CLOUDINARY_ESPACIO", "  Imágenes subidas: " + urlsSubidas.size() + "/" + urls.length);
+                        Log.d("CLOUDINARY_ESPACIO", "  URLs finales: " + resultado);
+                        Log.d("CLOUDINARY_ESPACIO", "════════════════════════════════════════════");
+
+                        callback.onCompletado(resultado);
+                    }
+                }
+            });
+        }
+    }
+
+    // Método para subir imágenes a Cloudinary
+    private void subirImagenesACloudinary(String urlsLocales, CloudinaryUploadCallback callback) {
+        if (urlsLocales == null || urlsLocales.isEmpty()) {
+            callback.onCompletado("");
+            return;
+        }
+
+        String[] urls = urlsLocales.split(",");
+        List<String> urlsSubidas = new ArrayList<>();
+        int[] contador = {0};
+
+
+        Log.d("CLOUDINARY_UPLOAD", "📤 Subiendo " + urls.length + " imágenes a Cloudinary");
+
+        for (int i = 0; i < urls.length; i++) {
+            String rutaLocal = urls[i].trim();
+
+            if (rutaLocal.isEmpty()) {
+                contador[0]++;
+                if (contador[0] == urls.length) {
+                    callback.onCompletado(String.join(",", urlsSubidas));
+                }
+                continue;
+            }
+
+            File imagenFile = new File(rutaLocal);
+
+            if (!imagenFile.exists()) {
+                Log.e("CLOUDINARY_UPLOAD", "❌ Imagen no existe: " + rutaLocal);
+                urlsSubidas.add(rutaLocal);
+                contador[0]++;
+                if (contador[0] == urls.length) {
+                    callback.onCompletado(String.join(",", urlsSubidas));
+                }
+                continue;
+            }
+
+            final String rutaActual = rutaLocal;
+            cloudinaryHelper.subirImagen(imagenFile, new CloudinaryHelper.UploadCallback() {
+                @Override
+                public void onResult(boolean success, String url, String publicId) {
+                    if (success) {
+                        Log.d("CLOUDINARY_UPLOAD", "✅ Imagen subida: " + url);
+                        urlsSubidas.add(url);
+                    } else {
+                        Log.e("CLOUDINARY_UPLOAD", "❌ Error subiendo imagen");
+                        urlsSubidas.add(rutaActual);
+                    }
+
+                    contador[0]++;
+
+                    if (contador[0] == urls.length) {
+                        String resultado = String.join(",", urlsSubidas);
+                        Log.d("CLOUDINARY_UPLOAD", "📦 RESUMEN: " + resultado);
+
+                        // ✅ Toast en UI Thread
+                        callback.onCompletado(resultado);
+                    }
+                }
+            });
+        }
+    }
     private void configurarBusqueda() {
         // Configurar RecyclerView
         rvResultados.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -1179,10 +1697,33 @@ public class MapaFragment extends Fragment {
                 return;
             }
 
+            NombPiso = nombre;
+
             int numero = obtenerSiguienteNumeroPiso();
 
             // Insertar piso
             pisoId = db.insertPiso((int) idLugar, numero, nombre);
+
+
+            /*
+            // Intentar mandarlo a firebase
+            firebaseHelper.crearPisoEnFirestore(NombLugar, numero, nombre, 1, new FirebaseHelper.FirebaseCallback() {
+                @Override
+                public void onSuccess(String mensaje) {
+                    Log.d("FIREBASE_PISO", "✅ ÉXITO: " + mensaje);
+                    requireActivity().runOnUiThread(() -> {
+                        Toast.makeText(getContext(), "✅ Piso guardado en Firebase", Toast.LENGTH_SHORT).show();
+                    });
+                }
+
+                @Override
+                public void onError(String error) {
+                    Log.e("FIREBASE_PISO", "❌ ERROR: " + error);
+                    requireActivity().runOnUiThread(() -> {
+                        Toast.makeText(getContext(), "⚠️ Error al guardar piso: " + error, Toast.LENGTH_LONG).show();
+                    });
+                }
+            });}*/
 
             if (pisoId != -1) {
                 Log.d("FLUJO_PISO", "✓ Piso creado: " + nombre + " (#" + numero + ") ID: " + pisoId);
