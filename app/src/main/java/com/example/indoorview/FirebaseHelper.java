@@ -1,4 +1,5 @@
 package com.example.indoorview;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
@@ -75,6 +76,9 @@ public class FirebaseHelper {
                     }
                 });
     }
+
+
+
 
     // Crear piso en firebase o firestore
     public void crearPisoEnFirestore(String lugarId, int numero, String nombrePiso, int activo, FirebaseCallback callback) {
@@ -228,6 +232,124 @@ public class FirebaseHelper {
                         callback.onError(e.getMessage());
                     }
                 });
+    }
+
+
+
+    // Esto nos ayudara ya que los ids no son numeros sino que son como tal TEXTO PLANO
+    public void actualizarLugarPorNombre(String nombreActual,  // Nombre actual del lugar
+                                         String nuevoNombre,
+                                         String nuevaDescripcion,
+                                         String nuevasUrlsImagenes,
+                                         String nuevoColor,
+                                         FirebaseCallback callback) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        // PRIMERO: Buscar el documento por su campo "nombre"
+        db.collection("lugares")
+                .whereEqualTo("nombre", nombreActual)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    if (queryDocumentSnapshots.isEmpty()) {
+                        Log.e("FIREBASE_UPDATE", "❌ No se encontró el lugar: " + nombreActual);
+                        if (callback != null) {
+                            callback.onError("No se encontró el lugar: " + nombreActual);
+                        }
+                        return;
+                    }
+
+                    // Obtener el ID real del documento
+                    String lugarId = queryDocumentSnapshots.getDocuments().get(0).getId();
+                    Log.d("FIREBASE_UPDATE", "📌 Lugar encontrado - ID: " + lugarId);
+
+                    // SEGUNDO: Actualizar el documento encontrado
+                    Map<String, Object> updates = new HashMap<>();
+                    updates.put("nombre", nuevoNombre);
+                    updates.put("descripcion", nuevaDescripcion);
+                    updates.put("url_imagenes", nuevasUrlsImagenes);
+                    updates.put("color", nuevoColor);
+                    updates.put("fecha_actualizacion", FieldValue.serverTimestamp());
+
+                    db.collection("lugares").document(lugarId).update(updates)
+                            .addOnSuccessListener(aVoid -> {
+                                Log.d("FIREBASE_UPDATE", "✅ Lugar actualizado en Firebase");
+                                Log.d("FIREBASE_UPDATE", "  De: " + nombreActual + " → A: " + nuevoNombre);
+                                if (callback != null) {
+                                    callback.onSuccess("Lugar actualizado: " + nuevoNombre);
+                                }
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e("FIREBASE_UPDATE", "❌ Error al actualizar: " + e.getMessage());
+                                if (callback != null) {
+                                    callback.onError(e.getMessage());
+                                }
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("FIREBASE_UPDATE", "❌ Error al buscar: " + e.getMessage());
+                    if (callback != null) {
+                        callback.onError("Error al buscar lugar: " + e.getMessage());
+                    }
+                });
+    }
+
+    // EN FirebaseHelper.java - BÚSQUEDA MANUAL (NO necesita índice) es tardao pero es lo mejor que se podria de hacer
+    // o eso es lo que yo supongo
+    public void actualizarEspacioPorNombre(String nombreActual,
+                                           String nuevoNombre,
+                                           String nuevaDescripcion,
+                                           String nuevasUrlsImagenes,
+                                           FirebaseCallback callback) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        // 1. Obtener TODOS los lugares
+        db.collection("lugares").get().addOnSuccessListener(lugaresSnapshot -> {
+            for (DocumentSnapshot lugar : lugaresSnapshot.getDocuments()) {
+                String lugarId = lugar.getId();
+
+                // 2. Por cada lugar, obtener TODOS sus pisos
+                db.collection("lugares").document(lugarId).collection("pisos").get()
+                        .addOnSuccessListener(pisosSnapshot -> {
+                            for (DocumentSnapshot piso : pisosSnapshot.getDocuments()) {
+                                String pisoId = piso.getId();
+
+                                // 3. Buscar el espacio por su NOMBRE en este piso específico
+                                db.collection("lugares")
+                                        .document(lugarId)
+                                        .collection("pisos")
+                                        .document(pisoId)
+                                        .collection("espacios")
+                                        .whereEqualTo("nombre", nombreActual)
+                                        .limit(1)
+                                        .get()
+                                        .addOnSuccessListener(espacios -> {
+                                            if (!espacios.isEmpty()) {
+                                                // ¡Espacio encontrado!
+                                                DocumentSnapshot espacioDoc = espacios.getDocuments().get(0);
+                                                Map<String, Object> updates = new HashMap<>();
+                                                updates.put("nombre", nuevoNombre);
+                                                updates.put("descripcion", nuevaDescripcion);
+                                                updates.put("url_imagenes", nuevasUrlsImagenes);
+                                                updates.put("fecha_actualizacion", FieldValue.serverTimestamp());
+
+                                                espacioDoc.getReference().update(updates)
+                                                        .addOnSuccessListener(aVoid -> {
+                                                            if (callback != null)
+                                                                callback.onSuccess("Espacio actualizado: " + nuevoNombre);
+                                                        })
+                                                        .addOnFailureListener(e -> {
+                                                            if (callback != null) callback.onError(e.getMessage());
+                                                        });
+                                                return; // Salir del bucle
+                                            }
+                                        });
+                            }
+                        });
+            }
+        }).addOnFailureListener(e -> {
+            if (callback != null) callback.onError("Error obteniendo lugares: " + e.getMessage());
+        });
     }
 
 

@@ -344,40 +344,264 @@ public class MapaFragment extends Fragment {
                 // Convertir puntos a GeoJSON
                 String geojson = obtenerGeojsonDePuntos(mapManager.puntosLugarActual);
 
+                // Asignamos que el para firebase NombLugar
+                setNombLugar(nombre);
+
+
                 Log.d("FLUJO_CRUD", "════════════════════════════════════════════");
                 Log.d("FLUJO_CRUD", "📍 onLugarGuardado() INICIADO");
                 Log.d("FLUJO_CRUD", "  Nombre: " + nombre);
                 Log.d("FLUJO_CRUD", "════════════════════════════════════════════");
 
-                // ✅ 1. GUARDAR EN BD LOCAL
+                //GUARDAR EN BD LOCAL
                 idLugar = db.insertLugar(nombre, descripcion, urlImagenes, geojson, color);
+                crearPrimerPisoPorDefecto();
+                flujoPostLugar();
 
                 Log.d("FLUJO_CRUD", "✓ Lugar guardado en BD: " + nombre + " (ID: " + idLugar + ")");
 
-                // ✅ 2. SUBIR A CLOUDINARY SI HAY IMÁGENES
-                if (urlImagenes != null && !urlImagenes.isEmpty()) {
-                    Log.d("CLOUDINARY", "📸 Imágenes detectadas - Subiendo a Cloudinary...");
+                //SUBIR A CLOUDINARY SI HAY IMÁGENES
+               try {
+                   if (urlImagenes == null || urlImagenes.isEmpty()) {
+                       Log.d("CLOUDINARY", "No hay imagenes que subir");
+                   }else{
+                       Log.d("CLOUDINARY", "Se encontraron imaganes a subir");
+                   }
 
                     subirImagenesACloudinary(urlImagenes, new CloudinaryUploadCallback() {
                         @Override
                         public void onCompletado(String urlsCloudinary) {
-                            Log.d("CLOUDINARY", "✅ Imágenes subidas exitosamente");
+                            Log.d("CLOUDINARY", "Imágenes subidas exitosamente: " + urlsCloudinary);
+
+                            // Guardar en firebase y continuar
+                            guardarLugarFirebase(nombre, descripcion, urlsCloudinary, color, geojson);
+
+                            // Intentar guardar el piso automaticamente en firebase
+                            guardarPisoDeffaultFirebase(nombre);
+
                         }
 
                         @Override
                         public void onError(String error) {
-                            Log.e("CLOUDINARY", "❌ Error: " + error);
+                            Log.e("CLOUDINARY", "Error: " + error);
                         }
                     });
-                }
-
-                // ✅ 3. CONTINUAR FLUJO
-                crearPrimerPisoPorDefecto();
-                flujoPostLugar();
+                } catch (Exception e) {
+                   Log.e("CLOUDINARY", "Error: " + e.getMessage());
+               }
             }
+
+            private void guardarLugarFirebase(String nombre, String descripcion, String urlImagenes,
+                                                  String color, String geojson) {
+
+                Log.d("PRUEBA_FIREBASE", "════════════════════════════════════════════");
+                Log.d("PRUEBA_FIREBASE", "🚀 Guardando lugar en Firebase");
+                Log.d("PRUEBA_FIREBASE", "  Nombre: " + nombre);
+                Log.d("PRUEBA_FIREBASE", "  URL imágenes: " + urlImagenes);
+                Log.d("PRUEBA_FIREBASE", "════════════════════════════════════════════");
+
+
+                if (firebaseHelper != null) {
+                    firebaseHelper.guardarLugarEnFirestore(
+                            nombre,           // nombre
+                            descripcion,      // descripción
+                            urlImagenes,      // URLs (locales o Cloudinary)
+                            color,            // color
+                            geojson,          // geojson
+                            nombre,           // lugarId
+                            1,                // estado
+                            new FirebaseHelper.FirebaseCallback() {
+                                @Override
+                                public void onSuccess(String mensaje) {
+                                    Log.d("PRUEBA_FIREBASE", "✅✅✅ LUGAR GUARDADO EN FIREBASE ✅✅✅");
+                                    Log.d("PRUEBA_FIREBASE", "  Mensaje: " + mensaje);
+                                    Log.d("PRUEBA_FIREBASE", "  URL guardada: " + urlImagenes);
+
+                                    requireActivity().runOnUiThread(() -> {
+                                        Toast.makeText(getContext(),
+                                                "✅ Lugar guardado en Firebase",
+                                                Toast.LENGTH_SHORT).show();
+                                    });
+                                }
+
+                                @Override
+                                public void onError(String error) {
+                                    Log.e("PRUEBA_FIREBASE", " ERROR EN FIREBASE ");
+                                    Log.e("PRUEBA_FIREBASE", "  Error: " + error);
+
+                                    requireActivity().runOnUiThread(() -> {
+                                        Toast.makeText(getContext(),
+                                                "Error en Firebase: " + error,
+                                                Toast.LENGTH_LONG).show();
+                                    });
+                                }
+                            }
+                    );
+                } else {
+                    Log.e("PRUEBA_FIREBASE", "❌ firebaseHelper es NULL");
+                    requireActivity().runOnUiThread(() -> {
+                        Toast.makeText(getContext(), "❌ FirebaseHelper no inicializado", Toast.LENGTH_LONG).show();
+                    });
+                }
+            }
+
+
+            private void guardarPisoDeffaultFirebase(String nombre) {
+
+                Log.d("PRUEBA_FIREBASE", "════════════════════════════════════════════");
+                Log.d("PRUEBA_FIREBASE", "🚀 Guardando piso en Firebase");
+                Log.d("PRUEBA_FIREBASE", "  Nombre: " + nombre);
+                Log.d("PRUEBA_FIREBASE", "════════════════════════════════════════════");
+
+                if (firebaseHelper != null) {
+                    firebaseHelper.crearPisoEnFirestore(
+                            nombre,           // Id
+                            1,
+                            "Primera Planta",
+                            1,
+                            new FirebaseHelper.FirebaseCallback() {
+                                @Override
+                                public void onSuccess(String mensaje) {
+                                    Log.d("PRUEBA_FIREBASE", "✅✅✅ LUGAR GUARDADO EN FIREBASE ✅✅✅");
+                                    Log.d("PRUEBA_FIREBASE", "  Mensaje: " + mensaje);
+
+                                    requireActivity().runOnUiThread(() -> {
+                                        Toast.makeText(getContext(),
+                                                "✅ Lugar guardado en Firebase",
+                                                Toast.LENGTH_SHORT).show();
+                                    });
+                                }
+
+                                @Override
+                                public void onError(String error) {
+                                    Log.e("PRUEBA_FIREBASE", " ERROR EN FIREBASE ");
+                                    Log.e("PRUEBA_FIREBASE", "  Error: " + error);
+
+                                    requireActivity().runOnUiThread(() -> {
+                                        Toast.makeText(getContext(),
+                                                "Error en Firebase: " + error,
+                                                Toast.LENGTH_LONG).show();
+                                    });
+                                }
+                            }
+                    );
+                } else {
+                    Log.e("PRUEBA_FIREBASE", "❌ firebaseHelper es NULL");
+                    requireActivity().runOnUiThread(() -> {
+                        Toast.makeText(getContext(), "❌ FirebaseHelper no inicializado", Toast.LENGTH_LONG).show();
+                    });
+                }
+            }
+
+
+            public void guardarPisoFirebase(String nombreLugar, int numero, String nombrePiso) {
+
+                Log.d("PRUEBA_FIREBASE", "════════════════════════════════════════════");
+                Log.d("PRUEBA_FIREBASE", "🚀 Guardando piso en Firebase");
+                Log.d("PRUEBA_FIREBASE", "  Nombre: " + nombrePiso);
+                Log.d("PRUEBA_FIREBASE", "════════════════════════════════════════════");
+
+                if (firebaseHelper != null) {
+                    firebaseHelper.crearPisoEnFirestore(
+                            nombreLugar,           // Id
+                            numero,
+                            nombrePiso,
+                            1,
+                            new FirebaseHelper.FirebaseCallback() {
+                                @Override
+                                public void onSuccess(String mensaje) {
+                                    Log.d("PRUEBA_FIREBASE", "✅✅✅ LUGAR GUARDADO EN FIREBASE ✅✅✅");
+                                    Log.d("PRUEBA_FIREBASE", "  Mensaje: " + mensaje);
+
+                                    requireActivity().runOnUiThread(() -> {
+                                        Toast.makeText(getContext(),
+                                                "✅ Lugar guardado en Firebase",
+                                                Toast.LENGTH_SHORT).show();
+                                    });
+                                }
+
+                                @Override
+                                public void onError(String error) {
+                                    Log.e("PRUEBA_FIREBASE", " ERROR EN FIREBASE ");
+                                    Log.e("PRUEBA_FIREBASE", "  Error: " + error);
+
+                                    requireActivity().runOnUiThread(() -> {
+                                        Toast.makeText(getContext(),
+                                                "Error en Firebase: " + error,
+                                                Toast.LENGTH_LONG).show();
+                                    });
+                                }
+                            }
+                    );
+                } else {
+                    Log.e("PRUEBA_FIREBASE", "❌ firebaseHelper es NULL");
+                    requireActivity().runOnUiThread(() -> {
+                        Toast.makeText(getContext(), "❌ FirebaseHelper no inicializado", Toast.LENGTH_LONG).show();
+                    });
+                }
+            }
+
+
+            private void guardarEspacioEnFirebase(String lugarId, String pisoId, String nombre, String descripcion, String urlImagenes,
+                                                  String color, String verticesJson) {
+
+                // Llamar a la función crearEspacioEnFirestore
+                firebaseHelper.crearEspacioEnFirestore(
+                        lugarId,      // lugarId (ej: "MiEdificio")
+                        pisoId,     // pisoId (ej: "Primer Piso")
+                        nombre,         // espacioId (ej: "Oficina 101")
+                        nombre,         // nombre visible
+                        descripcion,    // descripción
+                        urlImagenes,    // URLs de las imágenes
+                        1,              // estado (1 = activo)
+                        new FirebaseHelper.FirebaseCallback() {
+                            @Override
+                            public void onSuccess(String mensaje) {
+                                // ÉXITO: El espacio se guardó en Firebase
+                                Log.d("EXITO", "Espacio guardado: " + mensaje);
+
+                                // Aquí puedes guardar la geometría después del espacio
+                                guardarGeometriaEnFirebase(lugarId, pisoId, nombre, verticesJson, color);
+                            }
+
+                            @Override
+                            public void onError(String error) {
+                                // ❌ ERROR: Falló al guardar en Firebase
+                                Log.e("ERROR", "No se pudo guardar: " + error);
+                            }
+                        }
+                );
+            }
+
+            // Función para guardar la geometría
+            private void guardarGeometriaEnFirebase(String lugarId ,String pisoId ,String espacioId, String verticesJson,
+                                                    String color) {
+                firebaseHelper.guardarGeometriaEspacio(
+                        lugarId,      // lugarId
+                        pisoId,     // pisoId
+                        espacioId,  // espacioId
+                        verticesJson,   // GeoJSON
+                        color,          // color
+                        new FirebaseHelper.FirebaseCallback() {
+                            @Override
+                            public void onSuccess(String mensaje) {
+                                Log.d("EXITO", "Geometría guardada: " + mensaje);
+                            }
+
+                            @Override
+                            public void onError(String error) {
+                                Log.e("ERROR", "Error geometría: " + error);
+                            }
+                        }
+                );
+            }
+
+
 
             private void crearPrimerPisoPorDefecto() {
                 String nombrePiso = "Primera Planta";
+                // Asignamos el nombre a la variable para su uso posterior
+                setNombPiso(nombrePiso);
                 int numeroPiso = 1;
 
                 pisoId = db.insertPiso((int) idLugar, numeroPiso, nombrePiso);
@@ -395,281 +619,32 @@ public class MapaFragment extends Fragment {
                 }
             }
 
-            /*
-            @Override
-            public void onLugarGuardado(String nombre, String descripcion, String urlImagenes, String color) {
-                String geojson = obtenerGeojsonDePuntos(mapManager.puntosLugarActual);
-
-                // para saber en que id ir para firebase
-                NombLugar = nombre;
-
-                Log.d("FLUJO_LUGAR", "════════════════════════════════════════════");
-                Log.d("FLUJO_LUGAR", "📍 onLugarGuardado() INICIADO");
-                Log.d("FLUJO_LUGAR", "  Nombre: " + nombre);
-                Log.d("FLUJO_LUGAR", "  URL Imágenes: " + urlImagenes);
-                Log.d("FLUJO_LUGAR", "════════════════════════════════════════════");
-
-                // ✅ Verificar si hay imágenes para subir
-                if (true) {
-                    Log.d("FLUJO_LUGAR", "📸 Imágenes detectadas - Subiendo a Cloudinary");
-
-                    subirImagenesACloudinary(urlImagenes, new CloudinaryUploadCallback() {
-                        @Override
-                        public void onCompletado(String urlsCloudinary) {
-                            Log.d("FLUJO_LUGAR", "✅ Imágenes subidas a Cloudinary");
-                            Log.d("FLUJO_LUGAR", "  URLs: " + urlsCloudinary);
-
-                            // Guardar en BD
-                            guardarLugarEnBD(nombre, descripcion, urlImagenes, geojson, color);
-                            // hacer por default lo que seria bd
-                            //CREAR EL PRIMER PISO POR DEFECTO
-                            //crearPrimerPisoPorDefecto();
-
-                            // ✅ GUARDAR EN FIREBASE CON CALLBACK
-                            if (true) {
-                                Log.d("FLUJO_LUGAR", "🔥 Guardando en Firebase...");
-                                firebaseHelper.guardarLugarEnFirestore(
-                                        nombre,
-                                        descripcion,
-                                        urlsCloudinary,  // ✅ URLs de Cloudinary
-                                        color,
-                                        geojson,
-                                        nombre,
-                                        1,
-                                        new FirebaseHelper.FirebaseCallback() {
-                                            @Override
-                                            public void onSuccess(String mensaje) {
-                                                Log.d("FLUJO_LUGAR", "✅ FIREBASE: " + mensaje);
-                                                Toast.makeText(getContext(), "✅ Lugar guardado en Firebase", Toast.LENGTH_SHORT).show();
-                                            }
-
-                                            @Override
-                                            public void onError(String error) {
-                                                Log.e("FLUJO_LUGAR", "❌ FIREBASE ERROR: " + error);
-                                                Toast.makeText(getContext(), "⚠️ Firebase error: " + error, Toast.LENGTH_LONG).show();
-                                            }
-                                        }
-                                );
-                            } else {
-                                Log.e("FLUJO_LUGAR", "❌ firebaseHelper es NULL");
-                            }
-                        }
-
-                        @Override
-                        public void onError(String error) {
-                            Log.e("FLUJO_LUGAR", "❌ Error subiendo imágenes: " + error);
-                            Log.d("FLUJO_LUGAR", "  Guardando con URLs locales (respaldo)");
-
-                            // Guardar con URLs locales si falla Cloudinary
-                            guardarLugarEnBD(nombre, descripcion, urlImagenes, geojson, color);
-
-                            //CREAR EL PRIMER PISO POR DEFECTO
-
-                            //crearPrimerPisoPorDefecto();
-
-                            // ✅ INTENTAR GUARDAR EN FIREBASE DE TODAS FORMAS
-                            if (firebaseHelper != null) {
-                                Log.d("FLUJO_LUGAR", "🔥 Guardando en Firebase con respaldo local...");
-                                firebaseHelper.guardarLugarEnFirestore(
-                                        nombre,
-                                        descripcion,
-                                        urlImagenes,  // URLs locales como respaldo
-                                        color,
-                                        geojson,
-                                        nombre,
-                                        1,
-                                        new FirebaseHelper.FirebaseCallback() {
-                                            @Override
-                                            public void onSuccess(String mensaje) {
-                                                Log.d("FLUJO_LUGAR", "✅ FIREBASE (con respaldo): " + mensaje);
-                                            }
-
-                                            @Override
-                                            public void onError(String error) {
-                                                Log.e("FLUJO_LUGAR", "❌ FIREBASE ERROR (respaldo): " + error);
-                                            }
-                                        }
-                                );
-                            }
-
-                        }
-
-
-                    });
-
-                } else {
-                    Log.d("FLUJO_LUGAR", "⚠️ Sin imágenes - Guardando directamente");
-
-                    // Guardar en BD sin imágenes
-                    guardarLugarEnBD(nombre, descripcion, "", geojson, color);
-
-                    // ✅ GUARDAR EN FIREBASE SIN IMÁGENES
-                    if (firebaseHelper != null) {
-                        Log.d("FLUJO_LUGAR", "🔥 Guardando en Firebase (sin imágenes)...");
-                        firebaseHelper.guardarLugarEnFirestore(
-                                nombre,
-                                descripcion,
-                                "",  // Sin imágenes
-                                color,
-                                geojson,
-                                nombre,
-                                1,
-                                new FirebaseHelper.FirebaseCallback() {
-                                    @Override
-                                    public void onSuccess(String mensaje) {
-                                        Log.d("FLUJO_LUGAR", "✅ FIREBASE: " + mensaje);
-                                        Toast.makeText(getContext(), "✅ Lugar guardado en Firebase (sin imágenes)", Toast.LENGTH_SHORT).show();
-                                    }
-
-                                    @Override
-                                    public void onError(String error) {
-                                        Log.e("FLUJO_LUGAR", "❌ FIREBASE ERROR: " + error);
-                                        Toast.makeText(getContext(), "⚠️ Firebase error: " + error, Toast.LENGTH_LONG).show();
-                                    }
-                                }
-                        );
-                    } else {
-                        Log.e("FLUJO_LUGAR", "❌ firebaseHelper es NULL");
-                    }
-                }
-
-                NombPiso = "Primer Piso";
-
-                crearPrimerPisoPorDefecto();
-
-
-                /*
-                // Enviar a firebase el primer piso por defecto
-                firebaseHelper.crearPisoEnFirestore(NombLugar, 1, NombPiso, 1, new FirebaseHelper.FirebaseCallback() {
-                    @Override
-                    public void onSuccess(String mensaje) {
-                        Log.d("FIREBASE_PISO", "✅ ÉXITO: " + mensaje);
-                        requireActivity().runOnUiThread(() -> {
-                            Toast.makeText(getContext(), "✅ Piso guardado en Firebase", Toast.LENGTH_SHORT).show();
-                        });
-                    }
-
-                    @Override
-                    public void onError(String error) {
-                        Log.e("FIREBASE_PISO", "❌ ERROR: " + error);
-                        requireActivity().runOnUiThread(() -> {
-                            Toast.makeText(getContext(), "⚠️ Error al guardar piso: " + error, Toast.LENGTH_LONG).show();
-                        });
-                    }
-                });
-
-
-
-                flujoPostLugar();
-
-                Log.d("FLUJO_LUGAR", "════════════════════════════════════════════");
-            }
-
-
-            // Método auxiliar para guardar en BD
-            private void guardarLugarEnBD(String nombre, String descripcion, String urlsImagenes,
-                                          String geojson, String color) {
-                idLugar = db.insertLugar(nombre, descripcion, urlsImagenes, geojson, color);
-
-                Log.d("FLUJO_CRUD", "✓ Lugar guardado en BD: " + nombre + " (ID: " + idLugar + ")");
-                Log.d("FLUJO_CRUD", "  Nombre: " + nombre);
-                Log.d("FLUJO_CRUD", "  Descripción: " + descripcion);
-                Log.d("FLUJO_CRUD", "  URLs imágenes: " + urlsImagenes);
-                Log.d("FLUJO_CRUD", "  GeoJSON: " + geojson);
-                Log.d("FLUJO_CRUD", "  Color: " + color);
-            }
-
-    */
-
             @Override
             public void onEspacioGuardado(String nombre, String descripcion, String urlImagenes, String color) {
-
                 int id_creado = (int) idLugar;
-                int tempIdPiso = (int) pisoId;
+                int idPiso = 1;
 
+                // Asignamos el idNombre espácio
+                setNombEspacio(nombre);
 
-                NombEspacio = nombre;
 
                 if (spinnerPisos.getVisibility() == View.VISIBLE) {
                     List<Integer> pisosId = (List<Integer>) spinnerPisos.getTag();
-
                     if (pisosId != null && spinnerPisos.getSelectedItemPosition() >= 0) {
-                        tempIdPiso = pisosId.get(spinnerPisos.getSelectedItemPosition());
+                        idPiso = pisosId.get(spinnerPisos.getSelectedItemPosition());
                     }
                 }
 
-                final int idPiso = tempIdPiso;
 
-                // ✅ Verificar si hay imágenes para subir a Cloudinary
-                if (urlImagenes != null &&
-                        !urlImagenes.isEmpty() &&
-                        !urlImagenes.startsWith("https://res.cloudinary.com")) {
 
-                    Log.d("CLOUDINARY_ESPACIO", "📸 Subiendo imágenes del espacio a Cloudinary");
 
-                    subirImagenesEspacioACloudinary(urlImagenes, nombre, new CloudinaryUploadCallback() {
-
-                        @Override
-                        public void onCompletado(String urlsCloudinary) {
-
-                            Log.d("CLOUDINARY_ESPACIO", "✅ Imágenes subidas");
-
-                            guardarEspacioEnBD(
-                                    nombre,
-                                    descripcion,
-                                    urlImagenes,
-                                    color,
-                                    id_creado,
-                                    idPiso
-                            );
-                        }
-
-                        @Override
-                        public void onError(String error) {
-
-                            Log.e("CLOUDINARY_ESPACIO", "❌ Error: " + error);
-
-                            guardarEspacioEnBD(
-                                    nombre,
-                                    descripcion,
-                                    urlImagenes,
-                                    color,
-                                    id_creado,
-                                    idPiso
-                            );
-                        }
-                    });
-
-                } else {
-
-                    guardarEspacioEnBD(
-                            nombre,
-                            descripcion,
-                            urlImagenes,
-                            color,
-                            id_creado,
-                            idPiso
-                    );
-                }
-
-                flujoPostEspacio();
-            }
-
-            // ✅ Método para guardar espacio en BD
-            private  void guardarEspacioEnBD(String nombre, String descripcion, String urlImagenes,
-                                            String color, int id_creado, int idPiso) {
                 try {
                     // ════════════════════════════════════════════════════════════════
                     // 1. CREAR ESPACIO
                     // ════════════════════════════════════════════════════════════════
 
-                    long espacioId = db.insertEspacio(
-                            id_creado,
-                            (int) pisoId,
-                            nombre,
-                            descripcion,
-                            urlImagenes
-                    );
+                    long espacioId = db.insertEspacio(id_creado, (int) pisoId, nombre, descripcion, urlImagenes);
+
                     if (espacioId == -1) {
                         Toast.makeText(getContext(), "Error al guardar espacio", Toast.LENGTH_SHORT).show();
                         Log.e("FLUJO_CRUD", "insertEspacio retornó -1");
@@ -681,43 +656,6 @@ public class MapaFragment extends Fragment {
                     Log.d("FLUJO_CRUD", "Descripcion: "+ descripcion);
                     Log.d("FLUJO_CRUD", "Url: "+ urlImagenes);
                     Log.d("FLUJO_CRUD", "color: "+ color);
-                    Log.d("FLUJO_CRUD", "ID_PISO: "+ (int) pisoId);
-
-
-                    /*
-
-                    //  Mandar a firebase probar si es posible gracias a los metodos
-                    firebaseHelper.crearEspacioEnFirestore(
-                            NombLugar,           // ej: "edificio_ingenieria"
-                            NombPiso,          // id del piso
-                            nombre,        // id del espacio
-                            nombre,        // nombre visible
-                            descripcion, // descripción
-                            "",      // URLs de Cloudinary
-                            1,
-                            new FirebaseHelper.FirebaseCallback() {
-                                @Override
-                                public void onSuccess(String mensaje) {
-                                    Log.d("FLUJO_ESPACIO", "✅ " + mensaje);
-                                    requireActivity().runOnUiThread(() -> {
-                                        Toast.makeText(getContext(), "✅ Espacio guardado en Firebase", Toast.LENGTH_SHORT).show();
-                                    });
-                                }
-
-                                @Override
-                                public void onError(String error) {
-                                    Log.e("FLUJO_ESPACIO", "❌ Error: " + error);
-                                    requireActivity().runOnUiThread(() -> {
-                                        Toast.makeText(getContext(), "⚠️ Error al guardar espacio: " + error, Toast.LENGTH_LONG).show();
-                                    });
-                                }
-                            }
-                    );
-
-                     */
-
-
-
 
                     // ════════════════════════════════════════════════════════════════
                     // 2. CREAR GEOMETRÍA
@@ -734,46 +672,41 @@ public class MapaFragment extends Fragment {
                         // NO return - el espacio ya está creado, al menos
                     }
 
+
+                    // Verificar toca subir la el espacio con su geometria sabiendo su id verdad
+                    try {
+                        if (urlImagenes == null || urlImagenes.isEmpty()) {
+                            Log.d("CLOUDINARY", "No hay imagenes que subir");
+                        }else{
+                            Log.d("CLOUDINARY", "Se encontraron imaganes a subir");
+                        }
+                        subirImagenesEspacioACloudinary(urlImagenes, nombre, new CloudinaryUploadCallback() {
+                            @Override
+                            public void onCompletado(String urlsCloudinary) {
+                                Log.d("CLOUDINARY", "Imágenes de espacio subidas: " + urlsCloudinary);
+
+                                // Guardar en Firebase con URLs de Cloudinary
+                                guardarEspacioEnFirebase(getNombLugar(), getNombPiso(), getNombEspacio(), descripcion, urlsCloudinary, color, verticesJson);
+                            }
+
+                            @Override
+                            public void onError(String error) {
+                                // Servidor o internet inexistente
+                                Log.e("CLOUDINARY", "❌ Error subiendo imágenes: " + error);
+
+                            }
+                        });
+                    } catch (Exception e) {
+                        // Sin imágenes o ya son de Cloudinary
+                        Log.d("CLOUDINARY", "⚠️ Error: "+ e.getMessage());
+                    }
+
                     Log.d("FLUJO_CRUD", "✓ Geometría #" + geometriaId + " | Color: " + color);
                     Log.d("FLUJO_CRUD", "Id espacio: "+ espac);
                     Log.d("FLUJO_CRUD", "Id lugar: "+ id_creado);
                     Log.d("FLUJO_CRUD", "Id piso: "+ pisoId);
                     Log.d("FLUJO_CRUD", "vertices: "+ verticesJson);
                     Log.d("FLUJO_CRUD", "color: "+ color);
-
-                    /*
-                    // En tu MapaFragment
-                    firebaseHelper.guardarGeometriaEspacio(
-                            NombLugar,           // ej: "edificio_ingenieria"
-                            NombPiso,          // id del piso
-                            NombEspacio,        // id del espacio
-                            verticesJson,      // GeoJSON de los vértices
-                            color,         // color del espacio
-                            new FirebaseHelper.FirebaseCallback() {
-                                @Override
-                                public void onSuccess(String mensaje) {
-                                    Log.d("FLUJO_GEOMETRIA", "✅ " + mensaje);
-                                    requireActivity().runOnUiThread(() -> {
-                                        Toast.makeText(getContext(), "✅ Geometría guardada", Toast.LENGTH_SHORT).show();
-                                    });
-                                }
-
-                                @Override
-                                public void onError(String error) {
-                                    Log.e("FLUJO_GEOMETRIA", "❌ Error: " + error);
-                                    requireActivity().runOnUiThread(() -> {
-                                        Toast.makeText(getContext(), "⚠️ Error en geometría: " + error, Toast.LENGTH_LONG).show();
-                                    });
-                                }
-                            }
-                    );
-
-                     */
-
-
-
-
-
 
                     // ════════════════════════════════════════════════════════════════
                     // 3. LOG FINAL Y CONTINUAR
@@ -789,6 +722,7 @@ public class MapaFragment extends Fragment {
 
                     Toast.makeText(getContext(), "✓ Espacio guardado: " + nombre, Toast.LENGTH_SHORT).show();
 
+                    flujoPostEspacio();
 
                 } catch (Exception e) {
                     Toast.makeText(getContext(), "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
@@ -1697,17 +1631,20 @@ public class MapaFragment extends Fragment {
                 return;
             }
 
-            NombPiso = nombre;
+            // Asignamos el nombre del piso como id
+            setNombPiso(nombre);
 
             int numero = obtenerSiguienteNumeroPiso();
 
             // Insertar piso
             pisoId = db.insertPiso((int) idLugar, numero, nombre);
 
+            // INTENTAR MANDAR EL PISO A FIREBASE
 
-            /*
+
+
             // Intentar mandarlo a firebase
-            firebaseHelper.crearPisoEnFirestore(NombLugar, numero, nombre, 1, new FirebaseHelper.FirebaseCallback() {
+            firebaseHelper.crearPisoEnFirestore(getNombLugar(), numero, getNombPiso(), 1, new FirebaseHelper.FirebaseCallback() {
                 @Override
                 public void onSuccess(String mensaje) {
                     Log.d("FIREBASE_PISO", "✅ ÉXITO: " + mensaje);
@@ -1723,7 +1660,7 @@ public class MapaFragment extends Fragment {
                         Toast.makeText(getContext(), "⚠️ Error al guardar piso: " + error, Toast.LENGTH_LONG).show();
                     });
                 }
-            });}*/
+            });
 
             if (pisoId != -1) {
                 Log.d("FLUJO_PISO", "✓ Piso creado: " + nombre + " (#" + numero + ") ID: " + pisoId);
@@ -1885,7 +1822,37 @@ public class MapaFragment extends Fragment {
         mapManager.limpiarLugares();
         mapManager.limpiarTodo();
         mapManager.cargarPoligonosLugar();
+        mapManager.resetearContadores();
     }
+
+    // Getters y setter de los nombres de ids
+    // String NombLugar
+    public String getNombLugar() {
+        return NombLugar;
+    }
+
+    public void setNombLugar(String nombLugar) {
+        this.NombLugar = nombLugar;
+    }
+
+    // String NombPiso
+    public String getNombPiso() {
+        return NombPiso;
+    }
+
+    public void setNombPiso(String nombPiso) {
+        this.NombPiso = nombPiso;
+    }
+
+    // String NombEspacio
+    public String getNombEspacio() {
+        return NombEspacio;
+    }
+
+    public void setNombEspacio(String nombEspacio) {
+        this.NombEspacio = nombEspacio;
+    }
+
 
 
     // Obtener datos de la sesion

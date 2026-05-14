@@ -11,6 +11,9 @@ import java.security.MessageDigest;
 public class CloudinaryHelper {
 
 
+
+
+
     private OkHttpClient client = new OkHttpClient();
 
     public interface UploadCallback {

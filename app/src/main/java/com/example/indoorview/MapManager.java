@@ -34,6 +34,7 @@ import com.example.indoorview.models.Geometria;
 import com.example.indoorview.models.Lugar;
 import com.example.indoorview.models.Pisos;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.gson.JsonObject;
 import com.mapbox.bindgen.Value;
 import com.mapbox.geojson.Feature;
@@ -122,6 +123,8 @@ public class MapManager {
 
     private static final String GEOJSON_UGB_LIMITE = "[ [ [ -88.41874168089034, 13.342901971786262 ], [ -88.41889785945618, 13.341106898005307 ], [ -88.41839524199705, 13.34103443603474 ], [ -88.41831812517535, 13.34178386011384 ], [ -88.41741476994676, 13.341794104340593 ], [ -88.41730671679485, 13.34196510159082 ], [ -88.41720451599281, 13.34209255599397 ], [ -88.41706008360627, 13.342479282053095 ], [ -88.41704985341521, 13.342675370623276 ], [ -88.41796776139901, 13.34270376976529 ], [ -88.41796378795416, 13.342793041275973 ], [ -88.41812265682583, 13.342799003628858 ], [ -88.41811979305093, 13.342972147765815 ], [ -88.41837785201281, 13.342976948895853 ], [ -88.41834732427823, 13.344205429857794 ], [ -88.41803842734053, 13.344204010776519 ], [ -88.4180916851741, 13.344569482157176 ], [ -88.42024086628714, 13.343740562349211 ], [ -88.42023351324613, 13.342921366041821 ], [ -88.41874168089034, 13.342901971786262 ] ] ]";
 
+    private FirebaseHelper firebaseHelper;
+    private CloudinaryHelper cloudinaryHelper;
 
     // ════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -140,6 +143,10 @@ public class MapManager {
         } else {
             Log.d("SPINNER_DEBUG", "✓ Spinner inicializado correctamente");
         }
+
+        // Encargadas de lo que seria el modificar en linea
+        firebaseHelper = new FirebaseHelper();
+        cloudinaryHelper = new CloudinaryHelper();
 
         // Crear managers de anotaciones
         AnnotationPlugin plugin = mapView.getPlugin(Plugin.Mapbox.MAPBOX_ANNOTATION_PLUGIN_ID);
@@ -169,11 +176,13 @@ public class MapManager {
             // Limpiamos los espacios por si acaso
             limpiarEspacios();
             restaurarPinesOcultos();
-            // Verifica si no hay pisos BUG SOLUCIONADO
-            cargarPisos(lugarActualId);
+
 
             elementoSeleccionadoId = data.get("id_lugar").getAsInt();
             esEspacioSeleccionado = false;
+
+            // Verifica si no hay pisos BUG SOLUCIONADO
+            cargarPisos(lugarActualId);
 
             if (modoEdicion) {
                 // Crud
@@ -1201,7 +1210,6 @@ public class MapManager {
         Log.d("LIMPIAR_TOTAL", "✓ URLs de imágenes limpiadas");
 
         // 5. Resetear contadores (opcional)
-        // resetearContadores();
 
         Log.d("LIMPIAR_TOTAL", "════════════════════════════════════════════");
         Log.d("LIMPIAR_TOTAL", "✅ TODO HA SIDO LIMPIADO");
@@ -2546,6 +2554,12 @@ public class MapManager {
                         db.updateGeometriaColor(data.get("id_geometria").getAsInt(), colorSeleccionado);
                         Toast.makeText(context, "Espacio actualizado", Toast.LENGTH_SHORT).show();
 
+                        try {
+                            actualizarEspacioFirebase(nombreOriginal, nuevoNombre, nuevaDesc, urlsImagenes);
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+
                     } else {
                         db.updateLugar(
                                 data.get("id_lugar").getAsInt(),
@@ -2555,6 +2569,14 @@ public class MapManager {
                                 urlsImagenes
                         );
                         Toast.makeText(context, "Lugar actualizado", Toast.LENGTH_SHORT).show();
+
+                        try {
+                            actualizarLugarFirebase(nombreOriginal, nuevoNombre, nuevaDesc, urlsImagenes, colorSeleccionado);
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+
+
                         limpiarTodo();
                         cargarPoligonosLugar();
                     }
@@ -2599,9 +2621,66 @@ public class MapManager {
         dialog.show();
     }
 
+
+
+
+    // En tu BD local, agrega un campo para guardar el ID de Firebase
+// tabla lugares: id_firebase TEXT
+
+    private void actualizarLugarFirebase(String nombreActual, String nuevoNombre, String nuevaDescripcion,
+                                         String urlsImagenes, String colorSeleccionado) {
+        firebaseHelper.actualizarLugarPorNombre(
+                nombreActual,
+                nuevoNombre,
+                nuevaDescripcion,
+                urlsImagenes,
+                colorSeleccionado,
+                new FirebaseHelper.FirebaseCallback() {
+                    @Override
+                    public void onSuccess(String mensaje) {
+                        Log.d("FIREBASE", "✅ " + mensaje);
+
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        Log.e("FIREBASE", "❌ Error: " + error);
+
+                    }
+                }
+        );
+    }
+
+
+    private void actualizarEspacioFirebase(String nombreActual,
+                                           String nuevoNombre,
+                                           String nuevaDescripcion,
+                                           String urlsImagenes) {
+        firebaseHelper.actualizarEspacioPorNombre(
+                nombreActual,
+                nuevoNombre,
+                nuevaDescripcion,
+                urlsImagenes,
+                new FirebaseHelper.FirebaseCallback() {
+                    @Override
+                    public void onSuccess(String mensaje) {
+                        Log.d("FIREBASE", "✅ " + mensaje);
+
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        Log.e("FIREBASE", "❌ Error: " + error);
+
+                    }
+                }
+        );
+    }
+
+
     // ════════════════════════════════════════════════════════════════
-// ✅ NUEVO MÉTODO: Actualizar color de polígono TEMPORAL
-// ════════════════════════════════════════════════════════════════
+    // NUEVO MÉTODO: Actualizar color de polígono TEMPORAL
+    // ════════════════════════════════════════════════════════════════
     /**
      * Actualiza el color de un polígono temporal (durante creación)
      * @param idPoligono ID del polígono temporal (ej: "lugar-1" o "lugar-1-espacio-1")
@@ -3368,6 +3447,7 @@ public class MapManager {
 
     public void resetearContadores() {
         lugarActualId = 0;
+        esEspacioSeleccionado = false;
         espacioContador = 0;
     }
 }
