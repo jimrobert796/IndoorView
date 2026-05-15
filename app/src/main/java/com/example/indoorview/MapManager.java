@@ -2571,7 +2571,7 @@ public class MapManager {
                                     public void onCompletado(String urlsFinales) {
                                         try {
                                             actualizarEspacioFirebase(nombreOriginal, nuevoNombre, nuevaDesc, urlsFinales, colorSeleccionado);
-                                            //actualizarColorEspacioFirebase(nombreOriginal, colorSeleccionado);
+
 
                                         } catch (Exception e) {
                                             throw new RuntimeException(e);
@@ -2812,6 +2812,7 @@ public class MapManager {
      */
 
 
+    // Método para actualizar SOLO el color en Firebase
     private void actualizarColorEspacioFirebase(String nombreEspacio, String nuevoColor) {
         firebaseHelper.actualizarColorGeometriaPorNombre(
                 nombreEspacio,
@@ -2820,7 +2821,6 @@ public class MapManager {
                     @Override
                     public void onSuccess(String mensaje) {
                         Log.d("FIREBASE_COLOR", "✅ " + mensaje);
-
                     }
 
                     @Override
@@ -2838,7 +2838,7 @@ public class MapManager {
                                            String nuevoNombre,
                                            String nuevaDescripcion,
                                            String urlsImagenes,
-                                           String color) {
+                                           String colorSeleccionado) {
         firebaseHelper.actualizarEspacioPorNombre(
                 nombreActual,
                 nuevoNombre,
@@ -2848,6 +2848,16 @@ public class MapManager {
                     @Override
                     public void onSuccess(String mensaje) {
                         Log.d("FIREBASE", "✅ " + mensaje);
+
+                        // ✅ Ahora sí, actualizar el color usando el nombre CORRECTO
+                        if (nuevoNombre != null && !nuevoNombre.isEmpty()) {
+                            // Si hay nuevo nombre, usarlo
+                            actualizarColorEspacioFirebase(nuevoNombre, colorSeleccionado);
+                        } else {
+                            // Si no hay nuevo nombre, usar el original
+                            actualizarColorEspacioFirebase(nombreActual, colorSeleccionado);
+                        }
+
                     }
 
                     @Override

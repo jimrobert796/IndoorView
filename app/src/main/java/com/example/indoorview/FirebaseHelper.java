@@ -385,70 +385,98 @@ public class FirebaseHelper {
                                                   FirebaseCallback callback) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-        // Buscar el espacio por su nombre en TODOS los lugares
-        db.collectionGroup("espacios")
-                .whereEqualTo("nombre", nombreEspacio)
-                .limit(1)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    if (queryDocumentSnapshots.isEmpty()) {
-                        Log.e("FIREBASE_GEOMETRIA", "❌ No se encontró el espacio: " + nombreEspacio);
-                        if (callback != null) {
-                            callback.onError("No se encontró el espacio: " + nombreEspacio);
-                        }
-                        return;
-                    }
+        // Buscar manualmente sin usar collectionGroup
+        db.collection("lugares").get().addOnSuccessListener(lugaresSnapshot -> {
 
-                    // Obtener el documento del espacio
-                    DocumentSnapshot espacioDoc = queryDocumentSnapshots.getDocuments().get(0);
-                    String espacioId = espacioDoc.getId();
+            final boolean[] encontrado = {false};
+            final int[] totalPisos = {0};
+            final int[] pisosProcesados = {0};
 
-                    // Obtener la ruta para encontrar lugarId y pisoId
-                    String ruta = espacioDoc.getReference().getParent().getParent().getPath();
-                    String[] partes = ruta.split("/");
-                    String lugarId = partes[1];  // lugares/{lugarId}/pisos/{pisoId}
-                    String pisoId = partes[3];
+            for (DocumentSnapshot lugar : lugaresSnapshot.getDocuments()) {
+                String lugarId = lugar.getId();
 
-                    Log.d("FIREBASE_GEOMETRIA", "📌 Espacio encontrado:");
-                    Log.d("FIREBASE_GEOMETRIA", "  Lugar: " + lugarId);
-                    Log.d("FIREBASE_GEOMETRIA", "  Piso: " + pisoId);
-                    Log.d("FIREBASE_GEOMETRIA", "  Espacio: " + espacioId);
+                // Obtener todos los pisos de este lugar
+                db.collection("lugares").document(lugarId).collection("pisos").get()
+                        .addOnSuccessListener(pisosSnapshot -> {
+                            totalPisos[0] += pisosSnapshot.size();
 
-                    // Actualizar SOLO el color en la geometría
-                    Map<String, Object> updates = new HashMap<>();
-                    updates.put("color", nuevoColor);
-                    updates.put("fecha_actualizacion", FieldValue.serverTimestamp());
+                            for (DocumentSnapshot piso : pisosSnapshot.getDocuments()) {
+                                String pisoId = piso.getId();
 
-                    db.collection("lugares")
-                            .document(lugarId)
-                            .collection("pisos")
-                            .document(pisoId)
-                            .collection("espacios")
-                            .document(espacioId)
-                            .collection("geometria")
-                            .document("vertices")
-                            .update(updates)
-                            .addOnSuccessListener(aVoid -> {
-                                Log.d("FIREBASE_GEOMETRIA", "✅ Color actualizado a: " + nuevoColor);
-                                if (callback != null) {
-                                    callback.onSuccess("Color actualizado para: " + nombreEspacio);
-                                }
-                            })
-                            .addOnFailureListener(e -> {
-                                Log.e("FIREBASE_GEOMETRIA", "❌ Error al actualizar color: " + e.getMessage());
-                                if (callback != null) {
-                                    callback.onError(e.getMessage());
-                                }
-                            });
-                })
-                .addOnFailureListener(e -> {
-                    Log.e("FIREBASE_GEOMETRIA", "❌ Error al buscar espacio: " + e.getMessage());
-                    if (callback != null) {
-                        callback.onError("Error al buscar espacio: " + e.getMessage());
-                    }
-                });
+                                // Buscar el espacio por nombre en este piso
+                                db.collection("lugares")
+                                        .document(lugarId)
+                                        .collection("pisos")
+                                        .document(pisoId)
+                                        .collection("espacios")
+                                        .whereEqualTo("nombre", nombreEspacio)
+                                        .limit(1)
+                                        .get()
+                                        .addOnSuccessListener(espacios -> {
+                                            pisosProcesados[0]++;
+
+                                            if (!espacios.isEmpty() && !encontrado[0]) {
+                                                encontrado[0] = true;
+
+                                                DocumentSnapshot espacioDoc = espacios.getDocuments().get(0);
+                                                String espacioId = espacioDoc.getId();
+
+                                                Log.d("FIREBASE_GEOMETRIA", "📌 Espacio encontrado:");
+                                                Log.d("FIREBASE_GEOMETRIA", "  Lugar: " + lugarId);
+                                                Log.d("FIREBASE_GEOMETRIA", "  Piso: " + pisoId);
+                                                Log.d("FIREBASE_GEOMETRIA", "  Espacio: " + espacioId);
+
+                                                // Actualizar el color
+                                                Map<String, Object> updates = new HashMap<>();
+                                                updates.put("color", nuevoColor);
+                                                updates.put("fecha_actualizacion", FieldValue.serverTimestamp());
+
+                                                db.collection("lugares")
+                                                        .document(lugarId)
+                                                        .collection("pisos")
+                                                        .document(pisoId)
+                                                        .collection("espacios")
+                                                        .document(espacioId)
+                                                        .collection("geometria")
+                                                        .document("vertices")
+                                                        .update(updates)
+                                                        .addOnSuccessListener(aVoid -> {
+                                                            Log.d("FIREBASE_GEOMETRIA", "✅ Color actualizado a: " + nuevoColor);
+                                                            if (callback != null) {
+                                                                callback.onSuccess("Color actualizado para: " + nombreEspacio);
+                                                            }
+                                                        })
+                                                        .addOnFailureListener(e -> {
+                                                            if (callback != null) callback.onError(e.getMessage());
+                                                        });
+                                            }
+
+                                            // Si ya procesamos todos los pisos y no se encontró
+                                            if (pisosProcesados[0] == totalPisos[0] && !encontrado[0]) {
+                                                Log.e("FIREBASE_GEOMETRIA", "❌ No se encontró el espacio: " + nombreEspacio);
+                                                if (callback != null) {
+                                                    callback.onError("No se encontró el espacio: " + nombreEspacio);
+                                                }
+                                            }
+                                        })
+                                        .addOnFailureListener(e -> {
+                                            pisosProcesados[0]++;
+                                            if (pisosProcesados[0] == totalPisos[0] && !encontrado[0]) {
+                                                if (callback != null) callback.onError(e.getMessage());
+                                            }
+                                        });
+                            }
+                        })
+                        .addOnFailureListener(e -> {
+                            if (!encontrado[0] && callback != null) {
+                                callback.onError("Error obteniendo pisos: " + e.getMessage());
+                            }
+                        });
+            }
+        }).addOnFailureListener(e -> {
+            if (callback != null) callback.onError("Error obteniendo lugares: " + e.getMessage());
+        });
     }
-
 
 
     private void cargarLugarCompleto(String lugarId) {
