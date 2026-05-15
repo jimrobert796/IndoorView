@@ -63,6 +63,8 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MapManager {
 
@@ -2393,6 +2395,10 @@ public class MapManager {
         String nombreOriginal = data.get("nombre").getAsString();
         String descripcionOriginal = data.get("descripcion").getAsString();
 
+        // Al inicio de mostrarBottomSheetCRUD, guarda las URLs originales
+        String urlsImagenesOriginal = data.has("url_imagenes") ?
+                data.get("url_imagenes").getAsString() : "";
+
         etNombre.setText(nombreOriginal);
         etDescripcion.setText(descripcionOriginal);
 
@@ -2554,11 +2560,38 @@ public class MapManager {
                         db.updateGeometriaColor(data.get("id_geometria").getAsInt(), colorSeleccionado);
                         Toast.makeText(context, "Espacio actualizado", Toast.LENGTH_SHORT).show();
 
+                        limpiarEspacios();
+                        mostrarEspaciosPorPiso(data.get("id_lugar").getAsInt(), data.get("id_piso").getAsInt());
+
+
+
+                        subirImagenesSiCambiaron(urlsImagenesOriginal, urlsImagenes,
+                                new CloudinaryUploadCallback() {
+                                    @Override
+                                    public void onCompletado(String urlsFinales) {
+                                        try {
+                                            actualizarEspacioFirebase(nombreOriginal, nuevoNombre, nuevaDesc, urlsFinales, colorSeleccionado);
+                                            //actualizarColorEspacioFirebase(nombreOriginal, colorSeleccionado);
+
+                                        } catch (Exception e) {
+                                            throw new RuntimeException(e);
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onError(String error) {
+                                        Log.e("ERROR", "Fallo al subir imágenes: " + error);
+                                        Toast.makeText(context, "Error al subir imágenes", Toast.LENGTH_SHORT).show();
+                                    }
+                        });
+                        /*
                         try {
                             actualizarEspacioFirebase(nombreOriginal, nuevoNombre, nuevaDesc, urlsImagenes);
                         } catch (Exception e) {
                             throw new RuntimeException(e);
                         }
+
+                         */
 
                     } else {
                         db.updateLugar(
@@ -2570,13 +2603,23 @@ public class MapManager {
                         );
                         Toast.makeText(context, "Lugar actualizado", Toast.LENGTH_SHORT).show();
 
-                        try {
-                            actualizarLugarFirebase(nombreOriginal, nuevoNombre, nuevaDesc, urlsImagenes, colorSeleccionado);
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
+                        subirImagenesSiCambiaron(urlsImagenesOriginal, urlsImagenes,
+                                new CloudinaryUploadCallback() {
+                                    @Override
+                                    public void onCompletado(String urlsFinales) {
+                                        try {
+                                            actualizarLugarFirebase(nombreOriginal, nuevoNombre, nuevaDesc, urlsFinales, colorSeleccionado);
+                                        } catch (Exception e) {
+                                            throw new RuntimeException(e);
+                                        }
+                                    }
 
-
+                                    @Override
+                                    public void onError(String error) {
+                                        Log.e("ERROR", "Fallo al subir imágenes: " + error);
+                                        Toast.makeText(context, "Error al subir imágenes", Toast.LENGTH_SHORT).show();
+                                    }
+                                });
                         limpiarTodo();
                         cargarPoligonosLugar();
                     }
@@ -2621,12 +2664,125 @@ public class MapManager {
         dialog.show();
     }
 
+    /**
+     * Sube imágenes a Cloudinary si son nuevas y luego ejecuta el callback
+     * @param urlsOriginal URLs originales (antes de editar)
+     * @param urlsNuevas URLs nuevas (después de editar)
+     * @param callback Callback que se ejecuta con las URLs finales (Cloudinary o locales)
+     */
+    private void subirImagenesSiCambiaron(String urlsOriginal, String urlsNuevas,
+                                          CloudinaryUploadCallback callback) {
+
+        // Verificar si hay imágenes nuevas para subir
+        if (urlsNuevas != null && !urlsNuevas.isEmpty() &&
+                !urlsNuevas.equals(urlsOriginal)) {
+
+            // Hay imágenes locales nuevas → Subir a Cloudinary
+            Log.d("CLOUDINARY", "📸 Nuevas imágenes detectadas, subiendo...");
+
+            subirImagenesACloudinary(urlsNuevas, new CloudinaryUploadCallback() {
+                @Override
+                public void onCompletado(String urlsCloudinary) {
+                    Log.d("CLOUDINARY", "✅ Imágenes subidas a Cloudinary");
+                    if (callback != null) {
+                        callback.onCompletado(urlsCloudinary);
+                    }
+                }
+
+                @Override
+                public void onError(String error) {
+                    Log.e("CLOUDINARY", "❌ Error subiendo imágenes: " + error);
+                    // Fallback: usar URLs locales
+                    if (callback != null) {
+                        callback.onCompletado(urlsNuevas);
+                    }
+                }
+            });
+
+        } else {
+            // Sin cambios o ya son de Cloudinary
+            Log.d("CLOUDINARY", "⚠️ Sin imágenes nuevas para subir");
+            if (callback != null) {
+                callback.onCompletado(urlsNuevas);
+            }
+        }
+    }
+
+
+
+
+    // Método para subir imágenes a Cloudinary
+    private void subirImagenesACloudinary(String urlsLocales, CloudinaryUploadCallback callback) {
+        if (urlsLocales == null || urlsLocales.isEmpty()) {
+            callback.onCompletado("");
+            return;
+        }
+
+        String[] urls = urlsLocales.split(",");
+        List<String> urlsSubidas = new ArrayList<>();
+        int[] contador = {0};
+
+
+        Log.d("CLOUDINARY_UPLOAD", "📤 Subiendo " + urls.length + " imágenes a Cloudinary");
+
+        for (int i = 0; i < urls.length; i++) {
+            String rutaLocal = urls[i].trim();
+
+            if (rutaLocal.isEmpty()) {
+                contador[0]++;
+                if (contador[0] == urls.length) {
+                    callback.onCompletado(String.join(",", urlsSubidas));
+                }
+                continue;
+            }
+
+            File imagenFile = new File(rutaLocal);
+
+            if (!imagenFile.exists()) {
+                Log.e("CLOUDINARY_UPLOAD", "❌ Imagen no existe: " + rutaLocal);
+                urlsSubidas.add(rutaLocal);
+                contador[0]++;
+                if (contador[0] == urls.length) {
+                    callback.onCompletado(String.join(",", urlsSubidas));
+                }
+                continue;
+            }
+
+            final String rutaActual = rutaLocal;
+            cloudinaryHelper.subirImagen(imagenFile, new CloudinaryHelper.UploadCallback() {
+                @Override
+                public void onResult(boolean success, String url, String publicId) {
+                    if (success) {
+                        Log.d("CLOUDINARY_UPLOAD", "✅ Imagen subida: " + url);
+                        urlsSubidas.add(url);
+                    } else {
+                        Log.e("CLOUDINARY_UPLOAD", "❌ Error subiendo imagen");
+                        urlsSubidas.add(rutaActual);
+                    }
+
+                    contador[0]++;
+
+                    if (contador[0] == urls.length) {
+                        String resultado = String.join(",", urlsSubidas);
+                        Log.d("CLOUDINARY_UPLOAD", "📦 RESUMEN: " + resultado);
+
+                        // ✅ Toast en UI Thread
+                        callback.onCompletado(resultado);
+                    }
+                }
+            });
+        }
+    }
+
+    // PARA SABER SI EL CALLBACK SE HACE BIEN
+    public interface CloudinaryUploadCallback {
+        void onCompletado(String urlsCloudinary);
+        void onError(String error);
+    }
 
 
 
     // En tu BD local, agrega un campo para guardar el ID de Firebase
-// tabla lugares: id_firebase TEXT
-
     private void actualizarLugarFirebase(String nombreActual, String nuevoNombre, String nuevaDescripcion,
                                          String urlsImagenes, String colorSeleccionado) {
         firebaseHelper.actualizarLugarPorNombre(
@@ -2651,11 +2807,38 @@ public class MapManager {
         );
     }
 
+    /**
 
+     */
+
+
+    private void actualizarColorEspacioFirebase(String nombreEspacio, String nuevoColor) {
+        firebaseHelper.actualizarColorGeometriaPorNombre(
+                nombreEspacio,
+                nuevoColor,
+                new FirebaseHelper.FirebaseCallback() {
+                    @Override
+                    public void onSuccess(String mensaje) {
+                        Log.d("FIREBASE_COLOR", "✅ " + mensaje);
+
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        Log.e("FIREBASE_COLOR", "❌ Error: " + error);
+                    }
+                }
+        );
+    }
+
+
+
+    // ACTUALIZAR LO QUE SERIA LA IFORMACION QUE SE LE DEJA EN PIE
     private void actualizarEspacioFirebase(String nombreActual,
                                            String nuevoNombre,
                                            String nuevaDescripcion,
-                                           String urlsImagenes) {
+                                           String urlsImagenes,
+                                           String color) {
         firebaseHelper.actualizarEspacioPorNombre(
                 nombreActual,
                 nuevoNombre,
@@ -2665,7 +2848,6 @@ public class MapManager {
                     @Override
                     public void onSuccess(String mensaje) {
                         Log.d("FIREBASE", "✅ " + mensaje);
-
                     }
 
                     @Override

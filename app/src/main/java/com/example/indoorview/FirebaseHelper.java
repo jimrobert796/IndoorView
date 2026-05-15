@@ -267,7 +267,19 @@ public class FirebaseHelper {
                     Map<String, Object> updates = new HashMap<>();
                     updates.put("nombre", nuevoNombre);
                     updates.put("descripcion", nuevaDescripcion);
-                    updates.put("url_imagenes", nuevasUrlsImagenes);
+
+                    if (nuevasUrlsImagenes != null && !nuevasUrlsImagenes.isEmpty()) {
+                        // Verificar si las URLs son de Cloudinary (ya están bien)
+                        boolean sonCloudinary = !nuevasUrlsImagenes.contains("storage");
+
+                        if (sonCloudinary) {
+                            updates.put("url_imagenes", nuevasUrlsImagenes);
+                            Log.d("FIREBASE_UPDATE", "  🖼️ Actualizando URLs de Cloudinary");
+                        } else {
+                            Log.d("FIREBASE_UPDATE", "  ⚠️ URLs locales detectadas, NO se actualizan en Firebase");
+                        }
+                    }
+
                     updates.put("color", nuevoColor);
                     updates.put("fecha_actualizacion", FieldValue.serverTimestamp());
 
@@ -330,7 +342,17 @@ public class FirebaseHelper {
                                                 Map<String, Object> updates = new HashMap<>();
                                                 updates.put("nombre", nuevoNombre);
                                                 updates.put("descripcion", nuevaDescripcion);
-                                                updates.put("url_imagenes", nuevasUrlsImagenes);
+                                                if (nuevasUrlsImagenes != null && !nuevasUrlsImagenes.isEmpty()) {
+                                                    // Verificar si las URLs son de Cloudinary (ya están bien)
+                                                    boolean sonCloudinary = !nuevasUrlsImagenes.contains("storage");
+
+                                                    if (sonCloudinary) {
+                                                        updates.put("url_imagenes", nuevasUrlsImagenes);
+                                                        Log.d("FIREBASE_UPDATE", "  🖼️ Actualizando URLs de Cloudinary");
+                                                    } else {
+                                                        Log.d("FIREBASE_UPDATE", "  ⚠️ URLs locales detectadas, NO se actualizan en Firebase");
+                                                    }
+                                                }
                                                 updates.put("fecha_actualizacion", FieldValue.serverTimestamp());
 
                                                 espacioDoc.getReference().update(updates)
@@ -351,6 +373,82 @@ public class FirebaseHelper {
             if (callback != null) callback.onError("Error obteniendo lugares: " + e.getMessage());
         });
     }
+
+    /**
+     * Actualiza SOLO el color de la geometría buscando el espacio por su nombre
+     * @param nombreEspacio Nombre actual del espacio
+     * @param nuevoColor Nuevo color en formato hexadecimal (ej: "#2196F3")
+     * @param callback Callback para resultado
+     */
+    public void actualizarColorGeometriaPorNombre(String nombreEspacio,
+                                                  String nuevoColor,
+                                                  FirebaseCallback callback) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        // Buscar el espacio por su nombre en TODOS los lugares
+        db.collectionGroup("espacios")
+                .whereEqualTo("nombre", nombreEspacio)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    if (queryDocumentSnapshots.isEmpty()) {
+                        Log.e("FIREBASE_GEOMETRIA", "❌ No se encontró el espacio: " + nombreEspacio);
+                        if (callback != null) {
+                            callback.onError("No se encontró el espacio: " + nombreEspacio);
+                        }
+                        return;
+                    }
+
+                    // Obtener el documento del espacio
+                    DocumentSnapshot espacioDoc = queryDocumentSnapshots.getDocuments().get(0);
+                    String espacioId = espacioDoc.getId();
+
+                    // Obtener la ruta para encontrar lugarId y pisoId
+                    String ruta = espacioDoc.getReference().getParent().getParent().getPath();
+                    String[] partes = ruta.split("/");
+                    String lugarId = partes[1];  // lugares/{lugarId}/pisos/{pisoId}
+                    String pisoId = partes[3];
+
+                    Log.d("FIREBASE_GEOMETRIA", "📌 Espacio encontrado:");
+                    Log.d("FIREBASE_GEOMETRIA", "  Lugar: " + lugarId);
+                    Log.d("FIREBASE_GEOMETRIA", "  Piso: " + pisoId);
+                    Log.d("FIREBASE_GEOMETRIA", "  Espacio: " + espacioId);
+
+                    // Actualizar SOLO el color en la geometría
+                    Map<String, Object> updates = new HashMap<>();
+                    updates.put("color", nuevoColor);
+                    updates.put("fecha_actualizacion", FieldValue.serverTimestamp());
+
+                    db.collection("lugares")
+                            .document(lugarId)
+                            .collection("pisos")
+                            .document(pisoId)
+                            .collection("espacios")
+                            .document(espacioId)
+                            .collection("geometria")
+                            .document("vertices")
+                            .update(updates)
+                            .addOnSuccessListener(aVoid -> {
+                                Log.d("FIREBASE_GEOMETRIA", "✅ Color actualizado a: " + nuevoColor);
+                                if (callback != null) {
+                                    callback.onSuccess("Color actualizado para: " + nombreEspacio);
+                                }
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e("FIREBASE_GEOMETRIA", "❌ Error al actualizar color: " + e.getMessage());
+                                if (callback != null) {
+                                    callback.onError(e.getMessage());
+                                }
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("FIREBASE_GEOMETRIA", "❌ Error al buscar espacio: " + e.getMessage());
+                    if (callback != null) {
+                        callback.onError("Error al buscar espacio: " + e.getMessage());
+                    }
+                });
+    }
+
 
 
     private void cargarLugarCompleto(String lugarId) {

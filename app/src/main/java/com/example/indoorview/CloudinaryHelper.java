@@ -10,8 +10,11 @@ import java.security.MessageDigest;
 
 public class CloudinaryHelper {
 
-
-
+    // Perfecto ya tenemos algo siminar a env files
+    public static final String CLOUD_NAME = CloudinaryApi.CLOUD_NAME;
+    public static final String UPLOAD_PRESET = CloudinaryApi.UPLOAD_PRESET;
+    public static final String API_KEY = CloudinaryApi.API_KEY;
+    private static final String API_SECRET = CloudinaryApi.API_SECRET;
 
 
     private OkHttpClient client = new OkHttpClient();
