@@ -2646,6 +2646,16 @@ public class MapManager {
                                 limpiarTodo();
                                 cargarPoligonosLugar();
                                 Toast.makeText(context, "Espacio eliminado", Toast.LENGTH_SHORT).show();
+
+                                try{
+                                    // Intentamos eliminar el lugar en firebase
+                                    eliminarEspacioFirebase(nombreOriginal);
+                                } catch (Exception e) {
+                                    throw new RuntimeException(e);
+                                }
+
+
+
                             } else {
                                 int id = data.get("id_lugar").getAsInt();
                                 db.eliminarLugar(id);
@@ -2654,6 +2664,14 @@ public class MapManager {
                                 limpiarTodo();
                                 cargarPoligonosLugar();
                                 Toast.makeText(context, "Lugar eliminado", Toast.LENGTH_SHORT).show();
+
+                                try{
+                                    // Intentamos eliminar el lugar en firebase
+                                    eliminarLugarFirebase(nombreOriginal);
+                                } catch (Exception e) {
+                                    throw new RuntimeException(e);
+                                }
+
                             }
                             dialog.dismiss();
                         }
@@ -2779,6 +2797,45 @@ public class MapManager {
         void onCompletado(String urlsCloudinary);
         void onError(String error);
     }
+
+
+    // Eliminar espacio por nombre
+    private void eliminarLugarFirebase(String nombreLugar) {
+
+        // 2. Actualizar Firebase
+        firebaseHelper.softDeleteLugar(nombreLugar, 0,
+                new FirebaseHelper.FirebaseCallback() {
+                    @Override
+                    public void onSuccess(String mensaje) {
+                        Log.d("ELIMINAR", "✅ " + mensaje);
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        Log.e("ELIMINAR", "❌ Error: " + error);
+                    }
+                });
+    }
+
+
+    private void eliminarEspacioFirebase (String nombreEspacio) {
+
+        // 2. Actualizar Firebase
+        firebaseHelper.softDeleteEspacioPorNombre(nombreEspacio, 0,
+                new FirebaseHelper.FirebaseCallback() {
+                    @Override
+                    public void onSuccess(String mensaje) {
+                        Log.d("ELIMINAR", "✅ " + mensaje);
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        Log.e("ELIMINAR", "❌ Error: " + error);
+                    }
+                });
+    }
+
+
 
 
 

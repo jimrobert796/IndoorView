@@ -479,6 +479,111 @@ public class FirebaseHelper {
     }
 
 
+    // ELIMINAR
+
+    public void softDeleteLugar(String lugarId, int nuevoEstado, FirebaseCallback callback) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("estado", nuevoEstado);
+        updates.put("fecha_actualizacion", FieldValue.serverTimestamp());
+
+        Log.d("FIREBASE_ESTADO", "Soft dellete estado del lugar: " + lugarId);
+        Log.d("FIREBASE_ESTADO", "  Nuevo estado: " + (nuevoEstado == 1 ? "ACTIVO" : "INACTIVO"));
+
+        db.collection("lugares").document(lugarId).update(updates)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d("FIREBASE_ESTADO", "✅ Estado actualizado: " + lugarId);
+                    if (callback != null) {
+                        callback.onSuccess("Lugar " + (nuevoEstado == 1 ? "activado" : "desactivado"));
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("FIREBASE_ESTADO", "❌ Error actualizando estado: " + e.getMessage());
+                    if (callback != null) {
+                        callback.onError(e.getMessage());
+                    }
+                });
+    }
+
+    public void softDeleteEspacioPorNombre(String nombreEspacio,
+                                           int nuevoEstado,
+                                           FirebaseCallback callback) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        // Obtener todos los lugares
+        db.collection("lugares").get().addOnSuccessListener(lugaresSnapshot -> {
+
+            final boolean[] encontrado = {false};
+
+            // Recorrer cada lugar
+            for (DocumentSnapshot lugar : lugaresSnapshot.getDocuments()) {
+                if (encontrado[0]) break;
+
+                String lugarId = lugar.getId();
+
+                // Obtener pisos de este lugar
+                db.collection("lugares").document(lugarId).collection("pisos").get()
+                        .addOnSuccessListener(pisosSnapshot -> {
+
+                            // Recorrer cada piso
+                            for (DocumentSnapshot piso : pisosSnapshot.getDocuments()) {
+                                if (encontrado[0]) break;
+
+                                String pisoId = piso.getId();
+
+                                // Buscar el espacio por nombre
+                                db.collection("lugares")
+                                        .document(lugarId)
+                                        .collection("pisos")
+                                        .document(pisoId)
+                                        .collection("espacios")
+                                        .whereEqualTo("nombre", nombreEspacio)
+                                        .get()  // ← Sin limit, pero solo tomamos el primero
+                                        .addOnSuccessListener(espacios -> {
+
+                                            if (!espacios.isEmpty() && !encontrado[0]) {
+                                                encontrado[0] = true;
+
+                                                DocumentSnapshot espacioDoc = espacios.getDocuments().get(0);
+
+                                                Log.d("FIREBASE_ESTADO", "📌 Espacio encontrado:");
+                                                Log.d("FIREBASE_ESTADO", "  Lugar: " + lugarId);
+                                                Log.d("FIREBASE_ESTADO", "  Piso: " + pisoId);
+                                                Log.d("FIREBASE_ESTADO", "  Espacio: " + espacioDoc.getId());
+
+                                                // Actualizar estado
+                                                espacioDoc.getReference().update(
+                                                        "estado", nuevoEstado,
+                                                        "fecha_actualizacion", FieldValue.serverTimestamp()
+                                                ).addOnSuccessListener(aVoid -> {
+                                                    Log.d("FIREBASE_ESTADO", "✅ Estado actualizado: " + nombreEspacio);
+                                                    if (callback != null) {
+                                                        callback.onSuccess("Espacio " + (nuevoEstado == 1 ? "activado" : "desactivado"));
+                                                    }
+                                                }).addOnFailureListener(e -> {
+                                                    if (callback != null) callback.onError(e.getMessage());
+                                                });
+                                            }
+                                        }).addOnFailureListener(e -> {
+                                            if (!encontrado[0] && callback != null) {
+                                                callback.onError(e.getMessage());
+                                            }
+                                        });
+                            }
+                        }).addOnFailureListener(e -> {
+                            if (!encontrado[0] && callback != null) {
+                                callback.onError("Error obteniendo pisos: " + e.getMessage());
+                            }
+                        });
+            }
+        }).addOnFailureListener(e -> {
+            if (callback != null) callback.onError("Error obteniendo lugares: " + e.getMessage());
+        });
+    }
+
+
+
     private void cargarLugarCompleto(String lugarId) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
