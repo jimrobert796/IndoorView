@@ -18,6 +18,8 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.net.ssl.HttpsURLConnection;
+
 // En tu DatabaseHelper o clase aparte
 public class ImageStorageManager {
 
@@ -27,14 +29,39 @@ public class ImageStorageManager {
 
     public ImageStorageManager(Context context) {
         this.context = context;
-        this.imageDirectory = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        inicializarDirectorio();
+    }
 
-        // Crear directorio si no existe
-        if (!imageDirectory.exists()) {
-            imageDirectory.mkdirs();
-            Log.d(TAG, "Directorio creado: " + imageDirectory.getAbsolutePath());
+    private void inicializarDirectorio() {
+        try {
+            // Intentar obtener directorio externo
+            File picturesDir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+
+            if (picturesDir != null && picturesDir.exists()) {
+                this.imageDirectory = picturesDir;
+                Log.d(TAG, "📁 Usando directorio externo: " + imageDirectory.getAbsolutePath());
+            } else {
+                // Fallback a directorio interno de la app
+                this.imageDirectory = new File(context.getFilesDir(), "images");
+                Log.w(TAG, "⚠️ Usando directorio interno fallback: " + imageDirectory.getAbsolutePath());
+            }
+
+            // Crear directorio si no existe
+            if (!imageDirectory.exists()) {
+                boolean creado = imageDirectory.mkdirs();
+                Log.d(TAG, "Directorio creado: " + creado);
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error inicializando directorio: " + e.getMessage());
+            // Último fallback
+            this.imageDirectory = new File(context.getCacheDir(), "images");
+            if (!imageDirectory.exists()) {
+                imageDirectory.mkdirs();
+            }
         }
     }
+
 
     /**
      * Extrae el nombre limpio de la imagen desde la URL de Cloudinary
@@ -78,48 +105,124 @@ public class ImageStorageManager {
     }
 
     /**
-     * Descargar imagen desde URL y guardar localmente
+     * Descargar imagen desde URL y guardar localmente  esto funciona bien
      */
-    public String descargarYGuardarImagen(String cloudinaryUrl) {
-        try {
-            String nombreArchivo = extraerNombreImagen(cloudinaryUrl);
+    public void descargarYGuardarImagen(String cloudinaryUrl,
+                                        ImageDownloadCallback callback) {
+        new Thread(() -> {
 
-            if (nombreArchivo == null || !esNombreValido(nombreArchivo)) {
-                Log.e(TAG, "Nombre inválido: " + nombreArchivo);
-                return null;
+            if (cloudinaryUrl == null || cloudinaryUrl.isEmpty()) {
+
+                if (callback != null) {
+                    callback.onError("URL vacía");
+                }
+                return;
             }
 
-            File imagenLocal = new File(imageDirectory, nombreArchivo);
+            try {
 
-            // Si ya existe, no descargar de nuevo
-            if (imagenLocal.exists()) {
-                Log.d(TAG, "Imagen ya existe localmente: " + imagenLocal.getAbsolutePath());
-                return obtenerRutaBD(imagenLocal);
+                Log.d(TAG, "════════════════════════════════════════════");
+                Log.d(TAG, "📥 INICIANDO DESCARGA");
+                Log.d(TAG, "URL: " + cloudinaryUrl);
+
+                String nombreArchivo = extraerNombreImagen(cloudinaryUrl);
+
+                if (nombreArchivo == null || !esNombreValido(nombreArchivo)) {
+
+                    if (callback != null) {
+                        callback.onError("Nombre inválido");
+                    }
+                    return;
+                }
+
+                File imagenLocal = new File(imageDirectory, nombreArchivo);
+
+                // Ya existe
+                if (imagenLocal.exists()) {
+
+                    Log.d(TAG, "✅ Ya existe localmente");
+
+                    if (callback != null) {
+                        callback.onSuccess(imagenLocal.getAbsolutePath());
+                    }
+                    return;
+                }
+
+                if (!imageDirectory.exists()) {
+                    imageDirectory.mkdirs();
+                }
+
+                URL url = new URL(cloudinaryUrl);
+
+                HttpsURLConnection connection =
+                        (HttpsURLConnection) url.openConnection();
+
+                connection.setRequestMethod("GET");
+                connection.setConnectTimeout(15000);
+                connection.setReadTimeout(15000);
+                connection.connect();
+
+                int responseCode = connection.getResponseCode();
+
+                Log.d(TAG, "HTTP CODE: " + responseCode);
+
+                if (responseCode != HttpsURLConnection.HTTP_OK) {
+
+                    if (callback != null) {
+                        callback.onError("HTTP Error: " + responseCode);
+                    }
+
+                    connection.disconnect();
+                    return;
+                }
+
+                InputStream inputStream = connection.getInputStream();
+
+                FileOutputStream outputStream =
+                        new FileOutputStream(imagenLocal);
+
+                byte[] buffer = new byte[4096];
+
+                int bytesRead;
+
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, bytesRead);
+                }
+
+                outputStream.flush();
+                outputStream.close();
+                inputStream.close();
+
+                connection.disconnect();
+
+                Log.d(TAG, "✅ Imagen descargada correctamente");
+                Log.d(TAG, "📁 Ruta: " + imagenLocal.getAbsolutePath());
+
+                if (callback != null) {
+                    callback.onSuccess(imagenLocal.getAbsolutePath());
+                }
+
+            } catch (Exception e) {
+
+                Log.e(TAG, "❌ ERROR DESCARGANDO");
+                Log.e(TAG, "Tipo: " + e.getClass().getName());
+                Log.e(TAG, "Mensaje: " + e.getMessage());
+
+                e.printStackTrace();
+
+                if (callback != null) {
+                    callback.onError(e.toString());
+                }
             }
 
-            // Descargar desde Cloudinary
-            InputStream inputStream = new URL(cloudinaryUrl).openStream();
-            FileOutputStream outputStream = new FileOutputStream(imagenLocal);
-
-            byte[] buffer = new byte[1024];
-            int bytesLeidos;
-            while ((bytesLeidos = inputStream.read(buffer)) != -1) {
-                outputStream.write(buffer, 0, bytesLeidos);
-            }
-
-            outputStream.close();
-            inputStream.close();
-
-            Log.d(TAG, "Imagen guardada: " + imagenLocal.getAbsolutePath());
-
-            return obtenerRutaBD(imagenLocal);
-
-        } catch (IOException e) {
-            Log.e(TAG, "Error descargando imagen: " + e.getMessage());
-            return null;
-        }
+        }).start();
     }
 
+    // En ImageStorageManager.java
+    public interface ImageDownloadCallback {
+        void onSuccess(String rutaLocal);
+        void onError(String error);
+    }
     /**
      * Guardar Bitmap directamente (para cámara)
      */

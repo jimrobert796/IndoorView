@@ -2,6 +2,7 @@ package com.example.indoorview;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -130,6 +131,8 @@ public class MapaFragment extends Fragment {
     private String imagenSubidaUrl = "";
     private boolean imagenSubidaExitosa = false;
 
+    private Dialog loadingDialog; // Para la pantalla de carga
+
 
     @Nullable
     @Override
@@ -177,6 +180,28 @@ public class MapaFragment extends Fragment {
         // Inicaliza el mapa e eventos
         inicializarLaunchers();
 
+
+        if (detectarInternet.hayConexionInternet()){
+
+
+            loadingDialog = new Dialog(getContext());
+            View loadingView = LayoutInflater.from(getContext()).inflate(R.layout.progress_loading, null);
+            loadingDialog.setContentView(loadingView);  // ← ESTO FALTA
+            loadingDialog.setCancelable(false);
+
+            // Mostrar diálogo de carga
+            loadingDialog.show();
+
+            // Cambiar mensaje
+            TextView tvMessage = loadingView.findViewById(R.id.tv_loading_message);
+            tvMessage.setText("Sincronizando datos...");
+
+            // SINCRONIZACIÓN AUTOMÁTICA AL INICIAR
+            new android.os.Handler().postDelayed(() -> {
+                sincronizarDatos();
+            }, 1500); // Esperar 1.5s a que cargue la UI
+        }
+
         mapManager.verificarConexionBD();
         searchManager = new SearchManager(db);
         spinnerPisos.setVisibility(View.GONE);
@@ -196,82 +221,53 @@ public class MapaFragment extends Fragment {
         return view;
     }
 
-    /**
-     * Cargar datos desde CouchDB
-     * Llamar esta función cuando quieras sincronizar
-     */
-    public void cargarDatosDelServidor() {
 
-        // Verificar conexión a internet
-        DetectarInternet detectorInternet = new DetectarInternet(getContext());
-        if (!detectorInternet.hayConexionInternet()) {
-            Toast.makeText(getContext(), "No hay conexión a internet", Toast.LENGTH_LONG).show();
+    /**
+     * Sincronizar datos desde Firebase a BD local
+     */
+    private void sincronizarDatos() {
+        Log.d("SYNC_INICIO", "════════════════════════════════════════════");
+        Log.d("SYNC_INICIO", "🔄 INICIANDO SINCRONIZACIÓN");
+        Log.d("SYNC_INICIO", "════════════════════════════════════════════");
+
+        // Verificar conexión
+        DetectarInternet detector = new DetectarInternet(getContext());
+        if (!detector.hayConexionInternet()) {
+            Log.w("SYNC_INICIO", "⚠️ Sin conexión a internet");;
             return;
         }
 
-        Log.d("SYNC", "════════════════════════════════════════════");
-        Log.d("SYNC", "INICIANDO SINCRONIZACIÓN CON COUCHDB");
-        Log.d("SYNC", "════════════════════════════════════════════");
+        // Crear SyncManager
+        SyncManager syncManager = new SyncManager(getContext(), db, firebaseHelper);
 
-        // Crear el AsyncTask
-        ObtenerProcesarDatos tarea = new ObtenerProcesarDatos(
-                getContext(),
-                db,
-                Utilidades.url_consulta
-        );
-
-        // Configurar listener para notificaciones
-        tarea.setOnDatosCargatosListener(new ObtenerProcesarDatos.OnDatosCargatosListener() {
+        syncManager.setSyncListener(new SyncManager.SyncListener() {
             @Override
-            public void onDatosEnCarga() {
-                Log.d("SYNC", "📡 Conectando con servidor...");
-                mostrarProgressDialog("Cargando datos...");
+            public void onProgress(String message, int progress, int total) {
+                Log.d("SYNC_PROGRESO", message + " (" + progress + "/" + total + ")");
             }
 
             @Override
-            public void onDatosCargados(boolean exitoso, String mensaje) {
-                Log.d("SYNC", "════════════════════════════════════════════");
+            public void onComplete(String message) {
+                Log.d("SYNC_COMPLETO", "✅ " + message);
+                Toast.makeText(getContext(), "✅ Sincronización completa", Toast.LENGTH_SHORT).show();
 
-                if (exitoso) {
-                    Log.d("SYNC", "✅ SINCRONIZACIÓN EXITOSA");
-                    Log.d("SYNC", mensaje);
-
-                    /*
-                    // Mostrar cantidad de datos cargados
-                    int cantidadLugares = db.obtenerCantidadLugares();
-                    int cantidadEspacios = db.obtenerCantidadEspacios();
-
-                    Log.d("SYNC", "  📍 Lugares en BD: " + cantidadLugares);
-                    Log.d("SYNC", "  🚪 Espacios en BD: " + cantidadEspacios);
-
-                    Toast.makeText(getContext(),
-                            "✅ Datos cargados\n" +
-                                    "Lugares: " + cantidadLugares + "\n" +
-                                    "Espacios: " + cantidadEspacios,
-                            Toast.LENGTH_LONG).show();
-
-                     */
-
-                    // IMPORTANTE: Recargar polígonos en el mapa
+                // Recargar mapa con datos sincronizados
+                new android.os.Handler().postDelayed(() -> {
+                    loadingDialog.dismiss();
                     reInicarMapa();
+                }, 500);
+            }
 
-                } else {
-                    Log.d("SYNC", "ERROR EN SINCRONIZACIÓN");
-                    Log.d("SYNC", "Mensaje: " + mensaje);
-
-                    Toast.makeText(getContext(),
-                            "Error cargando datos: " + mensaje,
-                            Toast.LENGTH_LONG).show();
-                }
-
-                Log.d("SYNC", "════════════════════════════════════════════");
-                cerrarProgressDialog();
+            @Override
+            public void onError(String error) {
+                Log.e("SYNC_ERROR", "❌ " + error);
             }
         });
 
-        // Ejecutar en background
-        tarea.execute();
+        // Iniciar sincronización
+        syncManager.syncAllMapWithClean();
     }
+
 
     /**
      * Mostrar un progress dialog (opcional)

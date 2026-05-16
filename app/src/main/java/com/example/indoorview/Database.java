@@ -1345,4 +1345,25 @@ public class Database extends SQLiteOpenHelper {
         return count;
     }
 
+
+    public void limpiarTablasMapa() {
+        SQLiteDatabase db = getWritableDatabase();
+        try {
+            db.beginTransaction();
+
+            db.delete("geometria", null, null);
+            db.delete("espacio", null, null);
+            db.delete("pisos", null, null);
+            db.delete("lugar", null, null);
+
+            db.setTransactionSuccessful();
+            Log.d("DB_CLEAN", "Todas las tablas limpiadas correctamente");
+        } catch (Exception e) {
+            Log.e("DB_CLEAN", "Error limpiando tablas: " + e.getMessage());
+        } finally {
+            db.endTransaction();
+            db.close();
+        }
+    }
+
 }
