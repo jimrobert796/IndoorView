@@ -127,6 +127,7 @@ public class MapManager {
 
     private FirebaseHelper firebaseHelper;
     private CloudinaryHelper cloudinaryHelper;
+    private DetectarInternet detectarInternet;
 
     // ════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -149,6 +150,7 @@ public class MapManager {
         // Encargadas de lo que seria el modificar en linea
         firebaseHelper = new FirebaseHelper();
         cloudinaryHelper = new CloudinaryHelper();
+        detectarInternet = new DetectarInternet(context);
 
         // Crear managers de anotaciones
         AnnotationPlugin plugin = mapView.getPlugin(Plugin.Mapbox.MAPBOX_ANNOTATION_PLUGIN_ID);
@@ -2564,26 +2566,34 @@ public class MapManager {
                         mostrarEspaciosPorPiso(data.get("id_lugar").getAsInt(), data.get("id_piso").getAsInt());
 
 
+                        // DETECTAMOS INTERNET PARA PODER HACER LOS CAMBIOS
+                        if (detectarInternet.hayConexionInternet()){
 
-                        subirImagenesSiCambiaron(urlsImagenesOriginal, urlsImagenes,
-                                new CloudinaryUploadCallback() {
-                                    @Override
-                                    public void onCompletado(String urlsFinales) {
-                                        try {
-                                            actualizarEspacioFirebase(nombreOriginal, nuevoNombre, nuevaDesc, urlsFinales, colorSeleccionado);
+                            // Intentar subir las imagenes como en tal caso e dar paso a lo que seria editar los datos
+                            subirImagenesSiCambiaron(urlsImagenesOriginal, urlsImagenes,
+                                    new CloudinaryUploadCallback() {
+                                        @Override
+                                        public void onCompletado(String urlsFinales) {
+                                            try {
+                                                actualizarEspacioFirebase(nombreOriginal, nuevoNombre, nuevaDesc, urlsFinales, colorSeleccionado);
 
 
-                                        } catch (Exception e) {
-                                            throw new RuntimeException(e);
+                                            } catch (Exception e) {
+                                                throw new RuntimeException(e);
+                                            }
                                         }
-                                    }
 
-                                    @Override
-                                    public void onError(String error) {
-                                        Log.e("ERROR", "Fallo al subir imágenes: " + error);
-                                        Toast.makeText(context, "Error al subir imágenes", Toast.LENGTH_SHORT).show();
-                                    }
-                        });
+                                        @Override
+                                        public void onError(String error) {
+                                            Log.e("ERROR", "Fallo al subir imágenes: " + error);
+                                            Toast.makeText(context, "Error al subir imágenes", Toast.LENGTH_SHORT).show();
+                                        }
+                                    });
+                        }else {
+                            Toast.makeText(context, "Sin conexión a internet", Toast.LENGTH_SHORT).show();
+                        }
+
+
                         /*
                         try {
                             actualizarEspacioFirebase(nombreOriginal, nuevoNombre, nuevaDesc, urlsImagenes);
@@ -2603,23 +2613,28 @@ public class MapManager {
                         );
                         Toast.makeText(context, "Lugar actualizado", Toast.LENGTH_SHORT).show();
 
-                        subirImagenesSiCambiaron(urlsImagenesOriginal, urlsImagenes,
-                                new CloudinaryUploadCallback() {
-                                    @Override
-                                    public void onCompletado(String urlsFinales) {
-                                        try {
-                                            actualizarLugarFirebase(nombreOriginal, nuevoNombre, nuevaDesc, urlsFinales, colorSeleccionado);
-                                        } catch (Exception e) {
-                                            throw new RuntimeException(e);
+                        // DETECTAMOS INTERNET PARA PODER HACER LOS CAMBIOS
+                        if (detectarInternet.hayConexionInternet()){
+                            subirImagenesSiCambiaron(urlsImagenesOriginal, urlsImagenes,
+                                    new CloudinaryUploadCallback() {
+                                        @Override
+                                        public void onCompletado(String urlsFinales) {
+                                            try {
+                                                actualizarLugarFirebase(nombreOriginal, nuevoNombre, nuevaDesc, urlsFinales, colorSeleccionado);
+                                            } catch (Exception e) {
+                                                throw new RuntimeException(e);
+                                            }
                                         }
-                                    }
 
-                                    @Override
-                                    public void onError(String error) {
-                                        Log.e("ERROR", "Fallo al subir imágenes: " + error);
-                                        Toast.makeText(context, "Error al subir imágenes", Toast.LENGTH_SHORT).show();
-                                    }
-                                });
+                                        @Override
+                                        public void onError(String error) {
+                                            Log.e("ERROR", "Fallo al subir imágenes: " + error);
+                                            Toast.makeText(context, "Error al subir imágenes", Toast.LENGTH_SHORT).show();
+                                        }
+                                    });
+                        }else {
+                            Toast.makeText(context, "Sin conexión a internet", Toast.LENGTH_SHORT).show();
+                        }
                         limpiarTodo();
                         cargarPoligonosLugar();
                     }

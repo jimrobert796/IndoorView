@@ -4,6 +4,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
@@ -13,6 +14,12 @@ public class FirebaseHelper {
 
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
     private CloudinaryHelper cloudinary = new CloudinaryHelper();
+
+    // En FirebaseHelper.java - Nuevo callback para listas
+    public interface FirebaseListCallback {
+        void onSuccess(List<DocumentSnapshot> documentos);
+        void onError(String error);
+    }
 
     public interface FirebaseCallback {
         void onSuccess(String mensaje);
@@ -580,6 +587,90 @@ public class FirebaseHelper {
         }).addOnFailureListener(e -> {
             if (callback != null) callback.onError("Error obteniendo lugares: " + e.getMessage());
         });
+    }
+
+    // Obtencion de datos en Firebase
+
+    // En FirebaseHelper.java
+
+    // Método que devuelve lista de lugares
+    public void obtenerTodosLugares(FirebaseListCallback callback) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        db.collection("lugares").get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    List<DocumentSnapshot> lugares = new ArrayList<>();
+                    for (DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
+                        lugares.add(doc);
+                    }
+                    callback.onSuccess(lugares);  // ✅ Usa FirebaseListCallback
+                })
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    // Método que devuelve lista de pisos
+    public void obtenerPisosDeLugar(String lugarId, FirebaseListCallback callback) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        db.collection("lugares")
+                .document(lugarId)
+                .collection("pisos")
+                .get()
+                .addOnSuccessListener(query -> {
+                    List<DocumentSnapshot> pisos = new ArrayList<>();
+                    for (DocumentSnapshot doc : query.getDocuments()) {
+                        pisos.add(doc);
+                    }
+                    callback.onSuccess(pisos);
+                })
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    // Método que devuelve lista de espacios
+    public void obtenerEspaciosDePiso(String lugarId, String pisoId, FirebaseListCallback callback) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        db.collection("lugares")
+                .document(lugarId)
+                .collection("pisos")
+                .document(pisoId)
+                .collection("espacios")
+                .get()
+                .addOnSuccessListener(query -> {
+                    List<DocumentSnapshot> espacios = new ArrayList<>();
+                    for (DocumentSnapshot doc : query.getDocuments()) {
+                        espacios.add(doc);
+                    }
+                    callback.onSuccess(espacios);
+                })
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    /**
+     * Obtener geometrías de un espacio específico
+     */
+    public void obtenerGeometriasDeEspacio(String lugarId,
+                                           String pisoId,
+                                           String espacioId,
+                                           FirebaseListCallback callback) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        db.collection("lugares")
+                .document(lugarId)
+                .collection("pisos")
+                .document(pisoId)
+                .collection("espacios")
+                .document(espacioId)
+                .collection("geometria")
+                .get()
+                .addOnSuccessListener(query -> {
+                    List<DocumentSnapshot> geometrias = new ArrayList<>();
+                    for (DocumentSnapshot doc : query.getDocuments()) {
+                        geometrias.add(doc);
+                    }
+                    callback.onSuccess(geometrias);
+                })
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
 

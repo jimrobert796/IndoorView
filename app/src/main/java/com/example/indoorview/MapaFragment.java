@@ -77,6 +77,8 @@ public class MapaFragment extends Fragment {
     private SearchManager searchManager;
     private FirebaseHelper firebaseHelper;
 
+    private DetectarInternet detectarInternet;
+
     // UI Elements
     private Button btnLugar, btnEspacios, btnCerrar, btnDeshacer, btnFinalizar, btnHabilitar;
     private TextView tvModo;
@@ -297,7 +299,9 @@ public class MapaFragment extends Fragment {
     private void inicializarLaunchers() {
 
         cloudinaryHelper = new CloudinaryHelper();
-        firebaseHelper = new FirebaseHelper();  // ✅ Agregar esto
+        firebaseHelper = new FirebaseHelper();
+        detectarInternet = new DetectarInternet(getContext());
+
 
 
 
@@ -360,35 +364,42 @@ public class MapaFragment extends Fragment {
 
                 Log.d("FLUJO_CRUD", "✓ Lugar guardado en BD: " + nombre + " (ID: " + idLugar + ")");
 
-                //SUBIR A CLOUDINARY SI HAY IMÁGENES
-               try {
-                   if (urlImagenes == null || urlImagenes.isEmpty()) {
-                       Log.d("CLOUDINARY", "No hay imagenes que subir");
-                   }else{
-                       Log.d("CLOUDINARY", "Se encontraron imaganes a subir");
-                   }
 
-                    subirImagenesACloudinary(urlImagenes, new CloudinaryUploadCallback() {
-                        @Override
-                        public void onCompletado(String urlsCloudinary) {
-                            Log.d("CLOUDINARY", "Imágenes subidas exitosamente: " + urlsCloudinary);
+                // DETECTAMOS SI HAY CONEXION A INTERNET PARA PROSEGUIR
+                if (detectarInternet.hayConexionInternet()) {
 
-                            // Guardar en firebase y continuar
-                            guardarLugarFirebase(nombre, descripcion, urlsCloudinary, color, geojson);
-
-                            // Intentar guardar el piso automaticamente en firebase
-                            guardarPisoDeffaultFirebase(nombre);
-
+                    //SUBIR A CLOUDINARY SI HAY IMÁGENES
+                    try {
+                        if (urlImagenes == null || urlImagenes.isEmpty()) {
+                            Log.d("CLOUDINARY", "No hay imagenes que subir");
+                        }else{
+                            Log.d("CLOUDINARY", "Se encontraron imaganes a subir");
                         }
 
-                        @Override
-                        public void onError(String error) {
-                            Log.e("CLOUDINARY", "Error: " + error);
-                        }
-                    });
-                } catch (Exception e) {
-                   Log.e("CLOUDINARY", "Error: " + e.getMessage());
-               }
+                        subirImagenesACloudinary(urlImagenes, new CloudinaryUploadCallback() {
+                            @Override
+                            public void onCompletado(String urlsCloudinary) {
+                                Log.d("CLOUDINARY", "Imágenes subidas exitosamente: " + urlsCloudinary);
+
+                                // Guardar en firebase y continuar
+                                guardarLugarFirebase(nombre, descripcion, urlsCloudinary, color, geojson);
+
+                                // Intentar guardar el piso automaticamente en firebase
+                                guardarPisoDeffaultFirebase(nombre);
+
+                            }
+
+                            @Override
+                            public void onError(String error) {
+                                Log.e("CLOUDINARY", "Error: " + error);
+                            }
+                        });
+                    } catch (Exception e) {
+                        Log.e("CLOUDINARY", "Error: " + e.getMessage());
+                    }
+                }else {
+                    Toast.makeText(getContext(), "Sin conexión a internet", Toast.LENGTH_SHORT).show();
+                }
             }
 
             private void guardarLugarFirebase(String nombre, String descripcion, String urlImagenes,
@@ -673,33 +684,41 @@ public class MapaFragment extends Fragment {
                     }
 
 
-                    // Verificar toca subir la el espacio con su geometria sabiendo su id verdad
-                    try {
-                        if (urlImagenes == null || urlImagenes.isEmpty()) {
-                            Log.d("CLOUDINARY", "No hay imagenes que subir");
-                        }else{
-                            Log.d("CLOUDINARY", "Se encontraron imaganes a subir");
+                    // DETECTAMOS SI HAY CONEXION A INTERNET PARA PROSEGUIR
+                    if (detectarInternet.hayConexionInternet()) {
+
+                        // Verificar toca subir la el espacio con su geometria sabiendo su id verdad
+                        try {
+                            if (urlImagenes == null || urlImagenes.isEmpty()) {
+                                Log.d("CLOUDINARY", "No hay imagenes que subir");
+                            }else{
+                                Log.d("CLOUDINARY", "Se encontraron imaganes a subir");
+                            }
+                            subirImagenesEspacioACloudinary(urlImagenes, nombre, new CloudinaryUploadCallback() {
+                                @Override
+                                public void onCompletado(String urlsCloudinary) {
+                                    Log.d("CLOUDINARY", "Imágenes de espacio subidas: " + urlsCloudinary);
+
+                                    // Guardar en Firebase con URLs de Cloudinary
+                                    guardarEspacioEnFirebase(getNombLugar(), getNombPiso(), getNombEspacio(), descripcion, urlsCloudinary, color, verticesJson);
+                                }
+
+                                @Override
+                                public void onError(String error) {
+                                    // Servidor o internet inexistente
+                                    Log.e("CLOUDINARY", "❌ Error subiendo imágenes: " + error);
+
+                                }
+                            });
+                        } catch (Exception e) {
+                            // Sin imágenes o ya son de Cloudinary
+                            Log.d("CLOUDINARY", "⚠️ Error: "+ e.getMessage());
                         }
-                        subirImagenesEspacioACloudinary(urlImagenes, nombre, new CloudinaryUploadCallback() {
-                            @Override
-                            public void onCompletado(String urlsCloudinary) {
-                                Log.d("CLOUDINARY", "Imágenes de espacio subidas: " + urlsCloudinary);
-
-                                // Guardar en Firebase con URLs de Cloudinary
-                                guardarEspacioEnFirebase(getNombLugar(), getNombPiso(), getNombEspacio(), descripcion, urlsCloudinary, color, verticesJson);
-                            }
-
-                            @Override
-                            public void onError(String error) {
-                                // Servidor o internet inexistente
-                                Log.e("CLOUDINARY", "❌ Error subiendo imágenes: " + error);
-
-                            }
-                        });
-                    } catch (Exception e) {
-                        // Sin imágenes o ya son de Cloudinary
-                        Log.d("CLOUDINARY", "⚠️ Error: "+ e.getMessage());
+                    }else {
+                        Toast.makeText(getContext(), "Sin conexión a internet", Toast.LENGTH_SHORT).show();
                     }
+
+
 
                     Log.d("FLUJO_CRUD", "✓ Geometría #" + geometriaId + " | Color: " + color);
                     Log.d("FLUJO_CRUD", "Id espacio: "+ espac);
