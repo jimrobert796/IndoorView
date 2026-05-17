@@ -21,6 +21,9 @@ import com.mapbox.maps.CameraOptions;
 import com.mapbox.maps.MapView;
 import com.mapbox.maps.MapboxMap;
 import com.mapbox.maps.Style;
+import com.mapbox.maps.plugin.Plugin;
+import com.mapbox.maps.plugin.animation.CameraAnimationsPlugin;
+import com.mapbox.maps.plugin.animation.MapAnimationOptions;
 import com.mapbox.maps.plugin.gestures.OnMapClickListener;
 import com.mapbox.maps.plugin.gestures.GesturesPlugin;
 import com.mapbox.maps.plugin.gestures.GesturesUtils;
@@ -158,12 +161,34 @@ public class MapaEventoActivity extends AppCompatActivity {
             Point punto = Point.fromLngLat(Double.parseDouble(longitudEvento), Double.parseDouble(latitudEvento));
             mapManager.agregarPinEvento(punto, nombreEvento, datosEvento);
 
+            redireccionPin(punto);
+
             Log.e("EVENTO_PRUEBA", "coordenadas: " + longitudEvento+", "+ latitudEvento);
 
         } catch (NumberFormatException e) {
             Log.e("EVENTO", "Error al parsear coordenadas: " + e.getMessage());
             Toast.makeText(this, "Error al cargar la ubicación del evento", Toast.LENGTH_SHORT).show();
         }
+    }
+
+
+    /**
+     * Centrar la cámara en el pin del evento
+     */
+    private void redireccionPin(Point punto) {
+        CameraAnimationsPlugin animationPlugin =
+                mapView.getPlugin(Plugin.MAPBOX_CAMERA_PLUGIN_ID);
+
+        animationPlugin.easeTo(
+                new CameraOptions.Builder()
+                        .center(punto)
+                        .zoom(19.8)
+                        .build(),
+                new MapAnimationOptions.Builder()
+                        .duration(1200L)
+                        .build(),
+                null
+        );
     }
 
     /**
