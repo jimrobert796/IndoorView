@@ -59,9 +59,13 @@ public class AgregarEventoActivity extends AppCompatActivity {
     private Database bdEventos;
     private String latitud = "0.0";
     private String longitud = "0.0";
+    private String tituloOriginal;
 
     // ===== LAUNCHER PARA MAPA EN MODO SELECCIÓN
     private ActivityResultLauncher<Intent> mapaLauncher;
+
+    private FirebaseHelper firebaseHelper;
+    private DetectarInternet detectarInternet;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,6 +74,10 @@ public class AgregarEventoActivity extends AppCompatActivity {
 
         // Inicializar BD
         bdEventos = new Database(this);
+
+        firebaseHelper = new FirebaseHelper();
+
+        detectarInternet = new DetectarInternet(this);
 
         // Inicializar vistas
         initViews();
@@ -168,6 +176,7 @@ public class AgregarEventoActivity extends AppCompatActivity {
 
                 // Cargar datos en los campos
                 etTituloEvento.setText(extras.getString("nombre", ""));
+                tituloOriginal = etTituloEvento.getText().toString().trim();
                 etDescripcion.setText(extras.getString("descripcion", ""));
 
                 // Cargar fechas y horas separadas
@@ -360,6 +369,24 @@ public class AgregarEventoActivity extends AppCompatActivity {
                     @Override
                     public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
                         String fecha = String.format("%02d/%02d/%d", dayOfMonth, month + 1, year);
+
+                        // ✅ Validar que no sea fecha pasada
+                        Calendar fechaSeleccionada = Calendar.getInstance();
+                        fechaSeleccionada.set(year, month, dayOfMonth);
+
+                        Calendar hoy = Calendar.getInstance();
+                        hoy.set(Calendar.HOUR_OF_DAY, 0);
+                        hoy.set(Calendar.MINUTE, 0);
+                        hoy.set(Calendar.SECOND, 0);
+                        hoy.set(Calendar.MILLISECOND, 0);
+
+                        if (fechaSeleccionada.before(hoy)) {
+                            Toast.makeText(AgregarEventoActivity.this,
+                                    "❌ No puedes seleccionar fechas anteriores a hoy",
+                                    Toast.LENGTH_LONG).show();
+                            return;
+                        }
+
                         if (isFechaInicio) {
                             etFechaInicio.setText(fecha);
                             calendarFechaInicio.set(year, month, dayOfMonth);
@@ -369,6 +396,13 @@ public class AgregarEventoActivity extends AppCompatActivity {
                                 etFechaFin.setText(fecha);
                             }
                         } else {
+                            // ✅ Validar que fecha fin no sea menor que fecha inicio
+                            if (fechaSeleccionada.before(calendarFechaInicio)) {
+                                Toast.makeText(AgregarEventoActivity.this,
+                                        "❌ La fecha de fin no puede ser anterior a la fecha de inicio",
+                                        Toast.LENGTH_LONG).show();
+                                return;
+                            }
                             etFechaFin.setText(fecha);
                             calendarFechaFin.set(year, month, dayOfMonth);
                         }
@@ -376,6 +410,9 @@ public class AgregarEventoActivity extends AppCompatActivity {
                 },
                 year, month, day
         );
+
+        // ✅ Limitar el DatePicker para que no muestre fechas pasadas
+        datePickerDialog.getDatePicker().setMinDate(System.currentTimeMillis() - 1000);
 
         datePickerDialog.show();
     }
@@ -459,6 +496,16 @@ public class AgregarEventoActivity extends AppCompatActivity {
             return;
         }
 
+        // VALIDACIÓN DE UBICACIÓN
+        if (latitud == null || longitud == null ||
+                latitud.equals("0.0") || longitud.equals("0.0") ||
+                latitud.isEmpty() || longitud.isEmpty()) {
+
+            btnAgregarPunto.setError("El punto es requerido");
+            btnAgregarPunto.requestFocus();
+            return;
+        }
+
         // ===== GUARDAR FECHA Y HORA SEPARADAS =====
         if (esEdicion) {
             // EDITAR evento existente
@@ -489,6 +536,28 @@ public class AgregarEventoActivity extends AppCompatActivity {
             Log.d("GUARDAR_EVENTO", "═══════════════════════════════════════");
 
             int filasActualizadas = bdEventos.updateEvento(evento);
+
+
+            // Mandar a firebase su hay conexion a internet
+            if (detectarInternet.hayConexionInternet()){
+                // Guardar en Firebase
+                firebaseHelper.modificarEventoPorNombre(tituloOriginal, evento, new FirebaseHelper.FirebaseCallback() {
+                    @Override
+                    public void onSuccess(String mensaje) {
+                        Log.d("EVENTO", "✅ " + mensaje);
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        Log.e("EVENTO", "❌ " + error);
+                    }
+                });
+            }else {
+                // Esperar para poder mandar los datos con conexion
+                Toast.makeText(this, "Sin conexion a internet", Toast.LENGTH_LONG).show();
+            }
+
+
             if (filasActualizadas > 0) {
                 Toast.makeText(this, "✓ Evento actualizado correctamente", Toast.LENGTH_LONG).show();
                 finish();
@@ -511,6 +580,25 @@ public class AgregarEventoActivity extends AppCompatActivity {
             );
 
             long id = bdEventos.insertarEvento(evento);
+
+            if (detectarInternet.hayConexionInternet()){
+                // Guardar en Firebase
+                firebaseHelper.guardarEventoEnFirestore(evento, new FirebaseHelper.FirebaseCallback() {
+                    @Override
+                    public void onSuccess(String mensaje) {
+                        Log.d("EVENTO", "✅ " + mensaje);
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        Log.e("EVENTO", "❌ " + error);
+                    }
+                });
+            }else {
+                Toast.makeText(this, "Sin conexion a internet", Toast.LENGTH_LONG).show();
+            }
+
+
             if (id > 0) {
                 Toast.makeText(this, "✓ Evento creado correctamente", Toast.LENGTH_LONG).show();
                 finish();

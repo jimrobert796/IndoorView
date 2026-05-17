@@ -1,10 +1,15 @@
 package com.example.indoorview;
+import com.example.indoorview.models.Eventos;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
@@ -1157,6 +1162,331 @@ public class FirebaseHelper {
                     callback.onError("Error al eliminar: " + e.getMessage());
                 });
     }
+
+
+    /**
+     * Guardar un evento en Firestore
+     */
+    // Dejar que Firebase genere el ID automáticamente
+    public void guardarEventoEnFirestore(Eventos evento, FirebaseCallback callback) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        // Convertir fecha de dd/MM/yyyy a yyyy-MM-dd para Firebase
+        String fechaInicioISO = convertirFechaISO(evento.getFecha_inicio());
+        String fechaFinISO = convertirFechaISO(evento.getFecha_fin());
+
+        Map<String, Object> eventoMap = new HashMap<>();
+        eventoMap.put("nombre", evento.getNombre());
+        eventoMap.put("descripcion", evento.getDescripcion());
+        eventoMap.put("longitud", evento.getLongitud());
+        eventoMap.put("latitud", evento.getLatitud());
+        eventoMap.put("fecha_inicio", fechaInicioISO);  // Guardar en ISO
+        eventoMap.put("fecha_inicio_original", evento.getFecha_inicio()); // Guardar original para mostrar
+        eventoMap.put("hora_inicio", evento.getHora_inicio());
+        eventoMap.put("fecha_fin", fechaFinISO);
+        eventoMap.put("fecha_fin_original", evento.getFecha_fin());
+        eventoMap.put("hora_fin", evento.getHora_fin());
+        eventoMap.put("estado", evento.getEstado());
+        eventoMap.put("fecha_creacion", FieldValue.serverTimestamp());
+
+        String id_firebase = Utilidades.generarIdEvento(evento.getNombre());
+
+        db.collection("eventos").document(id_firebase).set(eventoMap)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d("FIREBASE_EVENTO", "✅ Evento guardado con ID: " + id_firebase);
+                    if (callback != null) {
+                        callback.onSuccess("Evento guardado con ID: " + id_firebase);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    if (callback != null) callback.onError(e.getMessage());
+                });
+    }
+
+    // Método auxiliar para convertir fecha
+    private String convertirFechaISO(String fechaDMY) {
+        try {
+            SimpleDateFormat sdfDMY = new SimpleDateFormat("dd/MM/yyyy");
+            SimpleDateFormat sdfISO = new SimpleDateFormat("yyyy-MM-dd");
+            Date date = sdfDMY.parse(fechaDMY);
+            return sdfISO.format(date);
+        } catch (ParseException e) {
+            return fechaDMY;
+        }
+    }
+
+    /**
+     * Modificar un evento existente en Firestore buscándolo por nombre
+     * @param nombreActual Nombre actual del evento (para buscarlo)
+     * @param evento Evento con los datos actualizados
+     * @param callback Callback para resultado
+     */
+    public void modificarEventoPorNombre(String nombreActual, Eventos evento, FirebaseCallback callback) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+
+        // Convertir fecha de dd/MM/yyyy a yyyy-MM-dd para Firebase
+        String fechaInicioISO = convertirFechaISO(evento.getFecha_inicio());
+        String fechaFinISO = convertirFechaISO(evento.getFecha_fin());
+
+
+        // PRIMERO: Buscar el evento por su nombre
+        db.collection("eventos")
+                .whereEqualTo("nombre", nombreActual)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    if (queryDocumentSnapshots.isEmpty()) {
+                        Log.e("FIREBASE_EVENTO", "❌ No se encontró el evento: " + nombreActual);
+                        if (callback != null) {
+                            callback.onError("No se encontró el evento: " + nombreActual);
+                        }
+                        return;
+                    }
+
+                    // Obtener el ID real del documento
+                    String idFirebase = queryDocumentSnapshots.getDocuments().get(0).getId();
+                    Log.d("FIREBASE_EVENTO", "📌 Evento encontrado - ID: " + idFirebase);
+
+                    // SEGUNDO: Actualizar el documento
+                    Map<String, Object> updates = new HashMap<>();
+                    updates.put("nombre", evento.getNombre());
+                    updates.put("descripcion", evento.getDescripcion());
+                    updates.put("longitud", evento.getLongitud());
+                    updates.put("latitud", evento.getLatitud());
+                    updates.put("fecha_inicio", fechaInicioISO);  // Guardar en ISO
+                    updates.put("fecha_inicio_original", evento.getFecha_inicio()); // Guardar original para mostrar
+                    updates.put("hora_inicio", evento.getHora_inicio());
+                    updates.put("fecha_fin", fechaFinISO);
+                    updates.put("fecha_fin_original", evento.getFecha_fin());
+                    updates.put("hora_fin", evento.getHora_fin());
+                    updates.put("estado", evento.getEstado());
+                    updates.put("fecha_modificacion", FieldValue.serverTimestamp());
+
+                    db.collection("eventos").document(idFirebase).update(updates)
+                            .addOnSuccessListener(aVoid -> {
+                                Log.d("FIREBASE_EVENTO", "✅ Evento modificado: " + evento.getNombre());
+                                if (callback != null) {
+                                    callback.onSuccess("Evento modificado: " + evento.getNombre());
+                                }
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e("FIREBASE_EVENTO", "❌ Error: " + e.getMessage());
+                                if (callback != null) callback.onError(e.getMessage());
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("FIREBASE_EVENTO", "❌ Error al buscar: " + e.getMessage());
+                    if (callback != null) callback.onError("Error al buscar evento: " + e.getMessage());
+                });
+    }
+
+    /**
+     * Soft delete de evento buscándolo por nombre
+     * @param nombreEvento Nombre del evento a eliminar
+     * @param callback Callback para resultado
+     */
+    /**
+     * Eliminar permanentemente un evento de Firestore (borrado físico)
+     * @param nombreEvento Nombre del evento a eliminar
+     * @param callback Callback para resultado
+     */
+    public void eliminarEventoPermanentePorNombre(String nombreEvento, FirebaseCallback callback) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        // Buscar el evento por su nombre
+        db.collection("eventos")
+                .whereEqualTo("nombre", nombreEvento)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    if (queryDocumentSnapshots.isEmpty()) {
+                        Log.e("FIREBASE_EVENTO", "❌ No se encontró el evento: " + nombreEvento);
+                        if (callback != null) {
+                            callback.onError("No se encontró el evento: " + nombreEvento);
+                        }
+                        return;
+                    }
+
+                    // Obtener el ID del documento
+                    String idFirebase = queryDocumentSnapshots.getDocuments().get(0).getId();
+                    Log.d("FIREBASE_EVENTO", "📌 Evento encontrado - ID: " + idFirebase);
+                    Log.d("FIREBASE_EVENTO", "  Nombre: " + nombreEvento);
+
+                    // ELIMINAR PERMANENTEMENTE
+                    db.collection("eventos").document(idFirebase).delete()
+                            .addOnSuccessListener(aVoid -> {
+                                Log.d("FIREBASE_EVENTO", "✅ Evento ELIMINADO PERMANENTEMENTE: " + nombreEvento);
+                                if (callback != null) {
+                                    callback.onSuccess("Evento eliminado permanentemente: " + nombreEvento);
+                                }
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e("FIREBASE_EVENTO", "❌ Error eliminando: " + e.getMessage());
+                                if (callback != null) callback.onError(e.getMessage());
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("FIREBASE_EVENTO", "❌ Error al buscar: " + e.getMessage());
+                    if (callback != null) callback.onError("Error al buscar evento: " + e.getMessage());
+                });
+    }
+
+
+    // LO ARREGLAREMOS MAÑANA MISMO POR QUE NECESITAMOS SINCRONIZAR CORRECTAMENTE POR FECHA
+
+    /**
+     * Obtener eventos desde Firestore con fecha de inicio >= fecha actual
+     * @param callback Callback con la lista de eventos
+     */
+    public void obtenerEventosFuturos(FirebaseListCallback callback) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        String fechaActualISO = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
+
+        // PASO 1: Filtrar solo por estado (usa índice existente)
+        db.collection("eventos")
+                .whereEqualTo("estado", 1)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    List<DocumentSnapshot> eventosActivos = new ArrayList<>();
+
+                    for (DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
+                        String fechaFin = doc.getString("fecha_fin");
+                        String fechaInicio = doc.getString("fecha_inicio");
+
+                        // ✅ Condición CORREGIDA: evento activo si fecha_fin >= fecha actual
+                        // No importa si empezó antes, mientras no haya terminado
+                        if (fechaFin != null && fechaFin.compareTo(fechaActualISO) >= 0) {
+                            eventosActivos.add(doc);
+                            Log.d("FIREBASE_EVENTO", "  📌 Activo: " + doc.getString("nombre") +
+                                    " (fecha_fin: " + fechaFin + ")");
+                        } else if (fechaFin == null) {
+                            // Si no tiene fecha_fin, usar fecha_inicio como fallback
+                            if (fechaInicio != null && fechaInicio.compareTo(fechaActualISO) >= 0) {
+                                eventosActivos.add(doc);
+                            }
+                        }
+                    }
+
+                    // Ordenar por fecha_inicio (próximos primero)
+                    eventosActivos.sort((a, b) -> {
+                        String fechaA = a.getString("fecha_inicio");
+                        String fechaB = b.getString("fecha_inicio");
+                        if (fechaA == null) return 1;
+                        if (fechaB == null) return -1;
+                        return fechaA.compareTo(fechaB);
+                    });
+
+                    Log.d("FIREBASE_EVENTO", "════════════════════════════════════════════");
+                    Log.d("FIREBASE_EVENTO", "📅 Fecha actual: " + fechaActualISO);
+                    Log.d("FIREBASE_EVENTO", "✅ " + eventosActivos.size() + " eventos activos");
+                    Log.d("FIREBASE_EVENTO", "════════════════════════════════════════════");
+
+                    callback.onSuccess(eventosActivos);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("FIREBASE_EVENTO", "❌ Error: " + e.getMessage());
+                    callback.onError(e.getMessage());
+                });
+    }
+
+    /**
+     * Eliminar eventos que ya terminaron (fecha_fin < fecha actual)
+     * @param callback Callback con el resultado
+     */
+    public void eliminarEventosPasados(FirebaseCallback callback) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        // Fecha actual en ISO
+        String fechaActualISO = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
+
+        Log.d("FIREBASE_EVENTO", "════════════════════════════════════════════");
+        Log.d("FIREBASE_EVENTO", "🗑️ Buscando eventos pasados para eliminar");
+        Log.d("FIREBASE_EVENTO", "📅 Fecha actual: " + fechaActualISO);
+        Log.d("FIREBASE_EVENTO", "════════════════════════════════════════════");
+
+        // Buscar eventos con fecha_fin < fecha actual
+        db.collection("eventos")
+                .whereLessThan("fecha_fin", fechaActualISO)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    List<DocumentSnapshot> eventosPasados = queryDocumentSnapshots.getDocuments();
+
+                    if (eventosPasados.isEmpty()) {
+                        Log.d("FIREBASE_EVENTO", "✅ No hay eventos pasados para eliminar");
+                        if (callback != null) {
+                            callback.onSuccess("No hay eventos pasados");
+                        }
+                        return;
+                    }
+
+                    Log.d("FIREBASE_EVENTO", "📦 " + eventosPasados.size() + " eventos pasados encontrados");
+
+                    // Eliminar cada evento
+                    int[] eliminados = {0};
+                    int total = eventosPasados.size();
+
+                    for (DocumentSnapshot evento : eventosPasados) {
+                        String idFirebase = evento.getId();
+                        String nombre = evento.getString("nombre");
+                        String fechaFin = evento.getString("fecha_fin_display");
+                        if (fechaFin == null) {
+                            fechaFin = evento.getString("fecha_fin");
+                        }
+
+                        Log.d("FIREBASE_EVENTO", "  🗑️ Eliminando: " + nombre + " (finalizó: " + fechaFin + ")");
+
+                        db.collection("eventos").document(idFirebase).delete()
+                                .addOnSuccessListener(aVoid -> {
+                                    eliminados[0]++;
+                                    Log.d("FIREBASE_EVENTO", "    ✅ Eliminado: " + nombre);
+
+                                    if (eliminados[0] == total && callback != null) {
+                                        Log.d("FIREBASE_EVENTO", "════════════════════════════════════════════");
+                                        Log.d("FIREBASE_EVENTO", "✅ Eliminados " + eliminados[0] + " eventos pasados");
+                                        Log.d("FIREBASE_EVENTO", "════════════════════════════════════════════");
+                                        callback.onSuccess("Eliminados " + eliminados[0] + " eventos pasados");
+                                    }
+                                })
+                                .addOnFailureListener(e -> {
+                                    eliminados[0]++;
+                                    Log.e("FIREBASE_EVENTO", "    ❌ Error eliminando: " + nombre + " - " + e.getMessage());
+
+                                    if (eliminados[0] == total && callback != null) {
+                                        callback.onSuccess("Eliminados " + eliminados[0] + " eventos (con errores)");
+                                    }
+                                });
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("FIREBASE_EVENTO", "❌ Error buscando eventos pasados: " + e.getMessage());
+                    if (callback != null) {
+                        callback.onError(e.getMessage());
+                    }
+                });
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     // ════════════════════════════════════════════════════════════════
     // LISTENERS

@@ -3,6 +3,7 @@ package com.example.indoorview;
 import android.content.Context;
 import android.util.Log;
 
+import com.example.indoorview.models.Eventos;
 import com.google.firebase.firestore.DocumentSnapshot;
 
 import java.util.ArrayList;
@@ -32,6 +33,12 @@ public class SyncManager {
         this.imageStorageManager = new ImageStorageManager(context);
     }
 
+    // Para manejar su propio thread
+    public interface SyncCallback {
+        void onSyncComplete();
+        void onSyncError(String error);
+    }
+
     public void setSyncListener(SyncListener listener) {
         this.listener = listener;
     }
@@ -45,11 +52,128 @@ public class SyncManager {
 
 
     public void syncAllMapWithClean() {
-        Log.d(TAG, "🧹 LIMPIANDO BD LOCAL ANTES DE SINCRONIZAR");
+        Log.d(TAG, "LIMPIANDO BD LOCAL ANTES DE SINCRONIZAR");
         db.limpiarTablasMapa();
         syncAllMap();
     }
 
+    public void syncAllEventosWithClean(SyncCallback callback) {
+        Log.d(TAG, "LIMPIANDO BD LOCAL ANTES DE SINCRONIZAR");
+        db.limpiarTablaEventos();
+
+        sincronizarEventos(callback);  // Pasar el callback
+    }
+
+
+
+    private void limpiarEventosPasados() {
+        firebaseHelper.eliminarEventosPasados(new FirebaseHelper.FirebaseCallback() {
+            @Override
+            public void onSuccess(String mensaje) {
+                Log.d("LIMPIAR", mensaje);
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.e("LIMPIAR", "Error: " + error);
+            }
+        });
+    }
+
+
+    /**
+     * Sincronizar eventos desde Firebase a BD local
+     */
+    private void sincronizarEventos(SyncCallback callback) {
+        firebaseHelper.obtenerEventosFuturos(new FirebaseHelper.FirebaseListCallback() {
+            @Override
+            public void onSuccess(List<DocumentSnapshot> documentos) {
+                if (documentos.isEmpty()) {
+                    Log.d("SYNC_EVENTOS", "⚠️ No hay eventos para sincronizar");
+                    // ✅ Notificar incluso si no hay eventos
+                    if (callback != null) callback.onSyncComplete();
+                    return;
+                }
+                Log.d("SYNC_EVENTOS", "📦 " + documentos.size() + " eventos obtenidos");
+                procesarEventos(documentos);
+
+                // ✅ Callback después de procesar
+                if (callback != null) callback.onSyncComplete();
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.e("SYNC_EVENTOS", "❌ Error: " + error);
+                // ✅ Notificar el error
+                if (callback != null) callback.onSyncError(error);
+            }
+        });
+    }
+    /**
+     * Procesar eventos y guardar en BD local
+     */
+    private void procesarEventos(List<DocumentSnapshot> eventos) {
+        if (eventos == null || eventos.isEmpty()) {
+            return;
+        }
+
+        int guardados = 0;
+        int actualizados = 0;
+
+        for (DocumentSnapshot doc : eventos) {
+            try {
+                // Obtener datos del documento
+                String nombre = doc.getString("nombre");
+                String descripcion = doc.getString("descripcion");
+                String longitud = doc.getString("longitud");
+                String latitud = doc.getString("latitud");
+
+                // Obtener fechas (priorizar display, si no usar la ISO)
+                String fechaInicio = doc.getString("fecha_inicio_original");
+
+                String fechaFin = doc.getString("fecha_fin_original");
+
+                String horaInicio = doc.getString("hora_inicio");
+                String horaFin = doc.getString("hora_fin");
+                int estado = doc.getLong("estado") != null ? doc.getLong("estado").intValue() : 1;
+
+                Log.d("SYNC_EVENTOS", "📌 Procesando: " + nombre);
+                Log.d("SYNC_EVENTOS", "   Fecha: " + fechaInicio + " " + horaInicio);
+
+
+                    // Insertar nuevo evento
+                    Eventos evento = new Eventos(
+                            -1,  // ID local (autoincremental)
+                            nombre,
+                            descripcion,
+                            longitud,
+                            latitud,
+                            fechaInicio,
+                            horaInicio,
+                            fechaFin,
+                            horaFin,
+                            estado
+                    );
+
+                    long id = db.insertarEvento(evento);
+                    if (id > 0) {
+                        guardados++;
+                        Log.d("SYNC_EVENTOS", "   Evento guardado: " + nombre);
+                    }
+
+
+            } catch (Exception e) {
+                Log.e("SYNC_EVENTOS", "❌ Error procesando evento: " + e.getMessage());
+            }
+        }
+
+        Log.d("SYNC_EVENTOS", "═══════════════════════════════════════");
+        Log.d("SYNC_EVENTOS", "📊 RESUMEN SINCRONIZACIÓN EVENTOS");
+        Log.d("SYNC_EVENTOS", "   Nuevos: " + guardados);
+        Log.d("SYNC_EVENTOS", "   Actualizados: " + actualizados);
+        Log.d("SYNC_EVENTOS", "   Total: " + (guardados + actualizados));
+        Log.d("SYNC_EVENTOS", "═══════════════════════════════════════");
+    }
 
 
     private void sincronizarLugares() {

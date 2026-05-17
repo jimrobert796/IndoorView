@@ -1366,4 +1366,21 @@ public class Database extends SQLiteOpenHelper {
         }
     }
 
+    public void limpiarTablaEventos() {
+        SQLiteDatabase db = getWritableDatabase();
+        try {
+            db.beginTransaction();
+
+            db.delete("eventos", null, null);
+
+            db.setTransactionSuccessful();
+            Log.d("DB_CLEAN", "La tabla eventos se ha limpiado correctamente correctamente");
+        } catch (Exception e) {
+            Log.e("DB_CLEAN", "Error limpiando tablas: " + e.getMessage());
+        } finally {
+            db.endTransaction();
+            db.close();
+        }
+    }
+
 }

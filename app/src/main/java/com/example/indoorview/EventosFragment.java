@@ -1,17 +1,20 @@
 package com.example.indoorview;
 
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.PopupMenu;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -41,6 +44,10 @@ public class EventosFragment extends Fragment {
     private int usuarioTipo;
     private String usuarioCarnet;
     private String usuarioCorreo;
+    private FirebaseHelper firebaseHelper;
+    private DetectarInternet detectarInternet;
+
+    private SyncManager syncManager;
 
     @Nullable
     @Override
@@ -66,6 +73,9 @@ public class EventosFragment extends Fragment {
 
         // Inicializar BD
         bdEventos = new Database(getContext());
+        firebaseHelper = new FirebaseHelper();
+        detectarInternet = new DetectarInternet(getContext());
+        syncManager = new SyncManager(getContext(), bdEventos, firebaseHelper);
 
         // Configurar RecyclerView
         rvEventos.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -73,8 +83,35 @@ public class EventosFragment extends Fragment {
         adapter = new EventosAdapter(eventosList, getContext());
         rvEventos.setAdapter(adapter);
 
-        // Cargar eventos
+        // Cargar eventos locales primero
         cargarEventos();
+
+
+        if (detectarInternet.hayConexionInternet()){
+            new android.os.Handler().postDelayed(() -> {
+                syncManager.syncAllEventosWithClean(new SyncManager.SyncCallback() {
+                    @Override
+                    public void onSyncComplete() {
+                        // Ahora SÍ carga los datos después de sincronizar
+                        requireActivity().runOnUiThread(() -> {
+                            cargarEventos();
+                            Toast.makeText(getContext(), "Eventos sincronizados", Toast.LENGTH_SHORT).show();
+                        });
+                    }
+
+                    @Override
+                    public void onSyncError(String error) {
+                        requireActivity().runOnUiThread(() -> {
+                            Toast.makeText(getContext(), "Error: " + error, Toast.LENGTH_LONG).show();
+                        });
+                    }
+                });
+            }, 1500);
+        }else {
+            cargarEventos();
+
+            Toast.makeText(getContext(), "Sin conexion a internet ", Toast.LENGTH_LONG).show();
+        }
 
 
         // Configurar listeners - SOLO para administrador
@@ -114,6 +151,9 @@ public class EventosFragment extends Fragment {
 
         return view;
     }
+
+
+
 
     /**
      * Cargar eventos de la base de datos
@@ -187,6 +227,28 @@ public class EventosFragment extends Fragment {
         // Cambiar estado a 0 (eliminado)
         evento.setEstado(0);
         int filasActualizadas = bdEventos.updateEvento(evento);
+
+
+
+        if (detectarInternet.hayConexionInternet()){
+            // Guardar en Firebase
+            firebaseHelper.eliminarEventoPermanentePorNombre(evento.getNombre(), new FirebaseHelper.FirebaseCallback() {
+                @Override
+                public void onSuccess(String mensaje) {
+                    Log.d("EVENTO", "✅ " + mensaje);
+                }
+
+                @Override
+                public void onError(String error) {
+                    Log.e("EVENTO", "❌ " + error);
+                }
+            });
+        }else {
+            // HACER LA ELIMINACION SIN CONEXION Y ESPERAR QUE SE SUBAN LOS CAMBIOS
+
+        }
+
+
 
         if (filasActualizadas > 0) {
             adapter.removeEvento(position);
