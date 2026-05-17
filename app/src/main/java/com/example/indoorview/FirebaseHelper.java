@@ -597,15 +597,22 @@ public class FirebaseHelper {
     public void obtenerTodosLugares(FirebaseListCallback callback) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-        db.collection("lugares").get()
+        // ✅ Filtrar solo lugares con estado = 1 (activos)
+        db.collection("lugares")
+                .whereEqualTo("estado", 1)
+                .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     List<DocumentSnapshot> lugares = new ArrayList<>();
                     for (DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
                         lugares.add(doc);
                     }
-                    callback.onSuccess(lugares);  // ✅ Usa FirebaseListCallback
+                    Log.d("FIREBASE", "✅ " + lugares.size() + " lugares activos obtenidos");
+                    callback.onSuccess(lugares);
                 })
-                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+                .addOnFailureListener(e -> {
+                    Log.e("FIREBASE", "❌ Error obteniendo lugares: " + e.getMessage());
+                    callback.onError(e.getMessage());
+                });
     }
 
     // Método que devuelve lista de pisos
@@ -635,15 +642,20 @@ public class FirebaseHelper {
                 .collection("pisos")
                 .document(pisoId)
                 .collection("espacios")
+                .whereEqualTo("estado", 1)  // ✅ Solo espacios activos
                 .get()
                 .addOnSuccessListener(query -> {
                     List<DocumentSnapshot> espacios = new ArrayList<>();
                     for (DocumentSnapshot doc : query.getDocuments()) {
                         espacios.add(doc);
                     }
+                    Log.d("FIREBASE", "✅ " + espacios.size() + " espacios activos obtenidos");
                     callback.onSuccess(espacios);
                 })
-                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+                .addOnFailureListener(e -> {
+                    Log.e("FIREBASE", "❌ Error obteniendo espacios: " + e.getMessage());
+                    callback.onError(e.getMessage());
+                });
     }
 
     /**
