@@ -384,45 +384,49 @@ public class SyncManager {
 
         String[] urls = urlsCloudinary.split(",");
         List<String> rutasLocales = new ArrayList<>();
-        int[] contador = {0};
-        int total = urls.length;
 
-        for (int i = 0; i < total; i++) {
-            final String urlActual = urls[i].trim(); // ✅ final desde el inicio
+        // ✅ Procesar secuencialmente con índice
+        procesarImagenSecuencial(urls, 0, rutasLocales, callback);
+    }
 
-            if (urlActual.isEmpty()) {
-                contador[0]++;
-                if (contador[0] == total && callback != null) {
-                    callback.onComplete(String.join(",", rutasLocales));
-                }
-                continue;
-            }
-
-            Log.d(TAG, "📥 Descargando: " + urlActual);
-
-            imageStorageManager.descargarYGuardarImagen(urlActual,
-                    new ImageStorageManager.ImageDownloadCallback() {
-                        @Override
-                        public void onSuccess(String rutaLocal) {
-                            rutasLocales.add(rutaLocal);
-                            contador[0]++;
-                            verificarCompletado();
-                        }
-
-                        @Override
-                        public void onError(String error) {
-                            rutasLocales.add(urlActual);
-                            contador[0]++;
-                            verificarCompletado();
-                        }
-
-                        private void verificarCompletado() {
-                            if (contador[0] == total && callback != null) {
-                                callback.onComplete(String.join(",", rutasLocales));
-                            }
-                        }
-                    });
+    private void procesarImagenSecuencial(String[] urls,
+                                          int index,
+                                          List<String> rutasLocales,
+                                          ImageProcessCallback callback) {
+        if (index >= urls.length) {
+            // Todas las imágenes procesadas
+            String resultado = String.join(",", rutasLocales);
+            callback.onComplete(resultado.isEmpty() ? "" : resultado);
+            return;
         }
+
+        String urlActual = urls[index].trim();
+
+        if (urlActual.isEmpty()) {
+            rutasLocales.add("");
+            procesarImagenSecuencial(urls, index + 1, rutasLocales, callback);
+            return;
+        }
+
+        Log.d(TAG, "📥 Descargando [" + index + "/" + urls.length + "]: " + urlActual);
+
+        imageStorageManager.descargarYGuardarImagen(urlActual,
+                new ImageStorageManager.ImageDownloadCallback() {
+                    @Override
+                    public void onSuccess(String rutaLocal) {
+                        rutasLocales.add(rutaLocal);
+                        // ✅ Siguiente imagen (secuencial)
+                        procesarImagenSecuencial(urls, index + 1, rutasLocales, callback);
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        Log.w(TAG, "Error en " + urlActual + ", usando URL original");
+                        rutasLocales.add(urlActual);
+                        // ✅ Continuar con siguiente aunque falle
+                        procesarImagenSecuencial(urls, index + 1, rutasLocales, callback);
+                    }
+                });
     }
 
     // Interfaz de callback

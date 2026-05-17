@@ -62,7 +62,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -2706,105 +2708,116 @@ public class MapManager {
     private void subirImagenesSiCambiaron(String urlsOriginal, String urlsNuevas,
                                           CloudinaryUploadCallback callback) {
 
-        // Verificar si hay imágenes nuevas para subir
-        if (urlsNuevas != null && !urlsNuevas.isEmpty() &&
-                !urlsNuevas.equals(urlsOriginal)) {
+        if (urlsNuevas == null || urlsNuevas.isEmpty()) {
+            if (callback != null) callback.onCompletado("");
+            return;
+        }
 
-            // Hay imágenes locales nuevas → Subir a Cloudinary
-            Log.d("CLOUDINARY", "📸 Nuevas imágenes detectadas, subiendo...");
+        // Verificar si hay cambios reales (ignorando orden)
+        if (hayCambiosReales(urlsOriginal, urlsNuevas)) {
+            Log.d("CLOUDINARY", "📸 Nuevas imágenes detectadas, subiendo secuencialmente...");
 
-            subirImagenesACloudinary(urlsNuevas, new CloudinaryUploadCallback() {
-                @Override
-                public void onCompletado(String urlsCloudinary) {
-                    Log.d("CLOUDINARY", "✅ Imágenes subidas a Cloudinary");
-                    if (callback != null) {
-                        callback.onCompletado(urlsCloudinary);
-                    }
-                }
-
-                @Override
-                public void onError(String error) {
-                    Log.e("CLOUDINARY", "❌ Error subiendo imágenes: " + error);
-                    // Fallback: usar URLs locales
-                    if (callback != null) {
-                        callback.onCompletado(urlsNuevas);
-                    }
-                }
-            });
+            // ✅ SUBIR SECUENCIALMENTE (manteniendo orden)
+            subirImagenesSecuencialmente(urlsNuevas, 0, new ArrayList<>(), callback);
 
         } else {
-            // Sin cambios o ya son de Cloudinary
-            Log.d("CLOUDINARY", "⚠️ Sin imágenes nuevas para subir");
-            if (callback != null) {
-                callback.onCompletado(urlsNuevas);
-            }
+            Log.d("CLOUDINARY", "⚠️ Sin cambios en imágenes");
+            if (callback != null) callback.onCompletado(urlsNuevas);
         }
     }
 
+    /**
+     * Compara si hay cambios reales en las imágenes (ignorando el orden)
+     * Ejemplo: "img1.jpg,img2.jpg" vs "img2.jpg,img1.jpg" → false (no hay cambios)
+     */
+    private boolean hayCambiosReales(String urlsOriginal, String urlsNuevas) {
+        if (urlsOriginal == null && urlsNuevas == null) return false;
+        if (urlsOriginal == null && urlsNuevas != null) return true;
+        if (urlsOriginal != null && urlsNuevas == null) return true;
+        if (urlsOriginal.equals(urlsNuevas)) return false;
 
+        // Comparar por conjunto (ignorando orden)
+        Set<String> setOriginal = new HashSet<>(Arrays.asList(urlsOriginal.split(",")));
+        Set<String> setNuevas = new HashSet<>(Arrays.asList(urlsNuevas.split(",")));
+
+        // Limpiar espacios
+        Set<String> setOriginalLimpio = new HashSet<>();
+        Set<String> setNuevasLimpio = new HashSet<>();
+
+        for (String s : setOriginal) setOriginalLimpio.add(s.trim());
+        for (String s : setNuevas) setNuevasLimpio.add(s.trim());
+
+        return !setOriginalLimpio.equals(setNuevasLimpio);
+    }
 
 
     // Método para subir imágenes a Cloudinary
-    private void subirImagenesACloudinary(String urlsLocales, CloudinaryUploadCallback callback) {
+    /**
+     * Sube imágenes secuencialmente (una tras otra, manteniendo el orden)
+     * @param urlsLocales URLs separadas por coma
+     * @param index Índice actual a subir
+     * @param resultados Lista acumuladora de URLs subidas
+     * @param callback Callback cuando todas terminan
+     */
+    private void subirImagenesSecuencialmente(String urlsLocales,
+                                              int index,
+                                              List<String> resultados,
+                                              CloudinaryUploadCallback callback) {
+
         if (urlsLocales == null || urlsLocales.isEmpty()) {
-            callback.onCompletado("");
+            if (callback != null) callback.onCompletado("");
             return;
         }
 
         String[] urls = urlsLocales.split(",");
-        List<String> urlsSubidas = new ArrayList<>();
-        int[] contador = {0};
 
-
-        Log.d("CLOUDINARY_UPLOAD", "📤 Subiendo " + urls.length + " imágenes a Cloudinary");
-
-        for (int i = 0; i < urls.length; i++) {
-            String rutaLocal = urls[i].trim();
-
-            if (rutaLocal.isEmpty()) {
-                contador[0]++;
-                if (contador[0] == urls.length) {
-                    callback.onCompletado(String.join(",", urlsSubidas));
-                }
-                continue;
-            }
-
-            File imagenFile = new File(rutaLocal);
-
-            if (!imagenFile.exists()) {
-                Log.e("CLOUDINARY_UPLOAD", "❌ Imagen no existe: " + rutaLocal);
-                urlsSubidas.add(rutaLocal);
-                contador[0]++;
-                if (contador[0] == urls.length) {
-                    callback.onCompletado(String.join(",", urlsSubidas));
-                }
-                continue;
-            }
-
-            final String rutaActual = rutaLocal;
-            cloudinaryHelper.subirImagen(imagenFile, new CloudinaryHelper.UploadCallback() {
-                @Override
-                public void onResult(boolean success, String url, String publicId) {
-                    if (success) {
-                        Log.d("CLOUDINARY_UPLOAD", "✅ Imagen subida: " + url);
-                        urlsSubidas.add(url);
-                    } else {
-                        Log.e("CLOUDINARY_UPLOAD", "❌ Error subiendo imagen");
-                        urlsSubidas.add(rutaActual);
-                    }
-
-                    contador[0]++;
-
-                    if (contador[0] == urls.length) {
-                        String resultado = String.join(",", urlsSubidas);
-                        Log.d("CLOUDINARY_UPLOAD", "📦 RESUMEN: " + resultado);
-
-                        // ✅ Toast en UI Thread
-                        callback.onCompletado(resultado);
-                    }
-                }
-            });
+        // Caso base: todas las imágenes fueron procesadas
+        if (index >= urls.length) {
+            String resultado = String.join(",", resultados);
+            Log.d("CLOUDINARY_SEC", "📦 Todas las imágenes subidas: " + resultado);
+            if (callback != null) callback.onCompletado(resultado);
+            return;
         }
+
+        String rutaLocal = urls[index].trim();
+
+        // Si es URL vacía
+        if (rutaLocal.isEmpty()) {
+            resultados.add("");
+            subirImagenesSecuencialmente(urlsLocales, index + 1, resultados, callback);
+            return;
+        }
+
+        File imagenFile = new File(rutaLocal);
+
+        // Si la imagen no existe
+        if (!imagenFile.exists()) {
+            Log.e("CLOUDINARY_SEC", "❌ Imagen no existe: " + rutaLocal);
+            resultados.add(rutaLocal);
+            subirImagenesSecuencialmente(urlsLocales, index + 1, resultados, callback);
+            return;
+        }
+
+        Log.d("CLOUDINARY_SEC", "📤 Subiendo imagen " + (index + 1) + "/" + urls.length);
+        Log.d("CLOUDINARY_SEC", "   Archivo: " + imagenFile.getName());
+
+        // ✅ SUBIR UNA IMAGEN y esperar a que termine
+        final int currentIndex = index;
+        cloudinaryHelper.subirImagen(imagenFile, new CloudinaryHelper.UploadCallback() {
+            @Override
+            public void onResult(boolean success, String url, String publicId) {
+                if (success && url != null && !url.isEmpty()) {
+                    Log.d("CLOUDINARY_SEC", "✅ Imagen " + (currentIndex + 1) + " subida: " + url);
+                    resultados.add(url);
+                } else {
+                    Log.e("CLOUDINARY_SEC", "❌ Error subiendo imagen " + (currentIndex + 1));
+                    resultados.add(rutaLocal); // Fallback a local
+                }
+
+                // ✅ SUBIR SIGUIENTE IMAGEN (secuencial)
+                subirImagenesSecuencialmente(urlsLocales, currentIndex + 1, resultados, callback);
+            }
+        });
     }
 
     // PARA SABER SI EL CALLBACK SE HACE BIEN

@@ -10,6 +10,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -17,6 +18,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -194,7 +196,7 @@ public class MapaFragment extends Fragment {
 
             // Cambiar mensaje
             TextView tvMessage = loadingView.findViewById(R.id.tv_loading_message);
-            tvMessage.setText("Sincronizando datos...");
+            tvMessage.setText("Cargando mapa...\nEsto puede tardar unos momentos");
 
             // SINCRONIZACIÓN AUTOMÁTICA AL INICIAR
             new android.os.Handler().postDelayed(() -> {
@@ -372,7 +374,7 @@ public class MapaFragment extends Fragment {
                             Log.d("CLOUDINARY", "Se encontraron imaganes a subir");
                         }
 
-                        subirImagenesACloudinary(urlImagenes, new CloudinaryUploadCallback() {
+                        subirImagenesACloudinarySecuencial(urlImagenes, 0, new ArrayList<>(), new CloudinaryUploadCallback() {
                             @Override
                             public void onCompletado(String urlsCloudinary) {
                                 Log.d("CLOUDINARY", "Imágenes subidas exitosamente: " + urlsCloudinary);
@@ -690,7 +692,7 @@ public class MapaFragment extends Fragment {
                             }else{
                                 Log.d("CLOUDINARY", "Se encontraron imaganes a subir");
                             }
-                            subirImagenesEspacioACloudinary(urlImagenes, nombre, new CloudinaryUploadCallback() {
+                            subirImagenesEspacioSecuencial(urlImagenes, nombre, 0, new ArrayList<>(), new CloudinaryUploadCallback() {
                                 @Override
                                 public void onCompletado(String urlsCloudinary) {
                                     Log.d("CLOUDINARY", "Imágenes de espacio subidas: " + urlsCloudinary);
@@ -768,137 +770,113 @@ public class MapaFragment extends Fragment {
         void onError(String error);
     }
 
-    private void subirImagenesEspacioACloudinary(String urlsLocales, String nombreEspacio,
-                                                 CloudinaryUploadCallback callback) {
+    private void subirImagenesEspacioSecuencial(String urlsLocales,
+                                                String nombreEspacio,
+                                                int index,
+                                                List<String> resultados,
+                                                CloudinaryUploadCallback callback) {
         if (urlsLocales == null || urlsLocales.isEmpty()) {
-            callback.onCompletado("");
+            if (callback != null) callback.onCompletado("");
             return;
         }
 
         String[] urls = urlsLocales.split(",");
-        List<String> urlsSubidas = new ArrayList<>();
-        int[] contador = {0};
 
-        Log.d("CLOUDINARY_ESPACIO", "📤 Subiendo " + urls.length + " imágenes para: " + nombreEspacio);
-
-        for (int i = 0; i < urls.length; i++) {
-            final int index = i;
-            String rutaLocal = urls[i].trim();
-
-            if (rutaLocal.isEmpty()) {
-                contador[0]++;
-                if (contador[0] == urls.length) {
-                    callback.onCompletado(String.join(",", urlsSubidas));
-                }
-                continue;
-            }
-
-            File imagenFile = new File(rutaLocal);
-
-            if (!imagenFile.exists()) {
-                Log.e("CLOUDINARY_ESPACIO", "❌ Imagen " + (i+1) + " no existe: " + rutaLocal);
-                urlsSubidas.add(rutaLocal);
-                contador[0]++;
-                if (contador[0] == urls.length) {
-                    callback.onCompletado(String.join(",", urlsSubidas));
-                }
-                continue;
-            }
-
-            Log.d("CLOUDINARY_ESPACIO", "📤 Subiendo imagen " + (i+1) + "/" + urls.length);
-            Log.d("CLOUDINARY_ESPACIO", "  Archivo: " + imagenFile.getName());
-
-            final int imagenIndex = i;
-            cloudinaryHelper.subirImagen(imagenFile, new CloudinaryHelper.UploadCallback() {
-                @Override
-                public void onResult(boolean success, String url, String publicId) {
-                    if (success) {
-                        Log.d("CLOUDINARY_ESPACIO", "✅ Imagen " + (imagenIndex+1) + " subida");
-                        Log.d("CLOUDINARY_ESPACIO", "  URL: " + url);
-                        urlsSubidas.add(url);
-                    } else {
-                        Log.e("CLOUDINARY_ESPACIO", "❌ Error imagen " + (imagenIndex+1));
-                        urlsSubidas.add(rutaLocal); // Mantener local como respaldo
-                    }
-
-                    contador[0]++;
-
-                    if (contador[0] == urls.length) {
-                        String resultado = String.join(",", urlsSubidas);
-                        Log.d("CLOUDINARY_ESPACIO", "════════════════════════════════════════════");
-                        Log.d("CLOUDINARY_ESPACIO", "📦 RESUMEN SUBIDA ESPACIO: " + nombreEspacio);
-                        Log.d("CLOUDINARY_ESPACIO", "  Imágenes subidas: " + urlsSubidas.size() + "/" + urls.length);
-                        Log.d("CLOUDINARY_ESPACIO", "  URLs finales: " + resultado);
-                        Log.d("CLOUDINARY_ESPACIO", "════════════════════════════════════════════");
-
-                        callback.onCompletado(resultado);
-                    }
-                }
-            });
+        if (index >= urls.length) {
+            String resultado = String.join(",", resultados);
+            Log.d("CLOUDINARY_ESPACIO", "📦 SECUENCIAL - Espacio '" + nombreEspacio + "' completado: " + resultado);
+            if (callback != null) callback.onCompletado(resultado);
+            return;
         }
+
+        String rutaLocal = urls[index].trim();
+
+        if (rutaLocal.isEmpty()) {
+            resultados.add("");
+            subirImagenesEspacioSecuencial(urlsLocales, nombreEspacio, index + 1, resultados, callback);
+            return;
+        }
+
+        File imagenFile = new File(rutaLocal);
+
+        if (!imagenFile.exists()) {
+            Log.e("CLOUDINARY_ESPACIO", "❌ Imagen no existe: " + rutaLocal);
+            resultados.add(rutaLocal);
+            subirImagenesEspacioSecuencial(urlsLocales, nombreEspacio, index + 1, resultados, callback);
+            return;
+        }
+
+        Log.d("CLOUDINARY_ESPACIO", "📤 [SECUENCIAL] Subiendo imagen " + (index + 1) + " para: " + nombreEspacio);
+
+        cloudinaryHelper.subirImagen(imagenFile, new CloudinaryHelper.UploadCallback() {
+            @Override
+            public void onResult(boolean success, String url, String publicId) {
+                if (success) {
+                    Log.d("CLOUDINARY_ESPACIO", "✅ Imagen " + (index + 1) + " subida");
+                    resultados.add(url);
+                } else {
+                    Log.e("CLOUDINARY_ESPACIO", "❌ Error imagen " + (index + 1));
+                    resultados.add(rutaLocal);
+                }
+                // ✅ Subir SIGUIENTE (secuencial)
+                subirImagenesEspacioSecuencial(urlsLocales, nombreEspacio, index + 1, resultados, callback);
+            }
+        });
     }
 
     // Método para subir imágenes a Cloudinary
-    private void subirImagenesACloudinary(String urlsLocales, CloudinaryUploadCallback callback) {
+    private void subirImagenesACloudinarySecuencial(String urlsLocales,
+                                                    int index,
+                                                    List<String> resultados,
+                                                    CloudinaryUploadCallback callback) {
         if (urlsLocales == null || urlsLocales.isEmpty()) {
-            callback.onCompletado("");
+            if (callback != null) callback.onCompletado("");
             return;
         }
 
         String[] urls = urlsLocales.split(",");
-        List<String> urlsSubidas = new ArrayList<>();
-        int[] contador = {0};
 
-
-        Log.d("CLOUDINARY_UPLOAD", "📤 Subiendo " + urls.length + " imágenes a Cloudinary");
-
-        for (int i = 0; i < urls.length; i++) {
-            String rutaLocal = urls[i].trim();
-
-            if (rutaLocal.isEmpty()) {
-                contador[0]++;
-                if (contador[0] == urls.length) {
-                    callback.onCompletado(String.join(",", urlsSubidas));
-                }
-                continue;
-            }
-
-            File imagenFile = new File(rutaLocal);
-
-            if (!imagenFile.exists()) {
-                Log.e("CLOUDINARY_UPLOAD", "❌ Imagen no existe: " + rutaLocal);
-                urlsSubidas.add(rutaLocal);
-                contador[0]++;
-                if (contador[0] == urls.length) {
-                    callback.onCompletado(String.join(",", urlsSubidas));
-                }
-                continue;
-            }
-
-            final String rutaActual = rutaLocal;
-            cloudinaryHelper.subirImagen(imagenFile, new CloudinaryHelper.UploadCallback() {
-                @Override
-                public void onResult(boolean success, String url, String publicId) {
-                    if (success) {
-                        Log.d("CLOUDINARY_UPLOAD", "✅ Imagen subida: " + url);
-                        urlsSubidas.add(url);
-                    } else {
-                        Log.e("CLOUDINARY_UPLOAD", "❌ Error subiendo imagen");
-                        urlsSubidas.add(rutaActual);
-                    }
-
-                    contador[0]++;
-
-                    if (contador[0] == urls.length) {
-                        String resultado = String.join(",", urlsSubidas);
-                        Log.d("CLOUDINARY_UPLOAD", "📦 RESUMEN: " + resultado);
-
-                        // ✅ Toast en UI Thread
-                        callback.onCompletado(resultado);
-                    }
-                }
-            });
+        // Caso base: todas procesadas
+        if (index >= urls.length) {
+            String resultado = String.join(",", resultados);
+            Log.d("CLOUDINARY_UPLOAD", "📦 SECUENCIAL - Todas subidas: " + resultado);
+            if (callback != null) callback.onCompletado(resultado);
+            return;
         }
+
+        String rutaLocal = urls[index].trim();
+
+        if (rutaLocal.isEmpty()) {
+            resultados.add("");
+            subirImagenesACloudinarySecuencial(urlsLocales, index + 1, resultados, callback);
+            return;
+        }
+
+        File imagenFile = new File(rutaLocal);
+
+        if (!imagenFile.exists()) {
+            Log.e("CLOUDINARY_UPLOAD", "❌ Imagen no existe: " + rutaLocal);
+            resultados.add(rutaLocal);
+            subirImagenesACloudinarySecuencial(urlsLocales, index + 1, resultados, callback);
+            return;
+        }
+
+        Log.d("CLOUDINARY_UPLOAD", "📤 [SECUENCIAL] Subiendo imagen " + (index + 1) + "/" + urls.length);
+
+        cloudinaryHelper.subirImagen(imagenFile, new CloudinaryHelper.UploadCallback() {
+            @Override
+            public void onResult(boolean success, String url, String publicId) {
+                if (success) {
+                    Log.d("CLOUDINARY_UPLOAD", "✅ Imagen " + (index + 1) + " subida: " + url);
+                    resultados.add(url);
+                } else {
+                    Log.e("CLOUDINARY_UPLOAD", "❌ Error imagen " + (index + 1));
+                    resultados.add(rutaLocal);
+                }
+                // ✅ Subir SIGUIENTE (secuencial)
+                subirImagenesACloudinarySecuencial(urlsLocales, index + 1, resultados, callback);
+            }
+        });
     }
     private void configurarBusqueda() {
         // Configurar RecyclerView
