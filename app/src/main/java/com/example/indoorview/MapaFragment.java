@@ -1192,24 +1192,41 @@ public class MapaFragment extends Fragment {
                         }
                 );
             } else {
-                mapManager.mostrarDialogoConfirmacion(
-                        "Modo Edición",
-                        "Estás a punto de activar el modo edición.\n\n" +
-                                "Podrás realizar los siguientes cambios:\n" +
-                                "• Modificar información del lugar\n" +
-                                "• Cambiar el color del marcador\n" +
-                                "• Actualizar imágenes\n\n" +
-                                "Recuerda guardar los cambios antes de salir.\n\n" +
-                                "¿Deseas continuar?",
-                        "Sí, activar",
-                        () -> {
-                            //ACTIVAR MODO EDICIÓN DENTRO DEL CALLBACK
-                            activarModoEdicion();
-                        }
-                );
+                if (detectarInternet.hayConexionInternet()){
+                    mapManager.mostrarDialogoConfirmacion(
+                            "Modo Edición",
+                            "Estás a punto de activar el modo edición.\n\n" +
+                                    "Podrás realizar los siguientes cambios:\n" +
+                                    "• Agregar nuevos lugares\n" +
+                                    "• Modificar información del lugar\n" +
+                                    "• Cambiar el color del contorno\n" +
+                                    "• Actualizar imágenes\n\n" +
+                                    "Recuerda guardar los cambios antes de salir.\n\n" +
+                                    "¿Deseas continuar?",
+                            "Sí, activar",
+                            () -> {
+                                //ACTIVAR MODO EDICIÓN DENTRO DEL CALLBACK
+                                activarModoEdicion();
+                            }
+                    );
+                }else {
+                    mostrarDialogoNecesitaConexion("habilitar el modo edicion");
+                }
+
             }
         });
     }
+    private void mostrarDialogoNecesitaConexion(String accion) {
+        new AlertDialog.Builder(getContext())
+                .setTitle("Conexión Requerida")
+                .setMessage("Para " + accion + " necesitas tener conexión a internet.\n\n" +
+                        "Por favor, verifica tu conexión y vuelve a intentarlo.")
+                .setPositiveButton("Entendido", (dialog, which) -> dialog.dismiss())
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .create()
+                .show();
+    }
+
 
     /**
      * Botón LUGAR - Iniciar dibujo de lugar

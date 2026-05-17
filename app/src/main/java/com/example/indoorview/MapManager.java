@@ -934,6 +934,7 @@ public class MapManager {
         data.addProperty("url_imagenes", espacio.getUrl_imagenes());
         data.addProperty("estado", espacio.getEstado());
         data.addProperty("vertices", geometria.getVertices());
+        data.addProperty("color", geometria.getColor());
 
         Bitmap icono = crearPinBitmap(color);
         PointAnnotationOptions op = new PointAnnotationOptions()
