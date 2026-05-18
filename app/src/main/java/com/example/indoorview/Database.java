@@ -613,7 +613,56 @@ public class Database extends SQLiteOpenHelper {
     public List<Eventos> getEventos() {
         List<Eventos> lista = new ArrayList<>();
         SQLiteDatabase db = getReadableDatabase();
-        Cursor c = db.rawQuery("SELECT * FROM eventos WHERE estado = 1", null);
+        Cursor c = db.rawQuery("SELECT * FROM eventos WHERE estado = 1 OR estado = 2 OR estado = 3", null);
+
+        while (c.moveToNext()) {
+            Eventos e = new Eventos(
+                    c.getInt(c.getColumnIndexOrThrow("id_evento")),
+                    c.getString(c.getColumnIndexOrThrow("nombre")),
+                    c.getString(c.getColumnIndexOrThrow("descripcion")),
+                    c.getString(c.getColumnIndexOrThrow("longitud")),
+                    c.getString(c.getColumnIndexOrThrow("latitud")),
+                    c.getString(c.getColumnIndexOrThrow("fecha_inicio")),
+                    c.getString(c.getColumnIndexOrThrow("hora_inicio")),
+                    c.getString(c.getColumnIndexOrThrow("fecha_fin")),
+                    c.getString(c.getColumnIndexOrThrow("hora_fin")),
+                    c.getInt(c.getColumnIndexOrThrow("estado"))
+            );
+            lista.add(e);
+        }
+        c.close();
+        db.close();
+        return lista;
+
+    }
+    public List<Eventos> getEventosPendientesAgregar() {
+        List<Eventos> lista = new ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor c = db.rawQuery("SELECT * FROM eventos WHERE estado = 3", null);
+
+        while (c.moveToNext()) {
+            Eventos e = new Eventos(
+                    c.getInt(c.getColumnIndexOrThrow("id_evento")),
+                    c.getString(c.getColumnIndexOrThrow("nombre")),
+                    c.getString(c.getColumnIndexOrThrow("descripcion")),
+                    c.getString(c.getColumnIndexOrThrow("longitud")),
+                    c.getString(c.getColumnIndexOrThrow("latitud")),
+                    c.getString(c.getColumnIndexOrThrow("fecha_inicio")),
+                    c.getString(c.getColumnIndexOrThrow("hora_inicio")),
+                    c.getString(c.getColumnIndexOrThrow("fecha_fin")),
+                    c.getString(c.getColumnIndexOrThrow("hora_fin")),
+                    c.getInt(c.getColumnIndexOrThrow("estado"))
+            );
+            lista.add(e);
+        }
+        c.close();
+        db.close();
+        return lista;
+    }
+    public List<Eventos> getEventosPendientesEliminar() {
+        List<Eventos> lista = new ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor c = db.rawQuery("SELECT * FROM eventos WHERE estado = 4", null);
 
         while (c.moveToNext()) {
             Eventos e = new Eventos(

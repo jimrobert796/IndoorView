@@ -224,13 +224,15 @@ public class EventosFragment extends Fragment {
      * Eliminar evento de la base de datos
      */
     private void eliminarEvento(Eventos evento, int position) {
-        // Cambiar estado a 0 (eliminado)
-        evento.setEstado(0);
-        int filasActualizadas = bdEventos.updateEvento(evento);
 
-
-
+        // Detectamos la conexion a internet
         if (detectarInternet.hayConexionInternet()){
+
+            // Cambiar estado a 0 (eliminado)
+            evento.setEstado(0);
+            int filasActualizadas = bdEventos.updateEvento(evento);
+
+
             // Guardar en Firebase
             firebaseHelper.eliminarEventoPermanentePorNombre(evento.getNombre(), new FirebaseHelper.FirebaseCallback() {
                 @Override
@@ -243,18 +245,27 @@ public class EventosFragment extends Fragment {
                     Log.e("EVENTO", "❌ " + error);
                 }
             });
+
+            if (filasActualizadas > 0) {
+                adapter.removeEvento(position);
+                Toast.makeText(getContext(), "Evento eliminado correctamente", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(getContext(), "Error al eliminar el evento", Toast.LENGTH_SHORT).show();
+            }
+
         }else {
             // HACER LA ELIMINACION SIN CONEXION Y ESPERAR QUE SE SUBAN LOS CAMBIOS
 
-        }
+            // Estado 4 significa eliminado localmente para esperar a mandarlo a firebase
+            evento.setEstado(4);
+            int filasActualizadas = bdEventos.updateEvento(evento);
 
-
-
-        if (filasActualizadas > 0) {
-            adapter.removeEvento(position);
-            Toast.makeText(getContext(), "Evento eliminado correctamente", Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(getContext(), "Error al eliminar el evento", Toast.LENGTH_SHORT).show();
+            if (filasActualizadas > 0) {
+                adapter.removeEvento(position);
+                Toast.makeText(getContext(), "Evento eliminado correctamente sin conexion", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(getContext(), "Error al eliminar el evento", Toast.LENGTH_SHORT).show();
+            }
         }
     }
 

@@ -1,5 +1,6 @@
 package com.example.indoorview;
 import com.example.indoorview.models.Eventos;
+import com.example.indoorview.models.Usuarios;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FieldValue;
@@ -1463,6 +1464,138 @@ public class FirebaseHelper {
                     Log.e("FIREBASE_EVENTO", "❌ Error buscando eventos pasados: " + e.getMessage());
                     if (callback != null) {
                         callback.onError(e.getMessage());
+                    }
+                });
+    }
+
+    /**
+     * Guardar usuario en Firestore usando carnet como ID
+     * @param usuario Usuario a guardar
+     * @param callback Callback para resultado
+     */
+    public void guardarUsuarioEnFirestore(Usuarios usuario, FirebaseCallback callback) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        Map<String, Object> usuarioMap = new HashMap<>();
+        usuarioMap.put("id_tipo", usuario.getId_tipo());
+        usuarioMap.put("nombres", usuario.getNombres());
+        usuarioMap.put("apellidos", usuario.getApellidos());
+        usuarioMap.put("correo", usuario.getCorreo());
+        usuarioMap.put("carnet", usuario.getCarnet());
+        usuarioMap.put("contraseña", usuario.getContraseña());
+        usuarioMap.put("estado", usuario.getEstado());
+        usuarioMap.put("fecha_creacion", FieldValue.serverTimestamp());
+
+        // ✅ Usar carnet como ID (único e inmutable)
+        String idFirebase = usuario.getCarnet();
+
+        Log.d("FIREBASE_USUARIO", "════════════════════════════════════════════");
+        Log.d("FIREBASE_USUARIO", "📝 Guardando usuario en Firestore");
+        Log.d("FIREBASE_USUARIO", "  Carnet: " + idFirebase);
+        Log.d("FIREBASE_USUARIO", "  Nombre: " + usuario.getNombres());
+        Log.d("FIREBASE_USUARIO", "  Tipo: " + usuario.getId_tipo());
+        Log.d("FIREBASE_USUARIO", "════════════════════════════════════════════");
+
+        db.collection("usuarios").document(idFirebase).set(usuarioMap)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d("FIREBASE_USUARIO", "✅ Usuario guardado: " + usuario.getCarnet());
+                    if (callback != null) {
+                        callback.onSuccess("Usuario guardado: " + usuario.getNombres());
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("FIREBASE_USUARIO", "❌ Error: " + e.getMessage());
+                    if (callback != null) {
+                        callback.onError(e.getMessage());
+                    }
+                });
+    }
+
+    public void actualizarUsuarioPorCarnet(Usuarios usuario, FirebaseCallback callback) {
+
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        Map<String, Object> usuarioMap = new HashMap<>();
+        usuarioMap.put("id_tipo", usuario.getId_tipo());
+        usuarioMap.put("nombres", usuario.getNombres());
+        usuarioMap.put("apellidos", usuario.getApellidos());
+        usuarioMap.put("correo", usuario.getCorreo());
+        usuarioMap.put("contraseña", usuario.getContraseña());
+        usuarioMap.put("estado", usuario.getEstado());
+
+        // El carnet NO se cambia porque es el ID
+        String carnet = usuario.getCarnet();
+
+        Log.d("FIREBASE_USUARIO", "════════════════════════════════════════════");
+        Log.d("FIREBASE_USUARIO", "✏️ Actualizando usuario");
+        Log.d("FIREBASE_USUARIO", "  Carnet: " + carnet);
+        Log.d("FIREBASE_USUARIO", "════════════════════════════════════════════");
+
+        db.collection("usuarios")
+                .document(carnet)
+                .update(usuarioMap)
+                .addOnSuccessListener(unused -> {
+
+                    Log.d("FIREBASE_USUARIO", "✅ Usuario actualizado");
+
+                    if (callback != null) {
+                        callback.onSuccess("Usuario actualizado");
+                    }
+                })
+                .addOnFailureListener(e -> {
+
+                    Log.e("FIREBASE_USUARIO", "❌ Error: " + e.getMessage());
+
+                    if (callback != null) {
+                        callback.onError(e.getMessage());
+                    }
+                });
+    }
+
+
+    /**
+     * Soft delete de usuario (cambiar estado a 0)
+     * @param carnet Carnet del usuario
+     * @param callback Callback para resultado
+     */
+    public void softDeleteUsuarioPorCarnet(String carnet, FirebaseCallback callback) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        // Validar carnet
+        if (carnet == null || carnet.isEmpty()) {
+            Log.e("FIREBASE_USUARIO", "❌ Carnet no puede ser nulo");
+            if (callback != null) {
+                callback.onError("Carnet inválido");
+            }
+            return;
+        }
+
+        // Crear mapa con los campos a actualizar
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("estado", 0);
+        updates.put("fecha_eliminacion", FieldValue.serverTimestamp());
+
+        Log.d("FIREBASE_USUARIO", "════════════════════════════════════════════");
+        Log.d("FIREBASE_USUARIO", "🗑️ SOFT DELETE - Eliminando lógicamente");
+        Log.d("FIREBASE_USUARIO", "  Carnet: " + carnet);
+        Log.d("FIREBASE_USUARIO", "  Estado actual: 1 → 0");
+        Log.d("FIREBASE_USUARIO", "════════════════════════════════════════════");
+
+        // Actualizar estado del documento
+        db.collection("usuarios").document(carnet).update(updates)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d("FIREBASE_USUARIO", "✅ Usuario eliminado lógicamente");
+                    Log.d("FIREBASE_USUARIO", "  Carnet: " + carnet);
+                    if (callback != null) {
+                        callback.onSuccess("Usuario eliminado correctamente");
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("FIREBASE_USUARIO", "❌ Error eliminando usuario");
+                    Log.e("FIREBASE_USUARIO", "  Carnet: " + carnet);
+                    Log.e("FIREBASE_USUARIO", "  Error: " + e.getMessage());
+                    if (callback != null) {
+                        callback.onError("Error al eliminar usuario: " + e.getMessage());
                     }
                 });
     }

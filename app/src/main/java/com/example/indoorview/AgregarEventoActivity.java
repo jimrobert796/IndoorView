@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
@@ -465,7 +466,6 @@ public class AgregarEventoActivity extends AppCompatActivity {
         // Validaciones
 
 
-
         if (titulo.isEmpty()) {
             etTituloEvento.setError("El título es requerido");
             etTituloEvento.requestFocus();
@@ -508,38 +508,40 @@ public class AgregarEventoActivity extends AppCompatActivity {
 
         // ===== GUARDAR FECHA Y HORA SEPARADAS =====
         if (esEdicion) {
-            // EDITAR evento existente
-            Eventos evento = new Eventos(
-                    idEventoEditando,
-                    titulo,
-                    descripcion,
-                    longitud,
-                    latitud,
-                    fechaInicio,      // dd/mm/yyyy
-                    horaInicio,        // hh:mm
-                    fechaFin,          // dd/mm/yyyy
-                    horaFin,           // hh:mm
-                    1                  // estado activo
-            );
-
-            // ===== LOGS DE PRUEBA - VALORES OBTENIDOS =====
-            Log.d("GUARDAR_EVENTO", "═══════════════════════════════════════");
-            Log.d("GUARDAR_EVENTO", " Título: " + titulo);
-            Log.d("GUARDAR_EVENTO", " Descripción: " + descripcion);
-            Log.d("GUARDAR_EVENTO", " Fecha Inicio: " + fechaInicio);
-            Log.d("GUARDAR_EVENTO", " Hora Inicio: " + horaInicio);
-            Log.d("GUARDAR_EVENTO", " Fecha Fin: " + fechaFin);
-            Log.d("GUARDAR_EVENTO", " Hora Fin: " + horaFin);
-            Log.d("GUARDAR_EVENTO", " Latitud: " + latitud);
-            Log.d("GUARDAR_EVENTO", " Longitud: " + longitud);
-            Log.d("GUARDAR_EVENTO", " Modo Edición: " + esEdicion);
-            Log.d("GUARDAR_EVENTO", "═══════════════════════════════════════");
-
-            int filasActualizadas = bdEventos.updateEvento(evento);
-
 
             // Mandar a firebase su hay conexion a internet
-            if (detectarInternet.hayConexionInternet()){
+            if (detectarInternet.hayConexionInternet()) {
+
+                // EDITAR evento existente
+                Eventos evento = new Eventos(
+                        idEventoEditando,
+                        titulo,
+                        descripcion,
+                        longitud,
+                        latitud,
+                        fechaInicio,      // dd/mm/yyyy
+                        horaInicio,        // hh:mm
+                        fechaFin,          // dd/mm/yyyy
+                        horaFin,           // hh:mm
+                        1                  // estado activo
+                );
+
+                // ===== LOGS DE PRUEBA - VALORES OBTENIDOS =====
+                Log.d("GUARDAR_EVENTO", "═══════════════════════════════════════");
+                Log.d("GUARDAR_EVENTO", " Título: " + titulo);
+                Log.d("GUARDAR_EVENTO", " Descripción: " + descripcion);
+                Log.d("GUARDAR_EVENTO", " Fecha Inicio: " + fechaInicio);
+                Log.d("GUARDAR_EVENTO", " Hora Inicio: " + horaInicio);
+                Log.d("GUARDAR_EVENTO", " Fecha Fin: " + fechaFin);
+                Log.d("GUARDAR_EVENTO", " Hora Fin: " + horaFin);
+                Log.d("GUARDAR_EVENTO", " Latitud: " + latitud);
+                Log.d("GUARDAR_EVENTO", " Longitud: " + longitud);
+                Log.d("GUARDAR_EVENTO", " Modo Edición: " + esEdicion);
+                Log.d("GUARDAR_EVENTO", "═══════════════════════════════════════");
+
+                int filasActualizadas = bdEventos.updateEvento(evento);
+
+
                 // Guardar en Firebase
                 firebaseHelper.modificarEventoPorNombre(tituloOriginal, evento, new FirebaseHelper.FirebaseCallback() {
                     @Override
@@ -552,36 +554,79 @@ public class AgregarEventoActivity extends AppCompatActivity {
                         Log.e("EVENTO", "❌ " + error);
                     }
                 });
-            }else {
+
+                if (filasActualizadas > 0) {
+                    Toast.makeText(this, "✓ Evento actualizado correctamente", Toast.LENGTH_LONG).show();
+                    finish();
+                } else {
+                    Toast.makeText(this, "✗ Error al actualizar el evento", Toast.LENGTH_SHORT).show();
+                }
+
+            } else {
+
+                // EDITAR evento existente
+                Eventos evento = new Eventos(
+                        idEventoEditando,
+                        titulo,
+                        descripcion,
+                        longitud,
+                        latitud,
+                        fechaInicio,      // dd/mm/yyyy
+                        horaInicio,        // hh:mm
+                        fechaFin,          // dd/mm/yyyy
+                        horaFin,           // hh:mm
+                        2                  // estado activo
+                );
+
+                // ===== LOGS DE PRUEBA - VALORES OBTENIDOS =====
+                Log.d("GUARDAR_EVENTO", "═══════════════════════════════════════");
+                Log.d("GUARDAR_EVENTO", " Título: " + titulo);
+                Log.d("GUARDAR_EVENTO", " Descripción: " + descripcion);
+                Log.d("GUARDAR_EVENTO", " Fecha Inicio: " + fechaInicio);
+                Log.d("GUARDAR_EVENTO", " Hora Inicio: " + horaInicio);
+                Log.d("GUARDAR_EVENTO", " Fecha Fin: " + fechaFin);
+                Log.d("GUARDAR_EVENTO", " Hora Fin: " + horaFin);
+                Log.d("GUARDAR_EVENTO", " ESTADO: " + evento.getEstado());
+                Log.d("GUARDAR_EVENTO", " Latitud: " + latitud);
+                Log.d("GUARDAR_EVENTO", " Longitud: " + longitud);
+                Log.d("GUARDAR_EVENTO", " Modo Edición: " + esEdicion);
+                Log.d("GUARDAR_EVENTO", "═══════════════════════════════════════");
+
+                int filasActualizadas = bdEventos.updateEvento(evento);
+
+                // Se guarda en shared para poder mandar a firebase cuando haya internet
+                guardarEnSharedPreferencesModificar(idEventoEditando, titulo, tituloOriginal);
+
+
+                if (filasActualizadas > 0) {
+                    finish();
+                } else {
+                    Toast.makeText(this, "✗ Error al actualizar el evento internet", Toast.LENGTH_SHORT).show();
+                }
+
                 // Esperar para poder mandar los datos con conexion
                 Toast.makeText(this, "Sin conexion a internet", Toast.LENGTH_LONG).show();
             }
-
-
-            if (filasActualizadas > 0) {
-                Toast.makeText(this, "✓ Evento actualizado correctamente", Toast.LENGTH_LONG).show();
-                finish();
-            } else {
-                Toast.makeText(this, "✗ Error al actualizar el evento", Toast.LENGTH_SHORT).show();
-            }
         } else {
-            // CREAR nuevo evento
-            Eventos evento = new Eventos(
-                    0,                 // id será generado por la BD
-                    titulo,
-                    descripcion,
-                    longitud,
-                    latitud,
-                    fechaInicio,      // dd/mm/yyyy
-                    horaInicio,        // hh:mm
-                    fechaFin,          // dd/mm/yyyy
-                    horaFin,           // hh:mm
-                    1                  // estado activo
-            );
 
-            long id = bdEventos.insertarEvento(evento);
+            if (detectarInternet.hayConexionInternet()) {
 
-            if (detectarInternet.hayConexionInternet()){
+                // CREAR nuevo evento
+                Eventos evento = new Eventos(
+                        0,                 // id será generado por la BD
+                        titulo,
+                        descripcion,
+                        longitud,
+                        latitud,
+                        fechaInicio,      // dd/mm/yyyy
+                        horaInicio,        // hh:mm
+                        fechaFin,          // dd/mm/yyyy
+                        horaFin,           // hh:mm
+                        1                  // estado activo
+                );
+
+                long id = bdEventos.insertarEvento(evento);
+
                 // Guardar en Firebase
                 firebaseHelper.guardarEventoEnFirestore(evento, new FirebaseHelper.FirebaseCallback() {
                     @Override
@@ -594,18 +639,53 @@ public class AgregarEventoActivity extends AppCompatActivity {
                         Log.e("EVENTO", "❌ " + error);
                     }
                 });
-            }else {
+                if (id > 0) {
+                    Toast.makeText(this, "✓ Evento creado correctamente", Toast.LENGTH_LONG).show();
+                    finish();
+                } else {
+                    Toast.makeText(this, "✗ Error al crear el evento", Toast.LENGTH_SHORT).show();
+                }
+
+            } else {
+                // Guardando en este caso con id 3 significando nuevo
+
+                // CREAR nuevo evento
+                Eventos evento = new Eventos(
+                        0,                 // id será generado por la BD
+                        titulo,
+                        descripcion,
+                        longitud,
+                        latitud,
+                        fechaInicio,      // dd/mm/yyyy
+                        horaInicio,        // hh:mm
+                        fechaFin,          // dd/mm/yyyy
+                        horaFin,           // hh:mm
+                        3                  // estado nuevo pendiente
+                );
+
+                long id = bdEventos.insertarEvento(evento);
+
+                if (id > 0) {
+                    Toast.makeText(this, "✓ Evento creado correctamente en local", Toast.LENGTH_LONG).show();
+                    finish();
+                } else {
+                    Toast.makeText(this, "✗ Error al crear el evento", Toast.LENGTH_SHORT).show();
+                }
+
                 Toast.makeText(this, "Sin conexion a internet", Toast.LENGTH_LONG).show();
             }
-
-
-            if (id > 0) {
-                Toast.makeText(this, "✓ Evento creado correctamente", Toast.LENGTH_LONG).show();
-                finish();
-            } else {
-                Toast.makeText(this, "✗ Error al crear el evento", Toast.LENGTH_SHORT).show();
-            }
         }
+    }
+
+
+    // asi sabremos cual vamos a modificar gracias a su id 1 2 3 4 5 6 etc
+    private void guardarEnSharedPreferencesModificar(int idEventoEditando, String titulo, String tituloOriginal){
+        SharedPreferences prefs = getSharedPreferences("eventos_pendientes_modificar", MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putBoolean("pendiente_" + idEventoEditando, true);
+        editor.putString("nombre_original_" + idEventoEditando, tituloOriginal);
+        editor.putString("nombre_actual_" + idEventoEditando, titulo);
+        editor.apply();
     }
 
 

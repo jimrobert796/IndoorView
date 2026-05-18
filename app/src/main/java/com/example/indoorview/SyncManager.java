@@ -1,6 +1,7 @@
 package com.example.indoorview;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.util.Log;
 
 import com.example.indoorview.models.Eventos;
@@ -8,6 +9,7 @@ import com.google.firebase.firestore.DocumentSnapshot;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class SyncManager {
 
@@ -17,7 +19,6 @@ public class SyncManager {
     private final Database db;
     private final FirebaseHelper firebaseHelper;
     private final ImageStorageManager imageStorageManager;
-
     private SyncListener listener;
 
     public interface SyncListener {
@@ -58,15 +59,296 @@ public class SyncManager {
     }
 
     public void syncAllEventosWithClean(SyncCallback callback) {
-        Log.d(TAG, "LIMPIANDO BD LOCAL ANTES DE SINCRONIZAR");
-        db.limpiarTablaEventos();
+        // PASO 1: Sincronizar eventos NUEVOS (estado = 3)
+        syncEventosPendientesAgregar(new SyncCallback() {
+            @Override
+            public void onSyncComplete() {
+                Log.d(TAG, "✅ Eventos nuevos sincronizados");
 
-        sincronizarEventos(callback);  // Pasar el callback
+                // PASO 2: Sincronizar eventos MODIFICADOS (estado = 2)
+                syncEventosPendientesModificar(new SyncCallback() {
+                    @Override
+                    public void onSyncComplete() {
+                        Log.d(TAG, "✅ Eventos modificados sincronizados");
+
+                        // PASO 3: Sincronizar eventos ELIMINADOS (estado = 4)
+                        syncEventosPendientesEliminar(new SyncCallback() {
+                            @Override
+                            public void onSyncComplete() {
+                                Log.d(TAG, "✅ Eventos eliminados sincronizados");
+
+                                // PASO 4: LIMPIAR BD LOCAL
+                                db.limpiarTablaEventos();
+                                Log.d(TAG, "✅ BD limpiada");
+
+                                // PASO 5: SINCRONIZAR DESDE FIREBASE
+                                sincronizarEventos(callback);
+                            }
+
+                            @Override
+                            public void onSyncError(String error) {
+                                Log.e(TAG, "❌ Error eliminando: " + error);
+                                // Continuar igual
+                                db.limpiarTablaEventos();
+                                sincronizarEventos(callback);
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onSyncError(String error) {
+                        Log.e(TAG, "❌ Error modificando: " + error);
+                        // Continuar igual
+                        syncEventosPendientesEliminar(new SyncCallback() {
+                            @Override
+                            public void onSyncComplete() {
+                                db.limpiarTablaEventos();
+                                sincronizarEventos(callback);
+                            }
+
+                            @Override
+                            public void onSyncError(String error) {
+                                db.limpiarTablaEventos();
+                                sincronizarEventos(callback);
+                            }
+                        });
+                    }
+                });
+            }
+
+            @Override
+            public void onSyncError(String error) {
+                Log.e(TAG, "❌ Error agregando: " + error);
+                // Continuar igual
+                syncEventosPendientesModificar(new SyncCallback() {
+                    @Override
+                    public void onSyncComplete() {
+                        syncEventosPendientesEliminar(new SyncCallback() {
+                            @Override
+                            public void onSyncComplete() {
+                                db.limpiarTablaEventos();
+                                sincronizarEventos(callback);
+                            }
+
+                            @Override
+                            public void onSyncError(String error) {
+                                db.limpiarTablaEventos();
+                                sincronizarEventos(callback);
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onSyncError(String error) {
+                        syncEventosPendientesEliminar(new SyncCallback() {
+                            @Override
+                            public void onSyncComplete() {
+                                db.limpiarTablaEventos();
+                                sincronizarEventos(callback);
+                            }
+
+                            @Override
+                            public void onSyncError(String error) {
+                                db.limpiarTablaEventos();
+                                sincronizarEventos(callback);
+                            }
+                        });
+                    }
+                });
+            }
+        });
     }
 
 
+    /**
+     * Sincronizar SOLO eventos pendientes a modificar (estado = 2) a Firebase
+     */
+    public void syncEventosPendientesModificar(SyncCallback callback) {
 
-    private void limpiarEventosPasados() {
+        SharedPreferences prefs = context.getSharedPreferences("eventos_pendientes_modificar", Context.MODE_PRIVATE);
+        Map<String, ?> all = prefs.getAll();
+
+        List<Integer> idsPendientes = new ArrayList<>();
+        for (String key : all.keySet()) {
+            if (key.startsWith("pendiente_") && (boolean) all.get(key)) {
+                String idStr = key.replace("pendiente_", "");
+                idsPendientes.add(Integer.parseInt(idStr));
+            }
+        }
+
+        // ✅ Si no hay pendientes, notificar igual
+        if (idsPendientes.isEmpty()) {
+            Log.d(TAG, "✅ No hay eventos pendientes");
+            if (callback != null) {
+                callback.onSyncComplete();  // ← IMPORTANTE
+            }
+            return;
+        }
+
+        Log.d(TAG, "📦 " + idsPendientes.size() + " eventos pendientes encontrados");
+
+        final int[] contador = {0};
+        final int total = idsPendientes.size();
+        final boolean[] hayError = {false};
+
+        for (int idLocal : idsPendientes) {
+            String nombreOriginal = prefs.getString("nombre_original_" + idLocal, "");
+            String nombreActual = prefs.getString("nombre_actual_" + idLocal, "");
+
+            Eventos evento = db.getEventoById(idLocal);
+            if (evento == null) {
+                Log.e(TAG, "❌ Evento no encontrado en BD: " + idLocal);
+                contador[0]++;
+
+                // ✅ Verificar si es el último
+                if (contador[0] == total && callback != null) {
+                    callback.onSyncComplete();
+                }
+                continue;
+            }
+
+            evento.setEstado(1);
+            final String nombreEvento = evento.getNombre();
+            final int finalIdLocal = idLocal;
+
+            Log.d(TAG, "📝 Sincronizando: " + nombreEvento);
+
+            firebaseHelper.modificarEventoPorNombre(nombreOriginal, evento,
+                    new FirebaseHelper.FirebaseCallback() {
+                        @Override
+                        public void onSuccess(String mensaje) {
+                            Log.d(TAG, "✅ Evento sincronizado: " + nombreEvento);
+
+                            SharedPreferences.Editor editor = prefs.edit();
+                            editor.remove("pendiente_" + finalIdLocal);
+                            editor.remove("nombre_original_" + finalIdLocal);
+                            editor.remove("nombre_actual_" + finalIdLocal);
+                            editor.apply();
+
+                            contador[0]++;
+
+                            // ✅ Cuando se completan todos
+                            if (contador[0] == total && callback != null) {
+                                callback.onSyncComplete();
+                            }
+                        }
+
+                        @Override
+                        public void onError(String error) {
+                            Log.e(TAG, "❌ Error sincronizando: " + nombreEvento + " - " + error);
+                            hayError[0] = true;
+                            contador[0]++;
+
+                            if (contador[0] == total && callback != null) {
+                                callback.onSyncComplete();  // ← Continuar igual
+                            }
+                        }
+                    });
+        }
+    }
+
+    /**
+     * Sincronizar eventos NUEVOS (estado = 3) a Firebase
+     * @param callback Callback para resultado
+     */
+    public void syncEventosPendientesAgregar(SyncCallback callback) {
+        List<Eventos> eventosNuevos = db.getEventosPendientesAgregar();
+
+        if (eventosNuevos.isEmpty()) {
+            Log.d(TAG, "✅ No hay eventos nuevos pendientes");
+            if (callback != null) callback.onSyncComplete();
+            return;
+        }
+
+        Log.d(TAG, "📦 " + eventosNuevos.size() + " eventos nuevos encontrados");
+
+        final int[] contador = {0};
+        final int total = eventosNuevos.size();
+        final boolean[] hayError = {false};
+
+        for (Eventos evento : eventosNuevos) {
+            final String nombreEvento = evento.getNombre();
+            evento.setEstado(1);
+
+            Log.d(TAG, "📝 Guardando evento nuevo: " + nombreEvento);
+
+            firebaseHelper.guardarEventoEnFirestore(evento, new FirebaseHelper.FirebaseCallback() {
+                @Override
+                public void onSuccess(String mensaje) {
+                    Log.d(TAG, "✅ Evento nuevo guardado en Firebase: " + nombreEvento);
+                    contador[0]++;
+
+                    // ✅ Verificar si es el último
+                    if (contador[0] == total && callback != null) {
+                        callback.onSyncComplete();
+                    }
+                }
+
+                @Override
+                public void onError(String error) {
+                    Log.e(TAG, "❌ Error guardando evento nuevo: " + nombreEvento + " - " + error);
+                    hayError[0] = true;
+                    contador[0]++;
+
+                    // ✅ Continuar igual aunque falle
+                    if (contador[0] == total && callback != null) {
+                        callback.onSyncComplete();
+                    }
+                }
+            });
+        }
+    }
+
+    public void syncEventosPendientesEliminar(SyncCallback callback) {
+        List<Eventos> eventosEliminar = db.getEventosPendientesEliminar();
+
+        if (eventosEliminar.isEmpty()) {
+            Log.d(TAG, "✅ No hay eventos para eliminar");
+            if (callback != null) callback.onSyncComplete();
+            return;
+        }
+
+        Log.d(TAG, "📦 " + eventosEliminar.size() + " eventos para eliminar encontrados");
+
+        final int[] contador = {0};
+        final int total = eventosEliminar.size();
+        final boolean[] hayError = {false};
+
+        for (Eventos evento : eventosEliminar) {
+            final String nombreEvento = evento.getNombre();
+            evento.setEstado(0);
+
+            Log.d(TAG, "📝 Eliminando evento: " + nombreEvento);
+
+            firebaseHelper.eliminarEventoPermanentePorNombre(nombreEvento, new FirebaseHelper.FirebaseCallback() {
+                @Override
+                public void onSuccess(String mensaje) {
+                    Log.d(TAG, "✅ Evento eliminado en Firebase: " + nombreEvento);
+                    contador[0]++;
+
+                    // ✅ Verificar si es el último
+                    if (contador[0] == total && callback != null) {
+                        callback.onSyncComplete();
+                    }
+                }
+
+                @Override
+                public void onError(String error) {
+                    Log.e(TAG, "❌ Error eliminando evento: " + nombreEvento + " - " + error);
+                    hayError[0] = true;
+                    contador[0]++;
+
+                    // ✅ Continuar igual aunque falle
+                    if (contador[0] == total && callback != null) {
+                        callback.onSyncComplete();
+                    }
+                }
+            });
+        }
+    }
+
+
+        private void limpiarEventosPasados() {
         firebaseHelper.eliminarEventosPasados(new FirebaseHelper.FirebaseCallback() {
             @Override
             public void onSuccess(String mensaje) {
