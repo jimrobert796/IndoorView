@@ -48,6 +48,8 @@ public class EventosFragment extends Fragment {
     private DetectarInternet detectarInternet;
 
     private SyncManager syncManager;
+    private Dialog loadingDialog; // Para la pantalla de carga
+
 
     @Nullable
     @Override
@@ -88,6 +90,18 @@ public class EventosFragment extends Fragment {
 
 
         if (detectarInternet.hayConexionInternet()){
+            loadingDialog = new Dialog(getContext());
+            View loadingView = LayoutInflater.from(getContext()).inflate(R.layout.progress_loading, null);
+            loadingDialog.setContentView(loadingView);  // ← ESTO FALTA
+            loadingDialog.setCancelable(false);
+
+            // Mostrar diálogo de carga
+            loadingDialog.show();
+
+            // Cambiar mensaje
+            TextView tvMessage = loadingView.findViewById(R.id.tv_loading_message);
+            tvMessage.setText("Cargando eventos...");
+
             new android.os.Handler().postDelayed(() -> {
                 syncManager.syncAllEventosWithClean(new SyncManager.SyncCallback() {
                     @Override
@@ -95,6 +109,7 @@ public class EventosFragment extends Fragment {
                         // Ahora SÍ carga los datos después de sincronizar
                         requireActivity().runOnUiThread(() -> {
                             cargarEventos();
+                            loadingDialog.dismiss();
                             Toast.makeText(getContext(), "Eventos sincronizados", Toast.LENGTH_SHORT).show();
                         });
                     }
