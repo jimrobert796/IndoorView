@@ -1987,6 +1987,147 @@ public class FirebaseHelper {
     }
 
 
+    public void buscarUsuarioPorCarnet(
+            String carnet,
+            FirebaseUsuarioCallback callback
+    ) {
+
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        Log.d("FIREBASE_BUSCAR",
+                "═══════════════════════════════");
+
+        Log.d("FIREBASE_BUSCAR",
+                "🔍 Buscando usuario: " + carnet);
+
+        db.collection("usuarios")
+                .document(carnet)
+                .get()
+
+                .addOnSuccessListener(documentSnapshot -> {
+
+                    // ==================== EXISTE ====================
+
+                    if (documentSnapshot.exists()) {
+
+                        try {
+
+                            // ==================== DATOS ====================
+
+                            String nombres =
+                                    documentSnapshot.getString("nombres");
+
+                            String apellidos =
+                                    documentSnapshot.getString("apellidos");
+
+                            String correo =
+                                    documentSnapshot.getString("correo");
+
+                            String contra =
+                                    documentSnapshot.getString("contraseña");
+
+                            Long idTipoLong =
+                                    documentSnapshot.getLong("id_tipo");
+
+                            Long estadoLong =
+                                    documentSnapshot.getLong("estado");
+
+                            int idTipo = (idTipoLong != null)
+                                    ? idTipoLong.intValue()
+                                    : 1;
+
+                            int estado = (estadoLong != null)
+                                    ? estadoLong.intValue()
+                                    : 0;
+
+                            // ==================== VALIDAR ESTADO ====================
+
+                            if (estado != 1) {
+
+                                Log.w("FIREBASE_BUSCAR",
+                                        "⚠️ Usuario desactivado");
+
+                                callback.onNotFound();
+                                return;
+                            }
+
+                            // ==================== CREAR OBJETO ====================
+
+                            Usuarios usuario = new Usuarios(
+                                    0,
+                                    idTipo,
+                                    nombres,
+                                    apellidos,
+                                    correo,
+                                    carnet,
+                                    contra,
+                                    estado
+                            );
+
+                            Log.d("FIREBASE_BUSCAR",
+                                    "✅ Usuario encontrado");
+
+                            Log.d("FIREBASE_BUSCAR",
+                                    "👤 Nombre: " + nombres);
+
+                            Log.d("FIREBASE_BUSCAR",
+                                    "🆔 Carnet: " + carnet);
+
+                            Log.d("FIREBASE_BUSCAR",
+                                    "📧 Correo: " + correo);
+
+                            Log.d("FIREBASE_BUSCAR",
+                                    "👥 Tipo: " + idTipo);
+
+                            Log.d("FIREBASE_BUSCAR",
+                                    "📌 Estado: " + estado);
+
+                            Log.d("FIREBASE_BUSCAR",
+                                    "═══════════════════════════════");
+
+                            callback.onSuccess(usuario);
+
+                        } catch (Exception e) {
+
+                            Log.e("FIREBASE_BUSCAR",
+                                    "❌ Error procesando usuario");
+
+                            Log.e("FIREBASE_BUSCAR",
+                                    "❌ " + e.getMessage());
+
+                            callback.onError(e.getMessage());
+                        }
+
+                    } else {
+
+                        Log.w("FIREBASE_BUSCAR",
+                                "⚠️ Usuario no existe");
+
+                        callback.onNotFound();
+                    }
+                })
+
+                .addOnFailureListener(e -> {
+
+                    Log.e("FIREBASE_BUSCAR",
+                            "❌ Error Firebase");
+
+                    Log.e("FIREBASE_BUSCAR",
+                            "❌ " + e.getMessage());
+
+                    callback.onError(e.getMessage());
+                });
+    }
+
+    public interface FirebaseUsuarioCallback {
+
+        void onSuccess(Usuarios usuario);
+
+        void onNotFound();
+
+        void onError(String error);
+    }
+
 
 
 

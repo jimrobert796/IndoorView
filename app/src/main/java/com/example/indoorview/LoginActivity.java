@@ -19,6 +19,8 @@ public class LoginActivity extends AppCompatActivity {
     private TextView registro;
     private EditText etCarnet, etPassword;
     private Database db;
+    private FirebaseHelper firebaseHelper;
+    private DetectarInternet detectarInternet;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,6 +36,8 @@ public class LoginActivity extends AppCompatActivity {
 
         // Inicializar base de datos
         db = new Database(this);
+        firebaseHelper = new FirebaseHelper();
+        detectarInternet = new DetectarInternet(this);
 
         // Verificar si ya hay sesión activa
         verificarSesion();
@@ -96,37 +100,84 @@ public class LoginActivity extends AppCompatActivity {
      */
     private void iniciarSesion(String carnet, String password) {
         try {
-            Log.d("LOGIN", "Buscando usuario: " + carnet);
 
-            // Buscar usuario por carnet
-            Usuarios usuario = db.getUsuarioByCarnet(carnet);
 
-            if (usuario == null) {
-                Toast.makeText(this, "Usuario no encontrado", Toast.LENGTH_SHORT).show();
-                Log.d("LOGIN", "Usuario no encontrado");
-                return;
+            if (detectarInternet.hayConexionInternet()){
+
+                Log.d("LOGIN", "Buscando usuario: " + carnet);
+
+                // Buscar usuario por carnet
+
+                // Buscar en Firebase
+                firebaseHelper.buscarUsuarioPorCarnet(
+                        carnet,
+
+                        new FirebaseHelper.FirebaseUsuarioCallback() {
+
+                            @Override
+                            public void onSuccess(Usuarios usuario) {
+
+                                if (usuario == null) {
+                                    Toast.makeText(LoginActivity.this, "Usuario no encontrado", Toast.LENGTH_SHORT).show();
+                                    Log.d("LOGIN", "Usuario no encontrado");
+                                    return;
+                                }
+
+                                Log.d("LOGIN", "Usuario encontrado: " + usuario.getNombres());
+                                Log.d("LOGIN", "Hash almacenado: " + usuario.getContraseña());
+
+                                // Verificar contraseña usando BCrypt
+                                boolean verified = Utilidades.verifyPassword(password, usuario.getContraseña());
+                                Log.d("LOGIN", "Verificación: " + verified);
+
+                                if (verified) {
+                                    // Login exitoso
+                                    guardarSesion(usuario);
+                                    Toast.makeText(LoginActivity.this, "Bienvenido " + usuario.getNombres(), Toast.LENGTH_SHORT).show();
+
+                                    Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                                    startActivity(intent);
+                                    finish();
+                                } else {
+                                    Toast.makeText(LoginActivity.this, "Contraseña incorrecta", Toast.LENGTH_SHORT).show();
+                                    etPassword.setText("");
+                                    etPassword.requestFocus();
+                                }
+                            }
+
+                            @Override
+                            public void onNotFound() {
+
+                                Log.w("LOGIN",
+                                        "⚠️ Usuario no encontrado");
+
+                                Toast.makeText(
+                                        LoginActivity.this,
+                                        "Usuario o contraseña incorrecta",
+                                        Toast.LENGTH_SHORT
+                                ).show();
+                            }
+
+                            @Override
+                            public void onError(String error) {
+
+                                Log.e("LOGIN",
+                                        "❌ Error: " + error);
+
+                                Toast.makeText(
+                                        LoginActivity.this,
+                                        "Error: " + error,
+                                        Toast.LENGTH_SHORT
+                                ).show();
+                            }
+                        }
+                );
+            }else {
+
+                Toast.makeText(this, "Necesita conexion para iniciar sesion" , Toast.LENGTH_LONG).show();
             }
 
-            Log.d("LOGIN", "Usuario encontrado: " + usuario.getNombres());
-            Log.d("LOGIN", "Hash almacenado: " + usuario.getContraseña());
 
-            // Verificar contraseña usando BCrypt
-            boolean verified = Utilidades.verifyPassword(password, usuario.getContraseña());
-            Log.d("LOGIN", "Verificación: " + verified);
-
-            if (verified) {
-                // Login exitoso
-                guardarSesion(usuario);
-                Toast.makeText(this, "Bienvenido " + usuario.getNombres(), Toast.LENGTH_SHORT).show();
-
-                Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                startActivity(intent);
-                finish();
-            } else {
-                Toast.makeText(this, "Contraseña incorrecta", Toast.LENGTH_SHORT).show();
-                etPassword.setText("");
-                etPassword.requestFocus();
-            }
         } catch (Exception e) {
             Log.e("LOGIN_ERROR", "Error: " + e.getMessage());
             e.printStackTrace();
