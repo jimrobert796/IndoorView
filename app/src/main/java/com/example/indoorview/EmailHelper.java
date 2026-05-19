@@ -18,8 +18,8 @@ import javax.mail.internet.MimeMessage;
 public class EmailHelper {
 
     // Credenciales de la cuenta robot de Gmail (Configuración de Google)
-    private static final String CORREO_REMITENTE = "indoorview.bot@gmail.com";
-    private static final String CONTRASENA_APP = "ooxmznedffkimahp";
+    private static final String CORREO_REMITENTE = EmailKeys.CORREO_REMITENTE;
+    private static final String CONTRASENA_APP = EmailKeys.CONTRASENA_APP;
 
     public static void enviarCodigoVerificacion(String correoDestino, String codigoGenerado) {
 
