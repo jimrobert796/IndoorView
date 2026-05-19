@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.util.Log;
 
 import com.example.indoorview.models.Eventos;
+import com.example.indoorview.models.Usuarios;
 import com.google.firebase.firestore.DocumentSnapshot;
 
 import java.util.ArrayList;
@@ -860,4 +861,203 @@ public class SyncManager {
             listener.onError(error);
         }
     }
+
+    // ==================== FUNCIONES PARA MANEJAR PENDIENTES ====================
+
+    /**
+     * 1️⃣ Enviar USUARIOS PENDIENTES DE AGREGAR (estado = 3)
+     * @param context Contexto de la aplicación
+     * @param callback Callback con resultado
+     */
+    public void sincronizarPendientesAgregar(Context context, SyncManagerCallback callback) {
+        Database dbLocal = new Database(context);
+        List<Usuarios> pendientesAgregar = dbLocal.getUsuariosPendientesAgregar();
+
+        if (pendientesAgregar.isEmpty()) {
+            Log.d("SYNC_PENDIENTES", "📭 No hay usuarios pendientes de agregar");
+            if (callback != null) callback.onAgregarCompletado(0);
+            return;
+        }
+
+        int total = pendientesAgregar.size();
+        int exitosos = 0;
+        int fallidos = 0;
+
+        Log.d("SYNC_PENDIENTES", "════════════════════════════════════════════");
+        Log.d("SYNC_PENDIENTES", "➕ PROCESANDO PENDIENTES DE AGREGAR: " + total);
+
+        for (Usuarios usuario : pendientesAgregar) {
+            firebaseHelper.guardarUsuarioEnFirestore(usuario, new FirebaseHelper.FirebaseCallback() {
+                @Override
+                public void onSuccess(String mensaje) {
+
+                }
+
+                @Override
+                public void onError(String error) {
+
+                }
+            });
+        }
+    }
+
+    /**
+     * 2️⃣ Enviar USUARIOS PENDIENTES DE MODIFICAR (estado = 2)
+     * @param context Contexto de la aplicación
+     * @param callback Callback con resultado
+     */
+    public void sincronizarPendientesModificar(Context context, SyncManagerCallback callback) {
+        Database dbLocal = new Database(context);
+        List<Usuarios> pendientesModificar = dbLocal.getUsuariosPendientesModificar();
+
+        if (pendientesModificar.isEmpty()) {
+            Log.d("SYNC_PENDIENTES", "📭 No hay usuarios pendientes de modificar");
+            if (callback != null) callback.onModificarCompletado(0);
+            return;
+        }
+
+        int total = pendientesModificar.size();
+        int exitosos = 0;
+        int fallidos = 0;
+
+        Log.d("SYNC_PENDIENTES", "════════════════════════════════════════════");
+        Log.d("SYNC_PENDIENTES", "✏️ PROCESANDO PENDIENTES DE MODIFICAR: " + total);
+
+        for (Usuarios usuario : pendientesModificar) {
+            firebaseHelper.actualizarUsuarioPorCarnet(usuario, new FirebaseHelper.FirebaseCallback() {
+                @Override
+                public void onSuccess(String mensaje) {
+
+                }
+
+                @Override
+                public void onError(String error) {
+
+                }
+            });
+        }
+    }
+
+    /**
+     * 3️⃣ Enviar USUARIOS PENDIENTES DE ELIMINAR (estado = 4)
+     * @param context Contexto de la aplicación
+     * @param callback Callback con resultado
+     */
+    public void sincronizarPendientesEliminar(Context context, SyncManagerCallback callback) {
+        Database dbLocal = new Database(context);
+        List<Usuarios> pendientesEliminar = dbLocal.getUsuariosPendientesEliminar();
+
+        if (pendientesEliminar.isEmpty()) {
+            Log.d("SYNC_PENDIENTES", "📭 No hay usuarios pendientes de eliminar");
+            if (callback != null) callback.onEliminarCompletado(0);
+            return;
+        }
+
+        int total = pendientesEliminar.size();
+        int exitosos = 0;
+        int fallidos = 0;
+
+        Log.d("SYNC_PENDIENTES", "════════════════════════════════════════════");
+        Log.d("SYNC_PENDIENTES", "🗑️ PROCESANDO PENDIENTES DE ELIMINAR: " + total);
+
+        for (Usuarios usuario : pendientesEliminar) {
+            firebaseHelper.softDeleteUsuarioPorCarnet(usuario.getCarnet(), new FirebaseHelper.FirebaseCallback() {
+                @Override
+                public void onSuccess(String mensaje) {
+
+                }
+
+                @Override
+                public void onError(String error) {
+
+                }
+            });
+        }
+    }
+
+// ==================== INTERFACES ====================
+
+    public interface SyncManagerCallback {
+
+        void onAgregarCompletado(int cantidad);
+
+        void onModificarCompletado(int cantidad);
+
+        void onEliminarCompletado(int cantidad);
+    }
+
+    public interface SyncManagerFinalCallback {
+
+        void onCompletado();
+    }
+
+
+    public void procesarTodosLosPendientes(
+            Context context,
+            SyncManagerFinalCallback callback
+    ) {
+
+        // ==================== AGREGAR ====================
+
+        sincronizarPendientesAgregar(context, new SyncManagerCallback() {
+
+            @Override
+            public void onAgregarCompletado(int cantidad) {
+
+                Log.d("SYNC_PENDIENTES",
+                        "✅ AGREGAR completado: " + cantidad);
+
+                // ==================== MODIFICAR ====================
+
+                sincronizarPendientesModificar(context, new SyncManagerCallback() {
+
+                    @Override
+                    public void onModificarCompletado(int cantidad) {
+
+                        Log.d("SYNC_PENDIENTES",
+                                "✅ MODIFICAR completado: " + cantidad);
+
+                        // ==================== ELIMINAR ====================
+
+                        sincronizarPendientesEliminar(context, new SyncManagerCallback() {
+
+                            @Override
+                            public void onEliminarCompletado(int cantidad) {
+
+                                Log.d("SYNC_PENDIENTES",
+                                        "✅ ELIMINAR completado: " + cantidad);
+
+                                Log.d("SYNC_PENDIENTES",
+                                        "🎉 TODOS LOS PENDIENTES SINCRONIZADOS");
+
+                                if (callback != null) {
+                                    callback.onCompletado();
+                                }
+                            }
+
+                            @Override
+                            public void onAgregarCompletado(int cantidad) {}
+
+                            @Override
+                            public void onModificarCompletado(int cantidad) {}
+                        });
+                    }
+
+                    @Override
+                    public void onAgregarCompletado(int cantidad) {}
+
+                    @Override
+                    public void onEliminarCompletado(int cantidad) {}
+                });
+            }
+
+            @Override
+            public void onModificarCompletado(int cantidad) {}
+
+            @Override
+            public void onEliminarCompletado(int cantidad) {}
+        });
+    }
+
+
 }

@@ -35,10 +35,22 @@ public class PerfilFragment extends Fragment {
 
     private ImageView btnEditarPerfil;
 
+    private FirebaseHelper firebaseHelper;
+    private DetectarInternet detectarInternet;
+    private SyncManager syncManager;
+    private  Database db;
+
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_perfil, container, false);
+
+
+        detectarInternet = new DetectarInternet(getContext());
+        firebaseHelper = new FirebaseHelper();
+        db = new Database(getContext());
+        syncManager = new SyncManager(getContext(), db, firebaseHelper );
 
         // Inicializar vistas
         btn_usuarios = view.findViewById(R.id.btn_usuarios);
@@ -48,6 +60,8 @@ public class PerfilFragment extends Fragment {
         tvCarnetUsuario = view.findViewById(R.id.tv_carnet);
         tvCorreoUsuario = view.findViewById(R.id.tv_correo);
         btnEditarPerfil = view.findViewById(R.id.btn_editar_perfil);
+
+        sincronizarUsuariosPendienesConFirebase();
 
         // Obtener datos de sesión
         obtenerDatosSesion();
@@ -189,5 +203,45 @@ public class PerfilFragment extends Fragment {
         // Opcional: También cambiar el botón negativo si quieres
         Button negativeButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
         negativeButton.setTextColor(Color.parseColor("#2196F3"));
+    }
+
+    // En ListarUsuariosActivity.java
+
+    private void sincronizarUsuariosPendienesConFirebase() {
+
+        if (!detectarInternet.hayConexionInternet()) {
+
+            Toast.makeText(
+                    getContext(),
+                    "Sin conexión a internet",
+                    Toast.LENGTH_SHORT
+            ).show();
+
+            return;
+        }
+
+        Toast.makeText(
+                getContext(),
+                "Sincronizando cambios pendientes...",
+                Toast.LENGTH_SHORT
+        ).show();
+
+        // 🔥 Procesar pendientes
+        syncManager.procesarTodosLosPendientes(
+                getContext(),
+                new SyncManager.SyncManagerFinalCallback() {
+
+                    @Override
+                    public void onCompletado() {
+
+                        Log.d("SYNC_TOTAL",
+                                "✅ Sincronización total completada");
+
+                        // Opcional:
+                        // recargar datos
+                        // cargarUsuarios();
+                    }
+                }
+        );
     }
 }

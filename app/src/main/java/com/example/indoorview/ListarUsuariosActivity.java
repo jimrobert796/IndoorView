@@ -406,7 +406,7 @@ public class ListarUsuariosActivity extends AppCompatActivity implements Usuario
             // Guardando sin conexion con estado 4 eliminado sin conexion
             usuario.setEstado(4); // Eliminado sin conexion
 
-            db.eliminarUsuario(usuario.getId_usuario());
+            db.actualizarUsuario(usuario);
             Toast.makeText(this, "Usuario eliminado sin conexion", Toast.LENGTH_SHORT).show();
             recargarLista();
         }
