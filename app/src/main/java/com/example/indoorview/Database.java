@@ -905,7 +905,7 @@ public class Database extends SQLiteOpenHelper {
 
         int offset = (pagina - 1) * usuariosPorPagina;
 
-        String where = "estado = 1";
+        String where = "estado = 1 OR estado = 2 OR estado = 3";
         ArrayList<String> args = new ArrayList<>();
 
         // Filtro por texto (nombre o carnet)
@@ -951,7 +951,7 @@ public class Database extends SQLiteOpenHelper {
     public int getTotalUsuariosFiltrados(String textoBusqueda, int tipoFiltro) {
         SQLiteDatabase db = getReadableDatabase();
 
-        String where = "estado = 1";
+        String where = "estado = 1 OR estado = 2 OR estado = 3";
         ArrayList<String> args = new ArrayList<>();
 
         if (!textoBusqueda.isEmpty()) {
@@ -982,7 +982,7 @@ public class Database extends SQLiteOpenHelper {
     public List<Usuarios> getUsuarios() {
         List<Usuarios> lista = new ArrayList<>();
         SQLiteDatabase db = getReadableDatabase();
-        Cursor c = db.rawQuery("SELECT * FROM usuarios WHERE estado = 1", null);
+        Cursor c = db.rawQuery("SELECT * FROM usuarios WHERE estado = 1 OR estado = 2 OR estado = 3", null);
 
         while (c.moveToNext()) {
             Usuarios u = new Usuarios(
@@ -1101,6 +1101,119 @@ public class Database extends SQLiteOpenHelper {
         return lista;
     }
 
+    // ==================== PENDIENTES MODIFICAR ====================
+// ESTADO = 2
+
+    public List<Usuarios> getUsuariosPendientesModificar() {
+
+        List<Usuarios> lista = new ArrayList<>();
+
+        SQLiteDatabase db = getReadableDatabase();
+
+        Cursor c = db.rawQuery(
+                "SELECT * FROM usuarios WHERE estado = 2",
+                null
+        );
+
+        while (c.moveToNext()) {
+
+            Usuarios u = new Usuarios(
+                    c.getInt(c.getColumnIndexOrThrow("id_usuario")),
+                    c.getInt(c.getColumnIndexOrThrow("id_tipo")),
+                    c.getString(c.getColumnIndexOrThrow("nombres")),
+                    c.getString(c.getColumnIndexOrThrow("apellidos")),
+                    c.getString(c.getColumnIndexOrThrow("correo")),
+                    c.getString(c.getColumnIndexOrThrow("carnet")),
+                    c.getString(c.getColumnIndexOrThrow("contraseña")),
+                    c.getInt(c.getColumnIndexOrThrow("estado"))
+            );
+
+            lista.add(u);
+        }
+
+        c.close();
+        db.close();
+
+        return lista;
+    }
+
+    // ==================== PENDIENTES AGREGAR ====================
+// ESTADO = 3
+
+    public List<Usuarios> getUsuariosPendientesAgregar() {
+
+        List<Usuarios> lista = new ArrayList<>();
+
+        SQLiteDatabase db = getReadableDatabase();
+
+        Cursor c = db.rawQuery(
+                "SELECT * FROM usuarios WHERE estado = 3",
+                null
+        );
+
+        while (c.moveToNext()) {
+
+            Usuarios u = new Usuarios(
+                    c.getInt(c.getColumnIndexOrThrow("id_usuario")),
+                    c.getInt(c.getColumnIndexOrThrow("id_tipo")),
+                    c.getString(c.getColumnIndexOrThrow("nombres")),
+                    c.getString(c.getColumnIndexOrThrow("apellidos")),
+                    c.getString(c.getColumnIndexOrThrow("correo")),
+                    c.getString(c.getColumnIndexOrThrow("carnet")),
+                    c.getString(c.getColumnIndexOrThrow("contraseña")),
+                    c.getInt(c.getColumnIndexOrThrow("estado"))
+            );
+
+            lista.add(u);
+        }
+
+        c.close();
+        db.close();
+
+        return lista;
+    }
+
+
+    // ==================== PENDIENTES ELIMINAR ====================
+    // ESTADO = 4
+
+    public List<Usuarios> getUsuariosPendientesEliminar() {
+
+        List<Usuarios> lista = new ArrayList<>();
+
+        SQLiteDatabase db = getReadableDatabase();
+
+        Cursor c = db.rawQuery(
+                "SELECT * FROM usuarios WHERE estado = 4",
+                null
+        );
+
+        while (c.moveToNext()) {
+
+            Usuarios u = new Usuarios(
+                    c.getInt(c.getColumnIndexOrThrow("id_usuario")),
+                    c.getInt(c.getColumnIndexOrThrow("id_tipo")),
+                    c.getString(c.getColumnIndexOrThrow("nombres")),
+                    c.getString(c.getColumnIndexOrThrow("apellidos")),
+                    c.getString(c.getColumnIndexOrThrow("correo")),
+                    c.getString(c.getColumnIndexOrThrow("carnet")),
+                    c.getString(c.getColumnIndexOrThrow("contraseña")),
+                    c.getInt(c.getColumnIndexOrThrow("estado"))
+            );
+
+            lista.add(u);
+        }
+
+        c.close();
+        db.close();
+
+        return lista;
+    }
+
+
+
+
+
     // 8. ACTUALIZAR usuario
     public int actualizarUsuario(Usuarios usuario) {
         SQLiteDatabase db = getWritableDatabase();
@@ -1187,6 +1300,161 @@ public class Database extends SQLiteOpenHelper {
         db.close();
         return usuario;
     }
+
+    public boolean insertarOActualizarPorCarnet(Usuarios usuario) {
+
+        SQLiteDatabase db = this.getWritableDatabase();
+        Cursor cursor = null;
+
+        boolean exito = false;
+
+        try {
+
+            Log.d("DB_SYNC", "════════════════════════════════════");
+            Log.d("DB_SYNC", "🔍 Procesando usuario");
+            Log.d("DB_SYNC", "📌 Carnet: " + usuario.getCarnet());
+            Log.d("DB_SYNC", "📊 Estado: " + usuario.getEstado());
+
+            // Buscar si existe localmente
+            String query = "SELECT id_usuario FROM usuarios WHERE carnet = ?";
+            cursor = db.rawQuery(query, new String[]{usuario.getCarnet()});
+
+            ContentValues values = new ContentValues();
+            values.put("id_tipo", usuario.getId_tipo());
+            values.put("nombres", usuario.getNombres());
+            values.put("apellidos", usuario.getApellidos());
+            values.put("carnet", usuario.getCarnet());
+            values.put("contraseña", usuario.getContraseña());
+            values.put("correo", usuario.getCorreo());
+            values.put("estado", usuario.getEstado());
+
+            // ==================== EXISTE LOCALMENTE ====================
+
+            if (cursor != null && cursor.moveToFirst()) {
+
+                int id = cursor.getInt(0);
+
+                Log.d("DB_SYNC", "✏️ Usuario existe localmente");
+                Log.d("DB_SYNC", "🆔 ID Local: " + id);
+
+                int filas = db.update(
+                        "usuarios",
+                        values,
+                        "id_usuario = ?",
+                        new String[]{String.valueOf(id)}
+                );
+
+                exito = filas > 0;
+
+                if (exito) {
+                    usuario.setId_usuario(id);
+
+                    Log.d("DB_SYNC", "✅ Usuario actualizado");
+                } else {
+                    Log.e("DB_SYNC", "❌ Error actualizando");
+                }
+
+            }
+
+            // ==================== NO EXISTE LOCALMENTE ====================
+
+            else {
+
+                // ⚠️ Si viene eliminado NO insertarlo
+                if (usuario.getEstado() == 0) {
+
+                    Log.w("DB_SYNC", "⚠️ Usuario eliminado no será insertado");
+                    Log.w("DB_SYNC", "📌 Carnet: " + usuario.getCarnet());
+
+                    return false;
+                }
+
+                // Insertar solo si estado = 1
+                long id = db.insert("usuarios", null, values);
+
+                exito = id > 0;
+
+                if (exito) {
+
+                    usuario.setId_usuario((int) id);
+
+                    Log.d("DB_SYNC", "➕ Usuario insertado");
+                    Log.d("DB_SYNC", "🆔 Nuevo ID: " + id);
+
+                } else {
+
+                    Log.e("DB_SYNC", "❌ Error insertando usuario");
+                }
+            }
+
+        } catch (Exception e) {
+
+            Log.e("DB_SYNC", "❌ Error: " + e.getMessage(), e);
+
+        } finally {
+
+            if (cursor != null) {
+                cursor.close();
+            }
+
+            // ⚠️ No cerrar DB aquí en sincronizaciones masivas
+            // db.close();
+
+            Log.d("DB_SYNC", "════════════════════════════════════");
+        }
+
+        return exito;
+    }
+
+    /**
+     * Insertar o actualizar LOTE de usuarios
+     */
+    public int sincronizarLotePorCarnet(List<Usuarios> usuarios) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        int contador = 0;
+
+        try {
+            db.beginTransaction();
+
+            for (Usuarios usuario : usuarios) {
+                // Verificar si existe
+                String query = "SELECT id_usuario FROM usuarios WHERE carnet = ?";
+                Cursor cursor = db.rawQuery(query, new String[]{usuario.getCarnet()});
+
+                ContentValues values = new ContentValues();
+                values.put("carnet", usuario.getCarnet());
+                values.put("nombres", usuario.getNombres());
+                values.put("correo", usuario.getCorreo());
+                values.put("id_tipo", usuario.getId_tipo());
+                values.put("estado", usuario.getEstado());
+                values.put("fecha_sincronizacion", System.currentTimeMillis());
+
+                if (cursor.moveToFirst()) {
+                    // Actualizar
+                    int id = cursor.getInt(0);
+                    db.update("usuarios", values, "id_usuario = ?", new String[]{String.valueOf(id)});
+                    usuario.setId_usuario(id);
+                } else {
+                    // Insertar
+                    long id = db.insert("usuarios", null, values);
+                    usuario.setId_usuario((int) id);
+                }
+                cursor.close();
+                contador++;
+            }
+
+            db.setTransactionSuccessful();
+            Log.d("DB_SYNC", "✅ Lote sincronizado: " + contador + " usuarios");
+        } catch (Exception e) {
+            Log.e("DB_SYNC", "Error en lote: " + e.getMessage());
+        } finally {
+            db.endTransaction();
+            db.close();
+        }
+
+        return contador;
+    }
+
 
 
     // ════════════════════════════════════════════════════════════════
@@ -1421,6 +1689,23 @@ public class Database extends SQLiteOpenHelper {
             db.beginTransaction();
 
             db.delete("eventos", null, null);
+
+            db.setTransactionSuccessful();
+            Log.d("DB_CLEAN", "La tabla eventos se ha limpiado correctamente correctamente");
+        } catch (Exception e) {
+            Log.e("DB_CLEAN", "Error limpiando tablas: " + e.getMessage());
+        } finally {
+            db.endTransaction();
+            db.close();
+        }
+    }
+
+    public void limpiarTablaUsuarios() {
+        SQLiteDatabase db = getWritableDatabase();
+        try {
+            db.beginTransaction();
+
+            db.delete("usuarios", null, null);
 
             db.setTransactionSuccessful();
             Log.d("DB_CLEAN", "La tabla eventos se ha limpiado correctamente correctamente");

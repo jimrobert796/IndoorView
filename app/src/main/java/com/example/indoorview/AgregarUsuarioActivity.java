@@ -47,6 +47,8 @@ public class AgregarUsuarioActivity extends AppCompatActivity {
     private boolean cambiarContraseña = true;
     private String nuevaContraseñaHash = null;
 
+    private String carnetOriginal;
+
 
     // Variables para datos de sesión
     private int usuarioId;
@@ -56,6 +58,11 @@ public class AgregarUsuarioActivity extends AppCompatActivity {
     private String usuarioCarnet;
     private String usuarioCorreo;
     private String usuarioContraseñaHash;
+
+    // Utils
+    private DetectarInternet detectarInternet;
+    private FirebaseHelper firebaseHelper;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,6 +77,9 @@ public class AgregarUsuarioActivity extends AppCompatActivity {
 
         // Inicializar base de datos
         db = new Database(this);
+
+        firebaseHelper = new FirebaseHelper();
+        detectarInternet = new DetectarInternet(this);
 
         // Verificar si estamos editando
         Bundle extras = getIntent().getExtras();
@@ -163,6 +173,7 @@ public class AgregarUsuarioActivity extends AppCompatActivity {
                 etPassword.setText("12345678");
 
                 nuevaContraseñaHash = usuario.getContraseña();
+                carnetOriginal = usuario.getCarnet();
 
                 etPassword.setFocusable(false);
                 etPassword.setFocusableInTouchMode(false);
@@ -263,6 +274,7 @@ public class AgregarUsuarioActivity extends AppCompatActivity {
         // Obtener el tipo seleccionado (1 o 2)
         int idTipo = getTipoSeleccionado();
 
+        // SI ES EN MODO DE EDITAR O MODIFICAR
         if (esEdicion) {
             String passwordFinal;
             if (cambiarContraseña == false) {
@@ -274,48 +286,132 @@ public class AgregarUsuarioActivity extends AppCompatActivity {
             }
 
             // ACTUALIZAR
-            Usuarios usuario = new Usuarios(
-                    usuarioIdEdicion,
-                    idTipo,
-                    nombres,
-                    apellidos,
-                    correo,
-                    carnet,
-                    passwordFinal,
-                    1
-            );
 
-            int resultado = db.actualizarUsuario(usuario);
-            if (resultado > 0) {
-                Toast.makeText(this, "Usuario actualizado correctamente", Toast.LENGTH_SHORT).show();
-                setResult(RESULT_OK);
-                finish();
-            } else {
-                Toast.makeText(this, "Error al actualizar usuario", Toast.LENGTH_SHORT).show();
+            if (detectarInternet.hayConexionInternet()){
+
+                Usuarios usuario = new Usuarios(
+                        usuarioIdEdicion,
+                        idTipo,
+                        nombres,
+                        apellidos,
+                        correo,
+                        carnet,
+                        passwordFinal,
+                        1
+                );
+
+                int resultado = db.actualizarUsuario(usuario);
+
+                // Guardar en Firebase
+                firebaseHelper.actualizarUsuarioPorCarnet(usuario, new FirebaseHelper.FirebaseCallback() {
+                    @Override
+                    public void onSuccess(String mensaje) {
+                        Log.d("EVENTO", "✅ " + mensaje);
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        Log.e("EVENTO", "❌ " + error);
+                    }
+                });
+
+                if (resultado > 0) {
+                    Toast.makeText(this, "Usuario actualizado correctamente", Toast.LENGTH_SHORT).show();
+                    setResult(RESULT_OK);
+                    finish();
+                } else {
+                    Toast.makeText(this, "Error al actualizar usuario", Toast.LENGTH_SHORT).show();
+                }
+
+            }else {
+
+                // Guardar sin conexion a internet ESTADO 2 Modificado sin conexion
+                Usuarios usuario = new Usuarios(
+                        usuarioIdEdicion,
+                        idTipo,
+                        nombres,
+                        apellidos,
+                        correo,
+                        carnet,
+                        passwordFinal,
+                        2
+                );
+
+                int resultado = db.actualizarUsuario(usuario);
+
+                guardarEnSharedPreferencesModificar(resultado,usuarioCarnet, carnetOriginal);
+
+                if (resultado > 0) {
+                    Toast.makeText(this, "Usuario actualizado correctamente sin conexion", Toast.LENGTH_SHORT).show();
+                    setResult(RESULT_OK);
+                    finish();
+                } else {
+                    Toast.makeText(this, "Error al actualizar usuario", Toast.LENGTH_SHORT).show();
+                }
+
             }
+            // AGREGAR
         } else {
             String passwordHash = Utilidades.hashPassword(password);
 
-            Log.d("CONTRASEÑA_HASH", "NUEVO USUARIO POR ADMIN:"+ passwordHash);
-            // INSERTAR NUEVO
-            Usuarios usuario = new Usuarios(
-                    0,
-                    idTipo,
-                    nombres,
-                    apellidos,
-                    correo,
-                    carnet,
-                    passwordHash,
-                    1
-            );
+            if (detectarInternet.hayConexionInternet()){
+                Log.d("CONTRASEÑA_HASH", "NUEVO USUARIO POR ADMIN:"+ passwordHash);
+                // INSERTAR NUEVO
+                Usuarios usuario = new Usuarios(
+                        0,
+                        idTipo,
+                        nombres,
+                        apellidos,
+                        correo,
+                        carnet,
+                        passwordHash,
+                        1
+                );
 
-            long resultado = db.insertarUsuario(usuario);
-            if (resultado > 0) {
-                Toast.makeText(this, "Usuario agregado correctamente", Toast.LENGTH_SHORT).show();
-                setResult(RESULT_OK);
-                finish();
-            } else {
-                Toast.makeText(this, "Error al agregar usuario", Toast.LENGTH_SHORT).show();
+                long resultado = db.insertarUsuario(usuario);
+                // Guardar en Firebase
+                firebaseHelper.guardarUsuarioEnFirestore(usuario, new FirebaseHelper.FirebaseCallback() {
+                    @Override
+                    public void onSuccess(String mensaje) {
+                        Log.d("EVENTO", "✅ " + mensaje);
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        Log.e("EVENTO", "❌ " + error);
+                    }
+                });
+
+                if (resultado > 0) {
+                    Toast.makeText(this, "Usuario agregado correctamente", Toast.LENGTH_SHORT).show();
+                    setResult(RESULT_OK);
+                    finish();
+                } else {
+                    Toast.makeText(this, "Error al agregar usuario", Toast.LENGTH_SHORT).show();
+                }
+            }else {
+                // Sin conexion a internet guardar con estado 2
+                Log.d("CONTRASEÑA_HASH", "NUEVO USUARIO POR ADMIN:"+ passwordHash);
+                // INSERTAR NUEVO
+                Usuarios usuario = new Usuarios(
+                        0,
+                        idTipo,
+                        nombres,
+                        apellidos,
+                        correo,
+                        carnet,
+                        passwordHash,
+                        3 // SIN CONEXION PARA SINCRONIZAR
+                );
+
+                long resultado = db.insertarUsuario(usuario);
+                if (resultado > 0) {
+                    Toast.makeText(this, "Usuario agregado correctamente sin conexion", Toast.LENGTH_SHORT).show();
+                    setResult(RESULT_OK);
+                    finish();
+                } else {
+                    Toast.makeText(this, "Error al agregar usuario", Toast.LENGTH_SHORT).show();
+                }
             }
         }
     }
@@ -472,6 +568,17 @@ public class AgregarUsuarioActivity extends AppCompatActivity {
         Button negativeButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
         negativeButton.setTextColor(Color.parseColor("#2196F3"));
     }
+
+    // asi sabremos cual vamos a modificar gracias a su id 1 2 3 4 5 6 etc
+    private void guardarEnSharedPreferencesModificar(int idUsuarioEditando, String usuarioCarnet, String usuarioCarnetOriginal){
+        SharedPreferences prefs = getSharedPreferences("usuarios_pendientes_modificar", MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putBoolean("pendiente_" + idUsuarioEditando, true);
+        editor.putString("nombre_original_" + idUsuarioEditando, usuarioCarnetOriginal);
+        editor.putString("nombre_actual_" + idUsuarioEditando, usuarioCarnet);
+        editor.apply();
+    }
+
 
     private void obtenerDatosSesion() {
         // CORRECCIÓN: Usar requireContext() en lugar de getActivity()

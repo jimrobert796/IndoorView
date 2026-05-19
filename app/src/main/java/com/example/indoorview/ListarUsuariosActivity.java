@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -60,6 +61,11 @@ public class ListarUsuariosActivity extends AppCompatActivity implements Usuario
     private String textoBusqueda = "";
     private int tipoFiltro = -1;
 
+    private FirebaseHelper firebaseHelper;
+    private  DetectarInternet detectarInternet;
+
+    // En ListarUsuariosActivity.java
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -67,11 +73,113 @@ public class ListarUsuariosActivity extends AppCompatActivity implements Usuario
 
         inicializarVistas();
         configurarSpinnerFiltro();
-        db = new Database(this);
 
-        cargarUsuarios();
+        db = new Database(this);
+        firebaseHelper = new FirebaseHelper();
+        detectarInternet = new DetectarInternet(this);
+
         configurarBotones();
         configurarBuscador();
+
+        // 1️⃣ Primero mostrar datos locales (si hay)
+        cargarUsuarios();
+
+        // 2️⃣ Luego sincronizar con Firebase en segundo plano esto sigue
+        sincronizarConFirebase();
+    }
+
+    /**
+     * Sincronizar todos los usuarios desde Firebase a SQLite
+     */
+    private void sincronizarConFirebase() {
+        // Verificar si hay internet
+        if (!detectarInternet.hayConexionInternet()) {
+            Toast.makeText(this, "Sin conexión a internet", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Mostrar progreso (opcional)
+        Toast.makeText(this, "Sincronizando usuarios...", Toast.LENGTH_SHORT).show();
+
+        // Llamar al método de Firebase
+        firebaseHelper.obtenerYGuardarTodosLosUsuarios(this);
+
+        new android.os.Handler().postDelayed(() -> {
+            cargarUsuarios();
+            Toast.makeText(this, "Sincronización completada", Toast.LENGTH_SHORT).show();
+        }, 3000);
+
+
+    }
+
+
+    private void sincronizarConBusquedaFirebase(
+            String textoBusqueda,
+            int tipoFiltro
+    ) {
+
+        if (!detectarInternet.hayConexionInternet()) {
+
+            Toast.makeText(
+                    this,
+                    "Sin conexión a internet",
+                    Toast.LENGTH_SHORT
+            ).show();
+            cargarUsuarios();
+            return;
+        }
+
+        Toast.makeText(
+                this,
+                "Buscando usuarios...",
+                Toast.LENGTH_SHORT
+        ).show();
+
+        firebaseHelper.buscarYGuardarUsuarios(
+                textoBusqueda,
+                tipoFiltro,
+                this,
+                new FirebaseHelper.FirebaseBusquedaCallback() {
+
+                    @Override
+                    public void onComplete(int resultados, int guardados) {
+
+                        runOnUiThread(() -> {
+
+                            Log.d("BUSQUEDA_FIREBASE",
+                                    "✅ Resultados: " + resultados);
+
+                            Log.d("BUSQUEDA_FIREBASE",
+                                    "💾 Guardados: " + guardados);
+
+                            // Recargar RecyclerView
+                            cargarUsuarios();
+
+                            Toast.makeText(
+                                    ListarUsuariosActivity.this,
+                                    "Usuarios encontrados: " + resultados,
+                                    Toast.LENGTH_SHORT
+                            ).show();
+                        });
+                    }
+
+                    @Override
+                    public void onError(String error) {
+
+                        runOnUiThread(() -> {
+
+                            Log.e("BUSQUEDA_FIREBASE",
+                                    "❌ Error: " + error);
+
+                            Toast.makeText(
+                                    ListarUsuariosActivity.this,
+                                    "Error: " + error,
+                                    Toast.LENGTH_SHORT
+                            ).show();
+                        });
+                    }
+                }
+        );
     }
 
     /**
@@ -235,13 +343,17 @@ public class ListarUsuariosActivity extends AppCompatActivity implements Usuario
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 textoBusqueda = s.toString();
                 paginaActual = 1; // Volver a página 1 al buscar
-                cargarUsuarios();
+                sincronizarConBusquedaFirebase(textoBusqueda,tipoFiltro);
             }
 
             @Override
             public void afterTextChanged(Editable s) {}
         });
     }
+
+
+
+
 
     /**
      * Callback: Editar usuario
@@ -264,11 +376,43 @@ public class ListarUsuariosActivity extends AppCompatActivity implements Usuario
                 "¿Estás seguro que deseas eliminar a " + usuario.getNombres() + "?",
                 "Eliminar",
                 ()->{
-                    db.eliminarUsuario(usuario.getId_usuario());
-                    Toast.makeText(this, "Usuario eliminado", Toast.LENGTH_SHORT).show();
-                    recargarLista();
+                    eliminarUsuario(usuario);
                 }
                 );
+    }
+
+
+    private void eliminarUsuario(Usuarios usuario){
+
+        if (detectarInternet.hayConexionInternet()){
+
+            db.eliminarUsuario(usuario.getId_usuario());
+            Toast.makeText(this, "Usuario eliminado", Toast.LENGTH_SHORT).show();
+            recargarLista();
+
+            // Guardar en Firebase
+            firebaseHelper.softDeleteUsuarioPorCarnet(usuario.getCarnet(), new FirebaseHelper.FirebaseCallback() {
+                @Override
+                public void onSuccess(String mensaje) {
+                    Log.d("EVENTO", "✅ " + mensaje);
+                }
+
+                @Override
+                public void onError(String error) {
+                    Log.e("EVENTO", "❌ " + error);
+                }
+            });
+        }else {
+            // Guardando sin conexion con estado 4 eliminado sin conexion
+            usuario.setEstado(4); // Eliminado sin conexion
+
+            db.eliminarUsuario(usuario.getId_usuario());
+            Toast.makeText(this, "Usuario eliminado sin conexion", Toast.LENGTH_SHORT).show();
+            recargarLista();
+        }
+
+
+
     }
 
     /**
@@ -321,6 +465,7 @@ public class ListarUsuariosActivity extends AppCompatActivity implements Usuario
         Button negativeButton = dialog.getButton(android.app.AlertDialog.BUTTON_NEGATIVE);
         negativeButton.setTextColor(Color.parseColor("#2196F3"));
     }
+
 
     /**
      * Limpiar recursos

@@ -1,6 +1,7 @@
 package com.example.indoorview;
 import com.example.indoorview.models.Eventos;
 import com.example.indoorview.models.Usuarios;
+import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FieldValue;
@@ -14,12 +15,16 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
+
+import android.content.Context;
 import android.util.Log;
 
 public class FirebaseHelper {
 
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
     private CloudinaryHelper cloudinary = new CloudinaryHelper();
+
+
 
     // En FirebaseHelper.java - Nuevo callback para listas
     public interface FirebaseListCallback {
@@ -1600,16 +1605,386 @@ public class FirebaseHelper {
                 });
     }
 
+    public void obtenerUsuariosActualizados(
+            Timestamp ultimaFecha,
+            FirebaseCallback callback
+    ) {
+
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        db.collection("usuarios")
+                .whereGreaterThan("fecha_actualizacion", ultimaFecha)
+                .orderBy("fecha_actualizacion", Query.Direction.ASCENDING)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+
+                    List<Usuarios> lista = new ArrayList<>();
+
+                    for (DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
+
+                        Usuarios usuario = doc.toObject(Usuarios.class);
+
+                        if (usuario != null) {
+
+                            usuario.setCarnet(doc.getId());
+
+                            // guardar timestamp si quieres
+                            Timestamp ts = doc.getTimestamp("fecha_actualizacion");
+
+                            lista.add(usuario);
+
+                            Log.d("SYNC_FIREBASE",
+                                    "⬇ Usuario actualizado: "
+                                            + usuario.getNombres());
+                        }
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("SYNC_FIREBASE", "❌ " + e.getMessage());
+                    callback.onError(e.getMessage());
+                });
+    }
+
+    /**
+     * Obtener TODOS los usuarios de Firebase de una sola vez
+     */
+    /**
+     * Obtener TODOS los usuarios de Firebase y guardarlos UNO POR UNO en BD
+     * @param callback Callback que recibe el progreso
+     */
+    /**
+     * Obtener TODOS los usuarios de Firebase y guardarlos en BD (uno por uno)
+     * @param context Contexto de la aplicación (Activity o Application)
+     */
+    /**
+     * Obtener TODOS los usuarios de Firebase y guardarlos correctamente en BD
+     * @param context Contexto de la aplicación
+     */
+
+    public void obtenerYGuardarTodosLosUsuarios(Context context) {
+
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        Database dbLocal = new Database(context);
+
+        Log.d("SYNC_USUARIOS", "════════════════════════════════════════════");
+        Log.d("SYNC_USUARIOS", "🚀 INICIANDO SINCRONIZACIÓN DE USUARIOS");
+        Log.d("SYNC_USUARIOS", "════════════════════════════════════════════");
+
+        long inicioTiempo = System.currentTimeMillis();
+
+        db.collection("usuarios")
+                .get()
+
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+
+                    int contadorGuardados = 0;
+                    int contadorActualizados = 0;
+                    int contadorErrores = 0;
+
+                    int total = queryDocumentSnapshots.size();
+
+                    Log.d("SYNC_USUARIOS", "📥 Usuarios encontrados en Firebase: " + total);
+
+                    if (total == 0) {
+
+                        Log.w("SYNC_USUARIOS", "⚠️ No hay usuarios para sincronizar");
+                        return;
+                    }
+
+                    Log.d("SYNC_USUARIOS", "════════════════════════════════════════════");
+
+                    int posicion = 1;
+
+                    for (DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
+
+                        try {
+
+                            Log.d("SYNC_USUARIOS", "");
+                            Log.d("SYNC_USUARIOS", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+                            Log.d("SYNC_USUARIOS", "👤 PROCESANDO USUARIO " + posicion + "/" + total);
+
+                            // ==================== OBTENER DATOS ====================
+
+                            String carnet = doc.getId();
+
+                            String nombres = doc.getString("nombres");
+                            String apellidos = doc.getString("apellidos");
+                            String contra = doc.getString("contraseña");
+
+                            // ⚠️ OJO: en tu guardar usas "correo"
+                            String correo = doc.getString("correo");
+
+                            Long idTipoLong = doc.getLong("id_tipo");
+                            Long estadoLong = doc.getLong("estado");
+
+                            int idTipo = (idTipoLong != null)
+                                    ? idTipoLong.intValue()
+                                    : 1;
+
+                            int estado = (estadoLong != null)
+                                    ? estadoLong.intValue()
+                                    : 1;
+
+                            Log.d("SYNC_USUARIOS", "🆔 Carnet: " + carnet);
+                            Log.d("SYNC_USUARIOS", "📛 Nombre: " + nombres);
+                            Log.d("SYNC_USUARIOS", "📛 Apellido: " + apellidos);
+                            Log.d("SYNC_USUARIOS", "📧 Correo: " + correo);
+                            Log.d("SYNC_USUARIOS", "🔐 Contraseña: " + contra);
+                            Log.d("SYNC_USUARIOS", "👨‍💼 Tipo: " + idTipo);
+                            Log.d("SYNC_USUARIOS", "📌 Estado: " + estado);
+
+                            // ==================== VALIDACIONES ====================
+
+                            if (carnet == null || carnet.isEmpty()) {
+
+                                Log.e("SYNC_USUARIOS", "❌ ERROR: carnet vacío");
+                                contadorErrores++;
+                                continue;
+                            }
+
+                            if (nombres == null) nombres = "";
+                            if (apellidos == null) apellidos = "";
+                            if (correo == null) correo = "";
+                            if (contra == null) contra = "";
+
+                            // ==================== CREAR OBJETO ====================
+
+                            Usuarios usuario = new Usuarios(
+                                    0,
+                                    idTipo,
+                                    nombres,
+                                    apellidos,
+                                    correo,
+                                    carnet,
+                                    contra,
+                                    estado
+                            );
+
+                            // ==================== VERIFICAR EXISTENCIA ====================
 
 
+                            boolean guardado =
+                                    dbLocal.insertarOActualizarPorCarnet(usuario);
+
+                            if (guardado) {
+
+                            } else {
+
+                                contadorErrores++;
+
+                                Log.e("SYNC_USUARIOS",
+                                        "❌ ERROR GUARDANDO EN SQLITE");
+                            }
+
+                        } catch (Exception e) {
+
+                            contadorErrores++;
+
+                            Log.e("SYNC_USUARIOS",
+                                    "❌ EXCEPCIÓN PROCESANDO USUARIO");
+
+                            Log.e("SYNC_USUARIOS",
+                                    "Mensaje: " + e.getMessage());
+
+                            e.printStackTrace();
+                        }
+
+                        posicion++;
+                    }
+
+                    // ==================== RESUMEN FINAL ====================
+
+                    long finTiempo = System.currentTimeMillis();
+                    long duracion = finTiempo - inicioTiempo;
+
+                    Log.d("SYNC_USUARIOS", "");
+                    Log.d("SYNC_USUARIOS", "════════════════════════════════════════════");
+                    Log.d("SYNC_USUARIOS", "🏁 SINCRONIZACIÓN FINALIZADA");
+                    Log.d("SYNC_USUARIOS", "════════════════════════════════════════════");
+
+                    Log.d("SYNC_USUARIOS", "📥 Total Firebase: " + total);
+                    Log.d("SYNC_USUARIOS", "➕ Insertados: " + contadorGuardados);
+                    Log.d("SYNC_USUARIOS", "🔄 Actualizados: " + contadorActualizados);
+                    Log.d("SYNC_USUARIOS", "❌ Errores: " + contadorErrores);
+
+                    Log.d("SYNC_USUARIOS", "⏱ Tiempo total: " + duracion + " ms");
+
+                    Log.d("SYNC_USUARIOS", "════════════════════════════════════════════");
+                })
+
+                .addOnFailureListener(e -> {
+
+                    Log.e("SYNC_USUARIOS", "════════════════════════════════════════════");
+                    Log.e("SYNC_USUARIOS", "❌ ERROR OBTENIENDO USUARIOS");
+                    Log.e("SYNC_USUARIOS", "════════════════════════════════════════════");
+
+                    Log.e("SYNC_USUARIOS", "📛 Mensaje: " + e.getMessage());
+
+                    e.printStackTrace();
+                });
+    }
 
 
+    public interface FirebaseBusquedaCallback {
+        void onComplete(int resultados, int guardados);
+        void onError(String error);
+    }
 
+    public void buscarYGuardarUsuarios(
+            String textoBusqueda,
+            int tipoFiltro,
+            Context context,
+            FirebaseBusquedaCallback callback
+    ) {
 
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        Database dbLocal = new Database(context);
 
+        Log.d("FIREBASE", "════════════════════════════════════");
+        Log.d("FIREBASE", "🔍 BUSCANDO USUARIOS");
+        Log.d("FIREBASE", "📌 Texto búsqueda: " + textoBusqueda);
+        Log.d("FIREBASE", "📌 Tipo filtro: " + tipoFiltro);
 
+        Query query = db.collection("usuarios");
 
+        // Filtro por tipo
+        if (tipoFiltro != -1) {
+            query = query.whereEqualTo("id_tipo", tipoFiltro);
+        }
 
+        // ✅ Limitar resultados
+        query = query.limit(20);
+
+        query.get()
+
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+
+                    List<Usuarios> resultados = new ArrayList<>();
+
+                    int guardados = 0;
+                    int total = queryDocumentSnapshots.size();
+
+                    Log.d("FIREBASE", "📥 Documentos obtenidos: " + total);
+
+                    for (DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
+
+                        try {
+
+                            String carnet = doc.getId();
+
+                            String nombres = doc.getString("nombres");
+                            String apellidos = doc.getString("apellidos");
+                            String contra = doc.getString("contraseña");
+                            String correo = doc.getString("correo");
+
+                            Long idTipoLong = doc.getLong("id_tipo");
+                            Long estadoLong = doc.getLong("estado");
+
+                            int idTipo = (idTipoLong != null)
+                                    ? idTipoLong.intValue()
+                                    : 1;
+
+                            int estado = (estadoLong != null)
+                                    ? estadoLong.intValue()
+                                    : 1;
+
+                            Usuarios usuario = new Usuarios(
+                                    0,
+                                    idTipo,
+                                    nombres,
+                                    apellidos,
+                                    correo,
+                                    carnet,
+                                    contra,
+                                    estado
+                            );
+
+                            // ==================== FILTRO ====================
+
+                            boolean coincide = false;
+
+                            if (textoBusqueda != null && !textoBusqueda.isEmpty()) {
+
+                                String busqueda = textoBusqueda.toLowerCase();
+
+                                if (
+                                        carnet.toLowerCase().contains(busqueda)
+                                                || nombres.toLowerCase().contains(busqueda)
+                                ) {
+
+                                    coincide = true;
+                                }
+
+                            } else {
+
+                                coincide = true;
+                            }
+
+                            // ==================== GUARDAR ====================
+
+                            if (coincide) {
+
+                                resultados.add(usuario);
+
+                                Log.d("FIREBASE",
+                                        "✅ Usuario encontrado: "
+                                                + carnet
+                                                + " - "
+                                                + nombres);
+
+                                if (dbLocal.insertarOActualizarPorCarnet(usuario)) {
+
+                                    guardados++;
+
+                                    Log.d("FIREBASE",
+                                            "💾 Guardado localmente: "
+                                                    + carnet);
+
+                                } else {
+
+                                    Log.w("FIREBASE",
+                                            "⚠️ No se guardó: "
+                                                    + carnet);
+                                }
+                            }
+
+                        } catch (Exception e) {
+
+                            Log.e("FIREBASE",
+                                    "❌ Error procesando documento: "
+                                            + e.getMessage());
+                        }
+                    }
+
+                    Log.d("FIREBASE", "════════════════════════════════════");
+                    Log.d("FIREBASE", "✅ BÚSQUEDA FINALIZADA");
+                    Log.d("FIREBASE", "📥 Total documentos: " + total);
+                    Log.d("FIREBASE", "🔍 Resultados: " + resultados.size());
+                    Log.d("FIREBASE", "💾 Guardados: " + guardados);
+                    Log.d("FIREBASE", "════════════════════════════════════");
+
+                    dbLocal.close();
+
+                    // ✅ CALLBACK
+                    if (callback != null) {
+                        callback.onComplete(resultados.size(), guardados);
+                    }
+                })
+
+                .addOnFailureListener(e -> {
+
+                    Log.e("FIREBASE",
+                            "❌ Error en búsqueda: "
+                                    + e.getMessage());
+
+                    dbLocal.close();
+
+                    // ✅ CALLBACK ERROR
+                    if (callback != null) {
+                        callback.onError(e.getMessage());
+                    }
+                });
+    }
 
 
 
