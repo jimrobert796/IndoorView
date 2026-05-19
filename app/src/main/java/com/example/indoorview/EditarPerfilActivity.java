@@ -36,6 +36,9 @@ public class EditarPerfilActivity extends AppCompatActivity {
 
     // Base de datos
     private Database db;
+    private FirebaseHelper firebaseHelper;
+    private DetectarInternet detectarInternet;
+
 
     // Variables para datos de sesión
     private int usuarioId;
@@ -60,6 +63,8 @@ public class EditarPerfilActivity extends AppCompatActivity {
 
         // Inicializar base de datos
         db = new Database(this);
+        firebaseHelper = new FirebaseHelper();
+        detectarInternet = new DetectarInternet(this);
 
         // Obtener datos de sesión
         obtenerDatosSesion();
@@ -240,33 +245,94 @@ public class EditarPerfilActivity extends AppCompatActivity {
             Log.d("CONTRASEÑA_HASH", "SE MANTIENE LA CONTRA HASHED:"+ passwordFinal);
         }
 
-        // Crear objeto usuario (tipo 1 por defecto, se mantiene el original)
-        Usuarios usuario = new Usuarios(
-                usuarioId,
-                usuarioTipo, // Mantener el tipo original (no editable)
-                nombres,
-                apellidos,
-                correo,
-                carnet,
-                passwordFinal,
-                1
-        );
 
-        // Actualizar en la base de datos
-        int resultado = db.actualizarUsuario(usuario);
+        if (detectarInternet.hayConexionInternet()){
 
-        if (resultado > 0) {
-            // Actualizar SharedPreferences
-            actualizarSesionAdmin(carnet,nombres, apellidos, correo,passwordFinal);
+            // Crear objeto usuario (tipo 1 por defecto, se mantiene el original)
+            Usuarios usuario = new Usuarios(
+                    usuarioId,
+                    usuarioTipo, // Mantener el tipo original (no editable)
+                    nombres,
+                    apellidos,
+                    correo,
+                    carnet,
+                    passwordFinal,
+                    1
+            );
 
-            Toast.makeText(this, "Perfil actualizado correctamente", Toast.LENGTH_SHORT).show();
-            setResult(RESULT_OK);
-            finish();
-        } else {
-            Toast.makeText(this, "Error al actualizar el perfil", Toast.LENGTH_SHORT).show();
-            setResult(RESULT_CANCELED);  // Opcional
+            // Actualizamos en firebase los datos del usuario
+            firebaseHelper.actualizarUsuarioPorCarnet(usuario, new FirebaseHelper.FirebaseCallback() {
+                @Override
+                public void onSuccess(String mensaje) {
+                    Log.d("EVENTO", "✅ " + mensaje);
+                }
+
+                @Override
+                public void onError(String error) {
+                    Log.e("EVENTO", "❌ " + error);
+                }
+            });
+
+            // Actualizar en la base de datos
+            int resultado = db.actualizarUsuario(usuario);
+
+            if (resultado > 0) {
+                // Actualizar SharedPreferences
+                actualizarSesionAdmin(carnet,nombres, apellidos, correo,passwordFinal);
+
+                Toast.makeText(this, "Perfil actualizado correctamente", Toast.LENGTH_SHORT).show();
+                setResult(RESULT_OK);
+                finish();
+            } else {
+                Toast.makeText(this, "Error al actualizar el perfil", Toast.LENGTH_SHORT).show();
+                setResult(RESULT_CANCELED);  // Opcional
+            }
+
+        }else{
+            // Guardar en pendientes con estado 2
+
+            // Crear objeto usuario (tipo 1 por defecto, se mantiene el original)
+            Usuarios usuario = new Usuarios(
+                    usuarioId,
+                    usuarioTipo, // Mantener el tipo original (no editable)
+                    nombres,
+                    apellidos,
+                    correo,
+                    carnet,
+                    passwordFinal,
+                    1
+            );
+
+            // Actualizar en la base de datos
+            int resultado = db.actualizarUsuario(usuario);
+
+            guardarEnSharedPreferencesModificar(usuarioId, carnet, usuarioCarnet);
+
+            if (resultado > 0) {
+                // Actualizar SharedPreferences
+                actualizarSesionAdmin(carnet,nombres, apellidos, correo,passwordFinal);
+
+                Toast.makeText(this, "Perfil actualizado correctamente", Toast.LENGTH_SHORT).show();
+                setResult(RESULT_OK);
+                finish();
+            } else {
+                Toast.makeText(this, "Error al actualizar el perfil", Toast.LENGTH_SHORT).show();
+                setResult(RESULT_CANCELED);  // Opcional
+            }
         }
+
     }
+
+    // asi sabremos cual vamos a modificar gracias a su id 1 2 3 4 5 6 etc
+    private void guardarEnSharedPreferencesModificar(int idUsuarioEditando, String usuarioCarnet, String usuarioCarnetOriginal){
+        SharedPreferences prefs = getSharedPreferences("usuarios_pendientes_modificar", MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putBoolean("pendiente_" + idUsuarioEditando, true);
+        editor.putString("nombre_original_" + idUsuarioEditando, usuarioCarnetOriginal);
+        editor.putString("nombre_actual_" + idUsuarioEditando, usuarioCarnet);
+        editor.apply();
+    }
+
     /**
      * Actualizar datos de sesión en SharedPreferences
      */
