@@ -257,12 +257,15 @@ public class MapaFragment extends Fragment {
                 new android.os.Handler().postDelayed(() -> {
                     loadingDialog.dismiss();
                     reInicarMapa();
+                    mapManager.actualizarVisibilidadPinesPorZoom(0.0);
                 }, 500);
             }
 
             @Override
             public void onError(String error) {
                 Log.e("SYNC_ERROR", "❌ " + error);
+                loadingDialog.dismiss();
+                reInicarMapa();
             }
         });
 
@@ -1021,7 +1024,7 @@ public class MapaFragment extends Fragment {
                     mapView.getMapboxMap().setCamera(
                             new CameraOptions.Builder()
                                     .center(Point.fromLngLat(-88.41783453298294, 13.342296805328829))
-                                    .zoom(17.0)
+                                    .zoom(18.0)
                                     .build()
                     );
 
@@ -1029,7 +1032,7 @@ public class MapaFragment extends Fragment {
                     mapView.getMapboxMap().setBounds(
                             new CameraBoundsOptions.Builder()
                                     .minZoom(16.0)
-                                    .maxZoom(20.0)
+                                    .maxZoom(22.0)
                                     .build()
                     );
 
@@ -1062,14 +1065,14 @@ public class MapaFragment extends Fragment {
                     );
 
 
-
-
-
             // cargar el los detalles
             mapManager.cargarLineStringDetalles();
 
             // Cargar polígonos de lugares
             mapManager.cargarPoligonosLugar();
+
+            // Hacer que la visibilidad se desabilite por defaul
+            mapManager.actualizarVisibilidadPinesPorZoom(0.0);
 
             // Crear manager permanente para UGB pin
             AnnotationPlugin annotationPlugin = mapView.getPlugin(Plugin.Mapbox.MAPBOX_ANNOTATION_PLUGIN_ID);

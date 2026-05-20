@@ -489,10 +489,10 @@ public class MapManager {
         animationPlugin.easeTo(
                 new CameraOptions.Builder()
                         .center(punto)
-                        .zoom(19.8)
+                        .zoom(20.8)
                         .build(),
                 new MapAnimationOptions.Builder()
-                        .duration(1200L)
+                        .duration(2600L)
                         .build(),
                 null
         );
@@ -3474,8 +3474,8 @@ public class MapManager {
 
     public void actualizarVisibilidadPinesPorZoom(double zoomActual) {
         // Configurar umbrales de zoom (puedes ajustar estos valores)
-        double zoomMinimoLugares = 17.0;  // Mostrar lugares a partir de zoom 17
-        double zoomMinimoPines = 18.5;    // Mostrar pines de espacios a partir de zoom 18.5
+        double zoomMinimoLugares = 19.4;  // Mostrar lugares a partir de zoom 17
+        double zoomMinimoPines = 19.4;    // Mostrar pines de espacios a partir de zoom 18.5
 
         // Actualizar visibilidad de pines de LUGARES
         // ✅ ACTUALIZAR LUGARES (respetando elemento seleccionado)
