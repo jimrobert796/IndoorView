@@ -534,30 +534,8 @@ public class SyncManager {
                     Log.d(TAG, "  • Firebase ID: " + lugarFirebaseId);
                     Log.d(TAG, "════════════════════════════════════════════");
 
-                    String nombrePrimerPiso = "Primera Planta";
-                    long idPrimerPiso = db.insertPiso((int)idLugarLocal, 1, nombrePrimerPiso);
 
-                    if (idPrimerPiso == -1) {
-                        Log.e(TAG, "❌ Error al crear primer piso");
-                        procesarLugaresEnCadena(lugares, indice + 1);
-                        return;
-                    }
-
-                    Log.d(TAG, "════════════════════════════════════════════");
-                    Log.d(TAG, "📦 INSERTANDO PRIMER PISO EN BD LOCAL");
-                    Log.d(TAG, "════════════════════════════════════════════");
-                    Log.d(TAG, "  DATOS A GUARDAR:");
-                    Log.d(TAG, "    • id_lugar (FK): " + idLugarLocal);
-                    Log.d(TAG, "    • numero: 1");
-                    Log.d(TAG, "    • nombre: " + nombrePrimerPiso);
-                    Log.d(TAG, "    • activo: 1");
-                    Log.d(TAG, "════════════════════════════════════════════");
-                    Log.d(TAG, "✅ PISO GUARDADO EN BD LOCAL");
-                    Log.d(TAG, "  • ID Local (generado): " + idPrimerPiso);
-                    Log.d(TAG, "  • ID Lugar (FK): " + idLugarLocal);
-                    Log.d(TAG, "════════════════════════════════════════════");
-
-                    sincronizarEspaciosDelLugarYContinuar(lugarFirebaseId, (int)idLugarLocal, (int)idPrimerPiso, lugares, indice);
+                    sincronizarEspaciosDelLugarYContinuar(lugarFirebaseId, (int)idLugarLocal, 0, lugares, indice);
 
                 }
             });

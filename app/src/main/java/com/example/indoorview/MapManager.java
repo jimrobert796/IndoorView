@@ -492,7 +492,8 @@ public class MapManager {
                         .zoom(20.8)
                         .build(),
                 new MapAnimationOptions.Builder()
-                        .duration(2600L)
+                        .duration(1200L)
+            // ← REDUCIR de 3000 a 1200ms
                         .build(),
                 null
         );
@@ -543,6 +544,12 @@ public class MapManager {
     // ════════════════════════════════════════════════════════════════
 
     public void cargarPoligonosLugar() {
+        limpiarLugares();
+        limpiarPinesTemporales();
+        limpiarTodoTemporal();
+        limpiarPinEvento();
+        limpiarEspacios();
+
         List<Lugar> lugares = db.getLugares();
 
         if (lugares.isEmpty()) {
@@ -780,6 +787,7 @@ public class MapManager {
     }
 
     public void dibujarPoligonoEspacio(Geometria geometria, Espacio espacio) {
+
         String vertices = geometria.getVertices();
         int idGeo = geometria.getId_geometria();
 
@@ -1644,6 +1652,8 @@ public class MapManager {
     // ════════════════════════════════════════════════════════════════
 
     public void cargarPisos(int idLugar) {
+        limpiarEspacios();
+
         List<Pisos> pisos = db.getPisosByLugar(idLugar);
         List<Integer> listaPisosId = new ArrayList<>();
         List<String> nombresPisos = new ArrayList<>();
@@ -1697,6 +1707,9 @@ public class MapManager {
     }
 
     public void mostrarEspaciosPorPiso(int idLugar, int numeroPiso) {
+
+        // Limpieza de espacios
+        limpiarEspacios();
         List<Espacio> espacios = db.getEspaciosByLugar(idLugar);
 
         Log.d("DEBUG_PISO", "=== DEBUGGING mostrarEspaciosPorPiso ===");
