@@ -131,6 +131,9 @@ public class MapManager {
     private CloudinaryHelper cloudinaryHelper;
     private DetectarInternet detectarInternet;
 
+    // PARA MEJORAR EL RENDIMIENTO DE PINES
+    private final HashMap<String, Bitmap> cachePins = new HashMap<>();
+
     // ════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ════════════════════════════════════════════════════════════════
@@ -311,7 +314,7 @@ public class MapManager {
             mostrarBottomSheetLugar(data);
             limpiarEspacios();
             lugarSeleccionado = -1;
-            Toast.makeText(context, "Lugar: " + data.get("nombre").getAsString(), Toast.LENGTH_SHORT).show();
+            //Toast.makeText(context, "Lugar: " + data.get("nombre").getAsString(), Toast.LENGTH_SHORT).show();
         }
 
         // Animar cámara hacia el lugar
@@ -506,7 +509,7 @@ public class MapManager {
             if (testDb != null && testDb.isOpen()) {
                 Toast.makeText(context, "Base de datos conectada correctamente", Toast.LENGTH_SHORT).show();
                 Log.d("BD_CONEXION", "Base de datos abierta correctamente");
-                contarRegistros();
+                //contarRegistros();
             } else {
                 Toast.makeText(context, "Error: No se pudo conectar a la BD", Toast.LENGTH_LONG).show();
             }
@@ -860,6 +863,8 @@ public class MapManager {
     // MÉTODOS DE PINES Y BITMAPS
     // ════════════════════════════════════════════════════════════════
 
+    /*
+
     private Bitmap crearPinBitmap(String hexColor) {
         int size = 60;
         Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
@@ -886,6 +891,47 @@ public class MapManager {
         return bitmap;
     }
 
+     */
+
+    private Bitmap crearPinBitmap(String hexColor) {
+        // Verificar si ya existe en caché
+        if (cachePins.containsKey(hexColor)) {
+            return cachePins.get(hexColor);
+        }
+
+        // Crear nuevo bitmap
+        int size = 48;
+        Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_4444);
+        Canvas canvas = new Canvas(bitmap);
+
+        Paint sombra = new Paint(Paint.ANTI_ALIAS_FLAG);
+        sombra.setColor(Color.parseColor("#44000000"));
+        canvas.drawCircle(size / 2f + 2, size / 2f + 2, size / 2.5f, sombra);
+
+        Paint exterior = new Paint(Paint.ANTI_ALIAS_FLAG);
+        exterior.setColor(Color.parseColor(hexColor));
+        canvas.drawCircle(size / 2f, size / 2f, size / 2.5f, exterior);
+
+        Paint borde = new Paint(Paint.ANTI_ALIAS_FLAG);
+        borde.setColor(Color.WHITE);
+        borde.setStyle(Paint.Style.STROKE);
+        borde.setStrokeWidth(3f);
+        canvas.drawCircle(size / 2f, size / 2f, size / 2.5f, borde);
+
+        Paint interior = new Paint(Paint.ANTI_ALIAS_FLAG);
+        interior.setColor(Color.WHITE);
+        canvas.drawCircle(size / 2f, size / 2f, size / 6f, interior);
+        // Guardar en caché
+        cachePins.put(hexColor, bitmap);
+
+        return bitmap;
+    }
+
+    // Seleccionar pin por color (usa caché automáticamente)
+    private Bitmap seleccionarPinPorColor(String hexColor) {
+        return crearPinBitmap(hexColor);
+    }
+
     public Bitmap crearPuntoBitmap(String hexColor) {
         int size = 30;
         Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
@@ -905,7 +951,7 @@ public class MapManager {
     }
 
     private void agregarPinLugar(Point punto, String texto, String color, Lugar lugar) {
-        Bitmap icono = crearPinBitmap(color);
+        Bitmap icono = seleccionarPinPorColor(color);
 
         JsonObject data = new JsonObject();
         data.addProperty("id_lugar", lugar.getId_lugar());
@@ -944,7 +990,7 @@ public class MapManager {
         data.addProperty("vertices", geometria.getVertices());
         data.addProperty("color", geometria.getColor());
 
-        Bitmap icono = crearPinBitmap(color);
+        Bitmap icono = seleccionarPinPorColor(color);
         PointAnnotationOptions op = new PointAnnotationOptions()
                 .withPoint(punto)
                 .withIconImage(icono)
@@ -2188,7 +2234,7 @@ public class MapManager {
         HorizontalScrollView hsvFotos = view.findViewById(R.id.hsv_fotos);
         if (urlsValidas.isEmpty()) {
             hsvFotos.setVisibility(View.GONE);
-            Toast.makeText(context, "Este lugar no tiene imágenes", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(context, "Este lugar no tiene imágenes", Toast.LENGTH_SHORT).show();
         } else {
             hsvFotos.setVisibility(View.VISIBLE);
         }
