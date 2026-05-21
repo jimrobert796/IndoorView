@@ -125,6 +125,7 @@ public class EditarPerfilActivity extends AppCompatActivity {
                 nuevaContraseñaHash = usuarioContraseñaHash;
 
                 if (usuarioTipo == 2){
+                    etCarnet.setEnabled(false);
                     // Ocultar funcionamiento de contraseña
                     etPassword.setFocusable(false);
                     etPassword.setFocusableInTouchMode(false);
@@ -274,9 +275,9 @@ public class EditarPerfilActivity extends AppCompatActivity {
             });
 
             // Actualizar en la base de datos
-            int resultado = db.actualizarUsuario(usuario);
+            Boolean resultado = db.insertarOActualizarPorCarnet(usuario);
 
-            if (resultado > 0) {
+            if (resultado == true) {
                 // Actualizar SharedPreferences
                 actualizarSesionAdmin(carnet,nombres, apellidos, correo,passwordFinal);
 

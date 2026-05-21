@@ -897,15 +897,15 @@ public class Database extends SQLiteOpenHelper {
      * Obtener usuarios paginados CON FILTRO
      */
     public List<Usuarios> getUsuariosPaginadosFiltrados(int pagina,
-                                                        int usuariosPorPagina,
-                                                        String textoBusqueda,
-                                                        int tipoFiltro) {
+                                                       int usuariosPorPagina,
+                                                       String textoBusqueda,
+                                                       int tipoFiltro) {
         List<Usuarios> lista = new ArrayList<>();
         SQLiteDatabase db = getReadableDatabase();
 
         int offset = (pagina - 1) * usuariosPorPagina;
 
-        String where = "estado = 1 OR estado = 2 OR estado = 3";
+        String where = "estado IN (1, 2, 3)";
         ArrayList<String> args = new ArrayList<>();
 
         // Filtro por texto (nombre o carnet)

@@ -83,7 +83,6 @@
                     android:layout_marginTop="8dp"
                     android:background="@drawable/bg_campo_perfil"
                     android:hint="Ingrese su nueva contraseña"
-                    android:inputType="textPassword"
                     android:padding="12dp"
                     android:textColor="@android:color/white"
                     android:textColorHint="#B3FFFFFF" />
@@ -107,7 +106,6 @@
                     android:layout_marginTop="8dp"
                     android:background="@drawable/bg_campo_perfil"
                     android:hint="Confirme su nueva contraseña"
-                    android:inputType="textPassword"
                     android:padding="12dp"
                     android:textColor="@android:color/white"
                     android:textColorHint="#B3FFFFFF" />

@@ -175,6 +175,9 @@ public class AgregarUsuarioActivity extends AppCompatActivity {
                 nuevaContraseñaHash = usuario.getContraseña();
                 carnetOriginal = usuario.getCarnet();
 
+                //Que no edite el carnet
+                etCarnet.setEnabled(false);
+
                 etPassword.setFocusable(false);
                 etPassword.setFocusableInTouchMode(false);
                 tvPasswordConfirmar.setVisibility(View.GONE);

@@ -39,7 +39,10 @@
                         android:layout_alignParentStart="true"
                         android:padding="8dp"
                         android:src="@drawable/ic_regreso"
-                        android:contentDescription="Regresar" />
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:tint="@android:color/white"
+                        android:contentDescription="Regresar"
+                        android:scaleType="centerInside" />
 
                     <!-- Logo de la universidad -->
                     <ImageView
