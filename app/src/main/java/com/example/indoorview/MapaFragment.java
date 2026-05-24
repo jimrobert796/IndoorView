@@ -1036,6 +1036,8 @@ public class MapaFragment extends Fragment {
                                     .build()
                     );
 
+
+
                     // Desactivar edificios por defecto de OpenStreetMap
                     style.setStyleLayerProperty(
                             "building",
@@ -1063,6 +1065,11 @@ public class MapaFragment extends Fragment {
                             "visibility",
                             Value.valueOf("none")
                     );
+                    style.setStyleLayerProperty(
+                            "poi-label",
+                            "visibility",
+                            Value.valueOf("none")
+                    );
 
 
             // cargar el los detalles
@@ -1086,6 +1093,7 @@ public class MapaFragment extends Fragment {
             configurarClickMapa(style);
         });
     }
+
 
     // NUEVO METODO: Configurar listener de cambios de zoom
     private void configurarListenerZoom() {

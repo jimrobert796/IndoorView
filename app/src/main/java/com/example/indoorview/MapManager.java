@@ -731,7 +731,7 @@ public class MapManager {
 
                 HashMap<String, Value> linePaint = new HashMap<>();
                 linePaint.put("line-color", Value.valueOf(color));
-                //linePaint.put("line-width", Value.valueOf(0.5));
+                linePaint.put("line-width", Value.valueOf(0.5));
                 lineLayerProps.put("paint", new Value(linePaint));
                 style.addStyleLayer(new Value(lineLayerProps), null);
 
@@ -964,15 +964,15 @@ public class MapManager {
 
         PointAnnotationOptions op = new PointAnnotationOptions()
                 .withPoint(punto)
-                .withIconImage(icono)
-                .withIconSize(0.9)
+                //.withIconImage(icono)
+                .withIconSize(2)
                 .withTextField(texto)
-                .withTextSize(11.0)
+                .withTextSize(13.0)
                 .withIconAnchor(IconAnchor.CENTER)
                 .withTextColor("#000000")
                 .withTextHaloColor("#ffffff")
-                .withTextHaloWidth(2.0)
-                .withTextOffset(Arrays.asList(0.0, 1.5))
+                .withTextHaloWidth(12.0)
+                //.withTextOffset(Arrays.asList(0.0, 1.5))
                 .withData(data);
         managerLugares.create(op);
     }
@@ -993,15 +993,15 @@ public class MapManager {
         Bitmap icono = seleccionarPinPorColor(color);
         PointAnnotationOptions op = new PointAnnotationOptions()
                 .withPoint(punto)
-                .withIconImage(icono)
-                .withIconSize(0.9)
+                //.withIconImage(icono)
+                .withIconSize(2)
                 .withTextField(texto)
-                .withTextSize(11.0)
+                .withTextSize(13.0)
                 .withIconAnchor(IconAnchor.CENTER)
                 .withTextColor("#000000")
                 .withTextHaloColor("#ffffff")
-                .withTextHaloWidth(2.0)
-                .withTextOffset(Arrays.asList(0.0, 1.5))
+                .withTextHaloWidth(12.0)
+                //.withTextOffset(Arrays.asList(0.0, 1.5))
                 .withData(data);
         managerEspacios.create(op);
     }
@@ -1012,13 +1012,13 @@ public class MapManager {
         PointAnnotationOptions op = new PointAnnotationOptions()
                 .withPoint(punto)
                 .withIconImage(icono)
-                .withIconSize(0.9)
+                .withIconSize(1)
                 .withTextField(texto)
-                .withTextSize(11.0)
+                .withTextSize(12.0)
                 .withIconAnchor(IconAnchor.CENTER)
                 .withTextColor("#000000")
                 .withTextHaloColor("#ffffff")
-                .withTextHaloWidth(2.0)
+                .withTextHaloWidth(12.0)
                 .withTextOffset(Arrays.asList(0.0, 2.8))
                 .withData(data);
         managerEventos.create(op);
@@ -3533,8 +3533,8 @@ public class MapManager {
 
     public void actualizarVisibilidadPinesPorZoom(double zoomActual) {
         // Configurar umbrales de zoom (puedes ajustar estos valores)
-        double zoomMinimoLugares = 19.4;  // Mostrar lugares a partir de zoom 17
-        double zoomMinimoPines = 19.4;    // Mostrar pines de espacios a partir de zoom 18.5
+        double zoomMinimoLugares = 18.4;  // Mostrar lugares a partir de zoom 17
+        double zoomMinimoPines = 18.4;    // Mostrar pines de espacios a partir de zoom 18.5
 
         // Actualizar visibilidad de pines de LUGARES
         // ✅ ACTUALIZAR LUGARES (respetando elemento seleccionado)

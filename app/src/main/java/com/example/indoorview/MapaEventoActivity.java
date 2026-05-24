@@ -299,6 +299,12 @@ public class MapaEventoActivity extends AppCompatActivity {
                 style.setStyleLayerProperty("landuse", "visibility", Value.valueOf("none"));
                 style.setStyleLayerProperty("landuse-overlay", "visibility", Value.valueOf("none"));
                 style.setStyleLayerProperty("pitch-outline", "visibility", Value.valueOf("none"));
+                style.setStyleLayerProperty(
+                        "poi-label",
+                        "visibility",
+                        Value.valueOf("none")
+                );
+
 
                 // CREAR UNA SOLA INSTANCIA de MapManager
                 if (mapManager == null) {
