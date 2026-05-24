@@ -29,4 +29,61 @@
         app:tint="@android:color/white"
         android:contentDescription="Agregar evento" />
 
+    <LinearLayout
+        android:id="@+id/ll_contenedor_vacio"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:visibility="gone"
+        android:padding="24dp">
+
+        <!-- Contenedor del círculo (para centrar el logo dentro) -->
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <!-- Círculo gris con borde -->
+            <View
+                android:id="@+id/circulo_vacio"
+                android:layout_width="180dp"
+                android:layout_height="180dp"
+                android:background="@drawable/bg_circulo_vacio" />
+
+            <!-- Logo de la universidad centrado dentro del círculo -->
+            <ImageView
+                android:id="@+id/iv_logo_circulo"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_gravity="center"
+                android:src="@drawable/logo_universidad"
+                android:contentDescription="Logo universidad" />
+
+        </FrameLayout>
+
+        <!-- Texto principal (más abajo) -->
+        <TextView
+            android:id="@+id/tv_titulo_vacio"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="48dp"
+            android:text="No hay eventos"
+            android:textColor="#FFCC00"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <!-- Texto secundario -->
+        <TextView
+            android:id="@+id/tv_subtitulo_vacio"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Próximamente habrá\neventos disponibles"
+            android:textColor="#E0E0E0"
+            android:textSize="14sp"
+            android:gravity="center" />
+
+    </LinearLayout>
+
 </RelativeLayout>

@@ -13,6 +13,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -50,6 +51,8 @@ public class EventosFragment extends Fragment {
     private SyncManager syncManager;
     private Dialog loadingDialog; // Para la pantalla de carga
 
+    private LinearLayout llContenedorVacio;
+
 
     @Nullable
     @Override
@@ -65,6 +68,7 @@ public class EventosFragment extends Fragment {
         // Inicializar vistas
         rvEventos = view.findViewById(R.id.rv_eventos);
         fab = view.findViewById(R.id.fab_agregar);
+        llContenedorVacio = view.findViewById(R.id.ll_contenedor_vacio);
 
         // Controlar visibilidad del FAB según tipo de usuario
         if (usuarioTipo == 1) {  // Estudiante
@@ -167,6 +171,16 @@ public class EventosFragment extends Fragment {
         return view;
     }
 
+    private void actualizarEstadoVacio() {
+        if (eventosList.isEmpty()) {
+            rvEventos.setVisibility(View.GONE);
+            llContenedorVacio.setVisibility(View.VISIBLE);
+        } else {
+            rvEventos.setVisibility(View.VISIBLE);
+            llContenedorVacio.setVisibility(View.GONE);
+        }
+    }
+
 
 
 
@@ -177,6 +191,7 @@ public class EventosFragment extends Fragment {
         eventosList.clear();
         eventosList.addAll(bdEventos.getEventos());
         adapter.notifyDataSetChanged();
+        actualizarEstadoVacio();  // ← Agrega esta línea
     }
 
     private void mostrarMenuOpciones(View view, Eventos evento, int position) {
@@ -263,6 +278,7 @@ public class EventosFragment extends Fragment {
 
             if (filasActualizadas > 0) {
                 adapter.removeEvento(position);
+                cargarEventos(); //acualizar datos en local
                 Toast.makeText(getContext(), "Evento eliminado correctamente", Toast.LENGTH_SHORT).show();
             } else {
                 Toast.makeText(getContext(), "Error al eliminar el evento", Toast.LENGTH_SHORT).show();
@@ -277,6 +293,7 @@ public class EventosFragment extends Fragment {
 
             if (filasActualizadas > 0) {
                 adapter.removeEvento(position);
+                cargarEventos(); //acualizar datos en local
                 Toast.makeText(getContext(), "Evento eliminado correctamente sin conexion", Toast.LENGTH_SHORT).show();
             } else {
                 Toast.makeText(getContext(), "Error al eliminar el evento", Toast.LENGTH_SHORT).show();
