@@ -60,6 +60,9 @@ public class SyncManager {
     }
 
     public void syncAllEventosWithClean(SyncCallback callback) {
+
+        limpiarEventosPasados();// Automaticamente
+
         // PASO 1: Sincronizar eventos NUEVOS (estado = 3)
         syncEventosPendientesAgregar(new SyncCallback() {
             @Override
