@@ -2,6 +2,10 @@ package com.example.indoorview;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -27,6 +31,8 @@ import com.mapbox.maps.plugin.animation.MapAnimationOptions;
 import com.mapbox.maps.plugin.gestures.OnMapClickListener;
 import com.mapbox.maps.plugin.gestures.GesturesPlugin;
 import com.mapbox.maps.plugin.gestures.GesturesUtils;
+import com.mapbox.maps.plugin.locationcomponent.LocationComponentPlugin;
+import com.mapbox.maps.plugin.locationcomponent.LocationComponentUtils;
 
 public class MapaEventoActivity extends AppCompatActivity {
     private MapView mapView;
@@ -34,7 +40,7 @@ public class MapaEventoActivity extends AppCompatActivity {
     private MapManager mapManager;
     private Database db;
     private Spinner spinnerPisos;
-    private Button btnFinalizar;
+    private Button btnFinalizar, btnGiroscopio;
     private ActivityResultLauncher<Intent> camaraLauncher;
     private ActivityResultLauncher<Intent> galeriaLauncher;
 
@@ -54,6 +60,27 @@ public class MapaEventoActivity extends AppCompatActivity {
     private boolean modoSeleccion = false;
     private Point puntoSeleccionado = null;
 
+
+    // ===== VARIABLES GIROSCOPIO =====
+    private SensorManager sensorManager;
+    private Sensor sensorAcelerometro;
+    private Sensor sensorMagnetometro;
+    private SensorEventListener giroscopioListener;
+    private float[] acelerometerReading = new float[3];
+    private float[] magnetometerReading = new float[3];
+    private float[] rotationMatrix = new float[9];
+    private float[] orientationAngles = new float[3];
+    private boolean giroscopioActivo = false;
+
+    // ===== VARIABLES UBICACIÓN =====
+    private LocationComponentPlugin locationComponent;
+
+
+    ///  RECORDA HACER QUE EL GIRO FUNCIONE ES L0 ULTIMO QUE NECESITO PARA PULIR BIEN ESTA APP
+
+
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -63,6 +90,7 @@ public class MapaEventoActivity extends AppCompatActivity {
         mapView = findViewById(R.id.mapView);
         spinnerPisos = findViewById(R.id.spnPisos);
         btnFinalizar = findViewById(R.id.btnFinalizar);
+        //btnGiroscopio = findViewById(R.id.btnGiroscopio); // Agrega este botón en tu XML
 
         // 2. Inicializar base de datos
         db = new Database(this);
@@ -79,6 +107,53 @@ public class MapaEventoActivity extends AppCompatActivity {
         // 6. Configurar botón finalizar
         configurarBotonFinalizar();
     }
+
+
+
+    private void activarUbicacionUsuario() {
+        PermissionManager.getInstance().requestNotificationAndLocationPermissions(this,
+                new PermissionManager.PermissionCallback() {
+                    @Override
+                    public void onPermissionGranted(int requestCode) {}
+
+                    @Override
+                    public void onPermissionDenied(int requestCode) {
+                        Toast.makeText(MapaEventoActivity.this,
+                                "Se necesita permiso de ubicación", Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onAllPermissionsGranted() {
+                        mostrarUbicacionEnMapa();
+                    }
+
+                    @Override
+                    public void onSomePermissionsDenied(String[] permissions, int[] grantResults) {
+                        if (PermissionManager.getInstance().hasLocationPermission(MapaEventoActivity.this)) {
+                            mostrarUbicacionEnMapa();
+                        }
+                    }
+                });
+    }
+
+
+    private void mostrarUbicacionEnMapa() {
+        try {
+            locationComponent = LocationComponentUtils.getLocationComponent(mapView);
+            if (locationComponent != null) {
+                locationComponent.setEnabled(true);
+                locationComponent.setPulsingEnabled(true); // Efecto pulso azul
+                Log.d("UBICACION", "✅ Ubicación del usuario activada");
+            }
+        } catch (Exception e) {
+            Log.e("UBICACION", "Error activando ubicación: " + e.getMessage());
+        }
+    }
+
+
+
+
+
 
     /**
      * Verificar si viene en modo selección o visualización
@@ -305,6 +380,8 @@ public class MapaEventoActivity extends AppCompatActivity {
                         Value.valueOf("none")
                 );
 
+                activarUbicacionUsuario();
+
 
                 // CREAR UNA SOLA INSTANCIA de MapManager
                 if (mapManager == null) {
@@ -404,7 +481,10 @@ public class MapaEventoActivity extends AppCompatActivity {
         }
     }
 
-    // Ciclo de vida
+    // ════════════════════════════════════════════════════════════════
+    // CICLO DE VIDA
+    // ════════════════════════════════════════════════════════════════
+
     @Override
     protected void onStart() {
         super.onStart();
@@ -415,6 +495,22 @@ public class MapaEventoActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         if (mapView != null) mapView.onResume();
+        // Reactivar giroscopio si estaba activo
+        if (giroscopioActivo && sensorManager != null) {
+            sensorManager.registerListener(giroscopioListener,
+                    sensorAcelerometro, SensorManager.SENSOR_DELAY_UI);
+            sensorManager.registerListener(giroscopioListener,
+                    sensorMagnetometro, SensorManager.SENSOR_DELAY_UI);
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // Pausar giroscopio para ahorrar batería
+        if (sensorManager != null) {
+            sensorManager.unregisterListener(giroscopioListener);
+        }
     }
 
     @Override

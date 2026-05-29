@@ -61,6 +61,8 @@ import com.mapbox.maps.plugin.annotation.generated.PointAnnotationManager;
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotationOptions;
 import com.mapbox.maps.plugin.gestures.GesturesUtils;
 import com.mapbox.maps.extension.style.layers.properties.generated.IconAnchor;
+import com.mapbox.maps.plugin.locationcomponent.LocationComponentPlugin;
+import com.mapbox.maps.plugin.locationcomponent.LocationComponentUtils;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -137,6 +139,10 @@ public class MapaFragment extends Fragment {
     private boolean imagenSubidaExitosa = false;
 
     private Dialog loadingDialog; // Para la pantalla de carga
+
+
+    // ===== VARIABLES UBICACIÓN =====
+    private LocationComponentPlugin locationComponent;
 
 
     @Nullable
@@ -283,6 +289,46 @@ public class MapaFragment extends Fragment {
     }
 
 
+    private void activarUbicacionUsuario() {
+        PermissionManager.getInstance().requestNotificationAndLocationPermissions(getActivity(),
+                new PermissionManager.PermissionCallback() {
+                    @Override
+                    public void onPermissionGranted(int requestCode) {}
+
+                    @Override
+                    public void onPermissionDenied(int requestCode) {
+                        Toast.makeText(getContext(),
+                                "Se necesita permiso de ubicación", Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onAllPermissionsGranted() {
+                        mostrarUbicacionEnMapa();
+                    }
+
+                    @Override
+                    public void onSomePermissionsDenied(String[] permissions, int[] grantResults) {
+                        if (PermissionManager.getInstance().hasLocationPermission(getContext())) {
+                            mostrarUbicacionEnMapa();
+                        }
+                    }
+                });
+    }
+
+    private void mostrarUbicacionEnMapa() {
+        try {
+            locationComponent = LocationComponentUtils.getLocationComponent(mapView);
+            if (locationComponent != null) {
+                locationComponent.setEnabled(true);
+                locationComponent.setPulsingEnabled(true); // Efecto pulso azul
+                Log.d("UBICACION", "✅ Ubicación del usuario activada");
+            }
+        } catch (Exception e) {
+            Log.e("UBICACION", "Error activando ubicación: " + e.getMessage());
+        }
+    }
+
+
     /**
      * Mostrar un progress dialog (opcional)
      */
@@ -312,6 +358,9 @@ public class MapaFragment extends Fragment {
         firebaseHelper = new FirebaseHelper();
         detectarInternet = new DetectarInternet(getContext());
         permissionManager = PermissionManager.getInstance();
+
+        // Activar la posiscion de usuario
+        activarUbicacionUsuario();;
 
 
 
