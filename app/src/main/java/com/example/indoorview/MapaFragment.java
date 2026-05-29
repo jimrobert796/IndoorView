@@ -11,6 +11,10 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.drawable.ColorDrawable;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -54,6 +58,8 @@ import com.mapbox.maps.extension.style.layers.generated.FillLayer;
 import com.mapbox.maps.extension.style.layers.generated.LineLayer;
 import com.mapbox.maps.extension.style.sources.generated.GeoJsonSource;
 import com.mapbox.maps.plugin.Plugin;
+import com.mapbox.maps.plugin.animation.CameraAnimationsPlugin;
+import com.mapbox.maps.plugin.animation.MapAnimationOptions;
 import com.mapbox.maps.plugin.annotation.AnnotationPlugin;
 import com.mapbox.maps.plugin.annotation.AnnotationType;
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotation;
@@ -85,7 +91,7 @@ public class MapaFragment extends Fragment {
     private DetectarInternet detectarInternet;
 
     // UI Elements
-    private Button btnLugar, btnEspacios, btnCerrar, btnDeshacer, btnFinalizar, btnHabilitar;
+    private Button btnLugar, btnEspacios, btnCerrar, btnDeshacer, btnFinalizar, btnHabilitar, btnGiroscopio;
     private TextView tvModo;
     private Spinner spinnerPisos;
 
@@ -141,8 +147,20 @@ public class MapaFragment extends Fragment {
     private Dialog loadingDialog; // Para la pantalla de carga
 
 
+    // ===== VARIABLES GIROSCOPIO =====
+    private SensorManager sensorManager;
+    private Sensor rotationSensor;
+    private SensorEventListener rotationListener;
+
+    private boolean seguimientoDireccion = false;
+    private float ultimoBearing = 0f;
+
     // ===== VARIABLES UBICACIÓN =====
     private LocationComponentPlugin locationComponent;
+
+    // ========= Variables para coordenadas de usuario ========
+    private double latitudUsuario = 0.0;
+    private double longitudUsuario = 0.0;
 
 
     @Nullable
@@ -166,6 +184,7 @@ public class MapaFragment extends Fragment {
         etBuscar = view.findViewById(R.id.etBuscar);
         btnLimpiarBusqueda = view.findViewById(R.id.btnLimpiarBusqueda);
         rvResultados = view.findViewById(R.id.rvResultados);
+        btnGiroscopio = view.findViewById(R.id.btnGiroscopio); // Agrega este botón en tu XML
 
 
         // OBTENER DATOS DE SESIÓN
@@ -316,16 +335,135 @@ public class MapaFragment extends Fragment {
     }
 
     private void mostrarUbicacionEnMapa() {
+
         try {
+
             locationComponent = LocationComponentUtils.getLocationComponent(mapView);
+
             if (locationComponent != null) {
+
                 locationComponent.setEnabled(true);
-                locationComponent.setPulsingEnabled(true); // Efecto pulso azul
+                locationComponent.setPulsingEnabled(true);
+
+                locationComponent.addOnIndicatorPositionChangedListener(point -> {
+
+                    latitudUsuario = point.latitude();
+                    longitudUsuario = point.longitude();
+
+                });
+
                 Log.d("UBICACION", "✅ Ubicación del usuario activada");
             }
+
         } catch (Exception e) {
-            Log.e("UBICACION", "Error activando ubicación: " + e.getMessage());
+
+            Log.e("UBICACION",
+                    "Error activando ubicación: " + e.getMessage());
         }
+    }
+
+    private void inicializarBrujula() {
+
+        sensorManager = (SensorManager)
+                requireContext().getSystemService(Context.SENSOR_SERVICE);
+
+        if (sensorManager != null) {
+            rotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
+        }
+
+        if (rotationSensor == null) {
+            Toast.makeText(getActivity(),
+                    "El dispositivo no tiene sensor de orientación",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        rotationListener = new SensorEventListener() {
+            @Override
+            public void onSensorChanged(SensorEvent event) {
+
+                if (!seguimientoDireccion ||  mapView.getMapboxMap() == null) {
+                    return;
+                }
+
+                float[] rotationMatrix = new float[9];
+                float[] orientationAngles = new float[3];
+
+                SensorManager.getRotationMatrixFromVector(
+                        rotationMatrix,
+                        event.values
+                );
+
+                SensorManager.getOrientation(
+                        rotationMatrix,
+                        orientationAngles
+                );
+
+                float azimuthInRadians = orientationAngles[0];
+                float azimuthInDegrees =
+                        (float) Math.toDegrees(azimuthInRadians);
+
+                if (azimuthInDegrees < 0) {
+                    azimuthInDegrees += 360;
+                }
+
+                // Suavizar movimiento
+                float diferencia = Math.abs(azimuthInDegrees - ultimoBearing);
+
+                if (diferencia > 2) {
+
+                    ultimoBearing = azimuthInDegrees;
+
+                    mapView.getMapboxMap().setCamera(
+                            new CameraOptions.Builder()
+                                    .bearing((double) azimuthInDegrees)
+                                    .build()
+                    );
+                }
+            }
+
+            @Override
+            public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+            }
+        };
+    }
+
+    private void centrarEnUsuario() {
+
+        if (mapView == null) {
+            return;
+        }
+
+        if (latitudUsuario == 0.0 || longitudUsuario == 0.0) {
+
+            Toast.makeText(getActivity(),
+                    "Esperando ubicación...",
+                    Toast.LENGTH_SHORT).show();
+
+            return;
+        }
+
+        Point ubicacionUsuario =
+                Point.fromLngLat(longitudUsuario, latitudUsuario);
+
+        CameraAnimationsPlugin animationPlugin =
+                mapView.getPlugin(Plugin.MAPBOX_CAMERA_PLUGIN_ID);
+
+        animationPlugin.easeTo(
+                new CameraOptions.Builder()
+                        .center(ubicacionUsuario)
+                        .zoom(19.0)
+                        .bearing((double) ultimoBearing)
+                        .pitch(45.0)
+                        .build(),
+
+                new MapAnimationOptions.Builder()
+                        .duration(1500L)
+                        .build(),
+
+                null
+        );
     }
 
 
@@ -1084,6 +1222,7 @@ public class MapaFragment extends Fragment {
                             new CameraOptions.Builder()
                                     .center(Point.fromLngLat(-88.41783453298294, 13.342296805328829))
                                     .zoom(18.0)
+                                    .pitch(45.0)
                                     .build()
                     );
 
@@ -1235,7 +1374,49 @@ public class MapaFragment extends Fragment {
         configurarBtnCerrar();
         configurarBtnDeshacer();
         configurarBtnFinalizar();
+        configurarBotonGiroscopio();
     }
+    private void configurarBotonGiroscopio() {
+            btnGiroscopio.setOnClickListener(v -> {
+
+                seguimientoDireccion = !seguimientoDireccion;
+
+                if (seguimientoDireccion) {
+
+                    inicializarBrujula();
+
+                    if (sensorManager != null &&
+                            rotationSensor != null &&
+                            rotationListener != null) {
+
+                        sensorManager.registerListener(
+                                rotationListener,
+                                rotationSensor,
+                                SensorManager.SENSOR_DELAY_UI
+                        );
+                    }
+
+                    centrarEnUsuario();
+
+                    Toast.makeText(getActivity(),
+                            "Brujula activada",
+                            Toast.LENGTH_SHORT).show();
+                } else {
+
+                    if (sensorManager != null &&
+                            rotationListener != null) {
+
+                        sensorManager.unregisterListener(rotationListener);
+                    }
+
+                    Toast.makeText(getActivity(),
+                            "Brujula desactivada",
+                            Toast.LENGTH_SHORT).show();
+                }
+            });
+
+    }
+
 
     /**
      * Botón HABILITAR - Activar/Desactivar modo edición

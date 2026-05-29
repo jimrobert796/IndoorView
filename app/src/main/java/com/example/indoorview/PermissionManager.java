@@ -3,8 +3,13 @@ package com.example.indoorview;
 import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.location.LocationManager;
 import android.os.Build;
+import android.provider.Settings;
+import android.widget.Toast;
+
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import java.util.ArrayList;
@@ -76,8 +81,21 @@ public class PermissionManager {
      * Verificar si tiene permiso de UBICACIÓN
      */
     public boolean hasLocationPermission(Context context) {
-        return ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED;
+
+        return ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    public boolean isGpsEnabled(Context context) {
+
+        LocationManager locationManager =
+                (LocationManager)
+                        context.getSystemService(Context.LOCATION_SERVICE);
+
+        return locationManager != null &&
+                locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
     }
 
     // ==================== PEDIR PERMISOS (diálogo nativo) ====================
@@ -101,32 +119,76 @@ public class PermissionManager {
     /**
      * Pedir permiso de NOTIFICACIONES y UBICACIÓN juntos
      */
-    public void requestNotificationAndLocationPermissions(Activity activity, PermissionCallback callback) {
-        boolean tieneNotificacion = hasNotificationPermission(activity);
-        boolean tieneUbicacion = hasLocationPermission(activity);
+    /**
+     * Pedir permiso de NOTIFICACIONES y UBICACIÓN juntos
+     */
+    public void requestNotificationAndLocationPermissions(
+            Activity activity,
+            PermissionCallback callback
+    ) {
 
-        // Si ya tiene ambos
+        boolean tieneNotificacion =
+                hasNotificationPermission(activity);
+
+        boolean tieneUbicacion =
+                hasLocationPermission(activity);
+
+        // ===============================
+        // SI YA TIENE TODOS LOS PERMISOS
+        // ===============================
+
         if (tieneNotificacion && tieneUbicacion) {
-            if (callback != null) callback.onAllPermissionsGranted();
+
+            // Verificar GPS
+            if (!isGpsEnabled(activity)) {
+
+                Toast.makeText(activity,
+                        "Activa el GPS para continuar",
+                        Toast.LENGTH_LONG).show();
+
+                Intent intent = new Intent(
+                        Settings.ACTION_LOCATION_SOURCE_SETTINGS
+                );
+
+                activity.startActivity(intent);
+
+                return;
+            }
+
+            // Todo correcto
+            if (callback != null) {
+                callback.onAllPermissionsGranted();
+            }
+
             return;
         }
+
+        // ===============================
+        // PEDIR PERMISOS FALTANTES
+        // ===============================
 
         this.callback = callback;
         this.currentActivity = activity;
 
         List<String> permisos = new ArrayList<>();
 
-        if (!tieneNotificacion && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        // Notificaciones
+        if (!tieneNotificacion &&
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+
             permisos.add(Manifest.permission.POST_NOTIFICATIONS);
         }
 
+        // Ubicación
         if (!tieneUbicacion) {
             permisos.add(Manifest.permission.ACCESS_FINE_LOCATION);
         }
 
-        ActivityCompat.requestPermissions(activity,
+        ActivityCompat.requestPermissions(
+                activity,
                 permisos.toArray(new String[0]),
-                RC_ALL);
+                RC_ALL
+        );
     }
 
     /**
@@ -224,39 +286,111 @@ public class PermissionManager {
     /**
      * Pedir TODOS los permisos de una vez (diálogo nativo del sistema)
      */
-    public void requestAllPermissions(Activity activity, PermissionCallback callback) {
+    public void requestAllPermissions(
+            Activity activity,
+            PermissionCallback callback
+    ) {
+
         List<String> permissionsList = new ArrayList<>();
 
-        if (!hasNotificationPermission(activity) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            permissionsList.add(Manifest.permission.POST_NOTIFICATIONS);
+        // ===============================
+        // NOTIFICACIONES
+        // ===============================
+
+        if (!hasNotificationPermission(activity)
+                && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+
+            permissionsList.add(
+                    Manifest.permission.POST_NOTIFICATIONS
+            );
         }
+
+        // ===============================
+        // CÁMARA
+        // ===============================
 
         if (!hasCameraPermission(activity)) {
-            permissionsList.add(Manifest.permission.CAMERA);
+            permissionsList.add(
+                    Manifest.permission.CAMERA
+            );
         }
 
+        // ===============================
+        // GALERÍA
+        // ===============================
+
         if (!hasGalleryPermission(activity)) {
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                permissionsList.add(Manifest.permission.READ_MEDIA_IMAGES);
+
+                permissionsList.add(
+                        Manifest.permission.READ_MEDIA_IMAGES
+                );
+
             } else {
-                permissionsList.add(Manifest.permission.READ_EXTERNAL_STORAGE);
+
+                permissionsList.add(
+                        Manifest.permission.READ_EXTERNAL_STORAGE
+                );
             }
         }
 
+        // ===============================
+        // UBICACIÓN
+        // ===============================
+
         if (!hasLocationPermission(activity)) {
-            permissionsList.add(Manifest.permission.ACCESS_FINE_LOCATION);
+
+            permissionsList.add(
+                    Manifest.permission.ACCESS_FINE_LOCATION
+            );
         }
 
-        if (permissionsList.isEmpty()) {
-            if (callback != null) callback.onAllPermissionsGranted();
+        // ===============================
+        // SI FALTAN PERMISOS
+        // ===============================
+
+        if (!permissionsList.isEmpty()) {
+
+            this.callback = callback;
+            this.currentActivity = activity;
+
+            ActivityCompat.requestPermissions(
+                    activity,
+                    permissionsList.toArray(new String[0]),
+                    RC_ALL
+            );
+
             return;
         }
 
-        this.callback = callback;
-        this.currentActivity = activity;
-        ActivityCompat.requestPermissions(activity,
-                permissionsList.toArray(new String[0]),
-                RC_ALL);
+        // ===============================
+        // SI YA TIENE PERMISOS
+        // VERIFICAR GPS
+        // ===============================
+
+        if (!isGpsEnabled(activity)) {
+
+            Toast.makeText(activity,
+                    "Activa el GPS para continuar",
+                    Toast.LENGTH_LONG).show();
+
+            Intent intent = new Intent(
+                    Settings.ACTION_LOCATION_SOURCE_SETTINGS
+            );
+
+            activity.startActivity(intent);
+
+            return;
+        }
+
+        // ===============================
+        // TODO CORRECTO
+        // ===============================
+
+        if (callback != null) {
+            callback.onAllPermissionsGranted();
+        }
     }
 
     // ==================== MANEJAR RESULTADO ====================

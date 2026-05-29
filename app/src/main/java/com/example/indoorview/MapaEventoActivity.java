@@ -63,17 +63,18 @@ public class MapaEventoActivity extends AppCompatActivity {
 
     // ===== VARIABLES GIROSCOPIO =====
     private SensorManager sensorManager;
-    private Sensor sensorAcelerometro;
-    private Sensor sensorMagnetometro;
-    private SensorEventListener giroscopioListener;
-    private float[] acelerometerReading = new float[3];
-    private float[] magnetometerReading = new float[3];
-    private float[] rotationMatrix = new float[9];
-    private float[] orientationAngles = new float[3];
-    private boolean giroscopioActivo = false;
+    private Sensor rotationSensor;
+    private SensorEventListener rotationListener;
+
+    private boolean seguimientoDireccion = false;
+    private float ultimoBearing = 0f;
 
     // ===== VARIABLES UBICACIÓN =====
     private LocationComponentPlugin locationComponent;
+
+    // ========= Variables para coordenadas de usuario ========
+    private double latitudUsuario = 0.0;
+    private double longitudUsuario = 0.0;
 
 
     ///  RECORDA HACER QUE EL GIRO FUNCIONE ES L0 ULTIMO QUE NECESITO PARA PULIR BIEN ESTA APP
@@ -90,7 +91,7 @@ public class MapaEventoActivity extends AppCompatActivity {
         mapView = findViewById(R.id.mapView);
         spinnerPisos = findViewById(R.id.spnPisos);
         btnFinalizar = findViewById(R.id.btnFinalizar);
-        //btnGiroscopio = findViewById(R.id.btnGiroscopio); // Agrega este botón en tu XML
+        btnGiroscopio = findViewById(R.id.btnGiroscopio); // Agrega este botón en tu XML
 
         // 2. Inicializar base de datos
         db = new Database(this);
@@ -106,7 +107,77 @@ public class MapaEventoActivity extends AppCompatActivity {
 
         // 6. Configurar botón finalizar
         configurarBotonFinalizar();
+
+        // 7. Habilitar boton de girsocopio
+        configurarBotonGiroscopio();
     }
+
+    private void inicializarBrujula() {
+
+        sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+
+        if (sensorManager != null) {
+            rotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
+        }
+
+        if (rotationSensor == null) {
+            Toast.makeText(this,
+                    "El dispositivo no tiene sensor de orientación",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        rotationListener = new SensorEventListener() {
+            @Override
+            public void onSensorChanged(SensorEvent event) {
+
+                if (!seguimientoDireccion || mapboxMap == null) {
+                    return;
+                }
+
+                float[] rotationMatrix = new float[9];
+                float[] orientationAngles = new float[3];
+
+                SensorManager.getRotationMatrixFromVector(
+                        rotationMatrix,
+                        event.values
+                );
+
+                SensorManager.getOrientation(
+                        rotationMatrix,
+                        orientationAngles
+                );
+
+                float azimuthInRadians = orientationAngles[0];
+                float azimuthInDegrees =
+                        (float) Math.toDegrees(azimuthInRadians);
+
+                if (azimuthInDegrees < 0) {
+                    azimuthInDegrees += 360;
+                }
+
+                // Suavizar movimiento
+                float diferencia = Math.abs(azimuthInDegrees - ultimoBearing);
+
+                if (diferencia > 2) {
+
+                    ultimoBearing = azimuthInDegrees;
+
+                    mapboxMap.setCamera(
+                            new CameraOptions.Builder()
+                                    .bearing((double) azimuthInDegrees)
+                                    .build()
+                    );
+                }
+            }
+
+            @Override
+            public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+            }
+        };
+    }
+
 
 
 
@@ -138,19 +209,70 @@ public class MapaEventoActivity extends AppCompatActivity {
 
 
     private void mostrarUbicacionEnMapa() {
+
         try {
+
             locationComponent = LocationComponentUtils.getLocationComponent(mapView);
+
             if (locationComponent != null) {
+
                 locationComponent.setEnabled(true);
-                locationComponent.setPulsingEnabled(true); // Efecto pulso azul
+                locationComponent.setPulsingEnabled(true);
+
+                locationComponent.addOnIndicatorPositionChangedListener(point -> {
+
+                    latitudUsuario = point.latitude();
+                    longitudUsuario = point.longitude();
+
+                });
+
                 Log.d("UBICACION", "✅ Ubicación del usuario activada");
             }
+
         } catch (Exception e) {
-            Log.e("UBICACION", "Error activando ubicación: " + e.getMessage());
+
+            Log.e("UBICACION",
+                    "Error activando ubicación: " + e.getMessage());
         }
     }
 
 
+    private void centrarEnUsuario() {
+
+        if (mapboxMap == null) {
+            return;
+        }
+
+        if (latitudUsuario == 0.0 || longitudUsuario == 0.0) {
+
+            Toast.makeText(this,
+                    "Esperando ubicación...",
+                    Toast.LENGTH_SHORT).show();
+
+            return;
+        }
+
+        Point ubicacionUsuario =
+                Point.fromLngLat(longitudUsuario, latitudUsuario);
+
+        CameraAnimationsPlugin animationPlugin =
+                mapView.getPlugin(Plugin.MAPBOX_CAMERA_PLUGIN_ID);
+
+        animationPlugin.easeTo(
+                new CameraOptions.Builder()
+                        .center(ubicacionUsuario)
+                        .zoom(19.0)
+                        .bearing((double) ultimoBearing)
+                        .pitch(45.0)
+                        .build(),
+
+                new MapAnimationOptions.Builder()
+                        .duration(1500L)
+                        .build(),
+
+                null
+        );
+    }
 
 
 
@@ -173,6 +295,7 @@ public class MapaEventoActivity extends AppCompatActivity {
                 // Cambiar texto del botón
                 btnFinalizar.setText("Confirmar Ubicación");
                 btnFinalizar.setEnabled(false); // Deshabilitado hasta seleccionar
+                btnGiroscopio.setVisibility(View.GONE);
             } else {
                 // Modo visualización: cargar datos del evento
                 recibirDatosEvento();
@@ -285,6 +408,48 @@ public class MapaEventoActivity extends AppCompatActivity {
             }
         });
     }
+    private void configurarBotonGiroscopio() {
+        if (!modoSeleccion){
+            btnGiroscopio.setOnClickListener(v -> {
+
+                seguimientoDireccion = !seguimientoDireccion;
+
+                if (seguimientoDireccion) {
+
+                    inicializarBrujula();
+
+                    if (sensorManager != null &&
+                            rotationSensor != null &&
+                            rotationListener != null) {
+
+                        sensorManager.registerListener(
+                                rotationListener,
+                                rotationSensor,
+                                SensorManager.SENSOR_DELAY_UI
+                        );
+                    }
+
+                    centrarEnUsuario();
+
+                    Toast.makeText(this,
+                            "Brujula activada",
+                            Toast.LENGTH_SHORT).show();
+                } else {
+
+                    if (sensorManager != null &&
+                            rotationListener != null) {
+
+                        sensorManager.unregisterListener(rotationListener);
+                    }
+
+                    Toast.makeText(this,
+                            "Brujula desactivada",
+                            Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+
+    }
 
     /**
      * Confirmar ubicación seleccionada y volver a AgregarEventoActivity
@@ -361,6 +526,7 @@ public class MapaEventoActivity extends AppCompatActivity {
                 mapboxMap.setCamera(new CameraOptions.Builder()
                         .center(Point.fromLngLat(-88.41783453298294, 13.342296805328829))
                         .zoom(17.0)
+                        .pitch(45.0)
                         .build());
 
                 mapboxMap.setBounds(new CameraBoundsOptions.Builder()
@@ -492,28 +658,6 @@ public class MapaEventoActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        if (mapView != null) mapView.onResume();
-        // Reactivar giroscopio si estaba activo
-        if (giroscopioActivo && sensorManager != null) {
-            sensorManager.registerListener(giroscopioListener,
-                    sensorAcelerometro, SensorManager.SENSOR_DELAY_UI);
-            sensorManager.registerListener(giroscopioListener,
-                    sensorMagnetometro, SensorManager.SENSOR_DELAY_UI);
-        }
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        // Pausar giroscopio para ahorrar batería
-        if (sensorManager != null) {
-            sensorManager.unregisterListener(giroscopioListener);
-        }
-    }
-
-    @Override
     protected void onStop() {
         super.onStop();
         if (mapView != null) mapView.onStop();
@@ -524,4 +668,30 @@ public class MapaEventoActivity extends AppCompatActivity {
         super.onDestroy();
         if (mapView != null) mapView.onDestroy();
     }
+
+    // para el Giroscopio
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (sensorManager != null && rotationSensor != null && rotationListener != null) {
+
+            sensorManager.registerListener(
+                    rotationListener,
+                    rotationSensor,
+                    SensorManager.SENSOR_DELAY_UI
+            );
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        if (sensorManager != null && rotationListener != null) {
+            sensorManager.unregisterListener(rotationListener);
+        }
+    }
+
+
 }
