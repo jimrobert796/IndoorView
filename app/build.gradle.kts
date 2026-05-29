@@ -49,6 +49,9 @@ dependencies {
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
 
+    //WORKER
+    implementation("androidx.work:work-runtime:2.9.0")
+
 
     // BCrypt para hashear contraseñas
     implementation("at.favre.lib:bcrypt:0.10.2")

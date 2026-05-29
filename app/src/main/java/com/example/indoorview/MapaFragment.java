@@ -182,7 +182,7 @@ public class MapaFragment extends Fragment {
         // Inicaliza el mapa e eventos
         inicializarLaunchers();
 
-
+        /*
         if (detectarInternet.hayConexionInternet()){
 
 
@@ -203,6 +203,8 @@ public class MapaFragment extends Fragment {
                 sincronizarDatos();
             }, 1500); // Esperar 1.5s a que cargue la UI
         }
+
+         */
 
         mapManager.verificarConexionBD();
         searchManager = new SearchManager(db);

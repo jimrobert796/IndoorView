@@ -609,6 +609,18 @@ public class Database extends SQLiteOpenHelper {
         return id;
     }
 
+
+    public int contarEventos() {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM eventos", null);
+        int count = 0;
+        if (cursor.moveToFirst()) {
+            count = cursor.getInt(0);
+        }
+        cursor.close();
+        return count;
+    }
+
     // ===== OBTENER TODOS LOS EVENTOS (MEJORADO) =====
     public List<Eventos> getEventos() {
         List<Eventos> lista = new ArrayList<>();

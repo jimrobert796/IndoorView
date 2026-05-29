@@ -21,7 +21,12 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
 
+    <!-- Para el uso de notificaciones push de eventos-->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+
     <application
+        android:name=".MyApp"
         android:usesCleartextTraffic="true"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -31,6 +36,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.IndoorView">
+
         <activity
             android:name=".LoginActivity"
             android:exported="true">
