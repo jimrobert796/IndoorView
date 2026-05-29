@@ -47,6 +47,7 @@ public class EventosFragment extends Fragment {
     private String usuarioCorreo;
     private FirebaseHelper firebaseHelper;
     private DetectarInternet detectarInternet;
+    private PermissionManager permissionManager;
 
     private SyncManager syncManager;
     private Dialog loadingDialog; // Para la pantalla de carga
@@ -82,6 +83,8 @@ public class EventosFragment extends Fragment {
         firebaseHelper = new FirebaseHelper();
         detectarInternet = new DetectarInternet(getContext());
         syncManager = new SyncManager(getContext(), bdEventos, firebaseHelper);
+        permissionManager = PermissionManager.getInstance();
+
 
         // Configurar RecyclerView
         rvEventos.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -115,6 +118,27 @@ public class EventosFragment extends Fragment {
                             cargarEventos();
                             loadingDialog.dismiss();
                             Toast.makeText(getContext(), "Eventos sincronizados", Toast.LENGTH_SHORT).show();
+
+
+                            permissionManager.requestNotificationAndLocationPermissions(getActivity(), new PermissionManager.PermissionCallback() {
+                                @Override
+                                public void onPermissionGranted(int requestCode) {}
+
+                                @Override
+                                public void onPermissionDenied(int requestCode) {}
+
+                                @Override
+                                public void onAllPermissionsGranted() {
+                                    //Toast.makeText(LoginActivity.this, "Todos los permisos concedidos ✓", Toast.LENGTH_SHORT).show();
+                                }
+
+                                @Override
+                                public void onSomePermissionsDenied(String[] permissions, int[] grantResults) {
+                                    //Toast.makeText(getActivity(), "Algunos permisos fueron denegados", Toast.LENGTH_SHORT).show();
+                                }
+                            });
+
+
                         });
                     }
 

@@ -1,5 +1,6 @@
 package com.example.indoorview;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -131,6 +132,9 @@ public class MapManager {
     private CloudinaryHelper cloudinaryHelper;
     private DetectarInternet detectarInternet;
 
+
+    private PermissionManager permissionManager;
+
     // PARA MEJORAR EL RENDIMIENTO DE PINES
     private final HashMap<String, Bitmap> cachePins = new HashMap<>();
 
@@ -156,6 +160,8 @@ public class MapManager {
         firebaseHelper = new FirebaseHelper();
         cloudinaryHelper = new CloudinaryHelper();
         detectarInternet = new DetectarInternet(context);
+        // Inicializar PermissionManager
+        permissionManager = PermissionManager.getInstance();
 
         // Crear managers de anotaciones
         AnnotationPlugin plugin = mapView.getPlugin(Plugin.Mapbox.MAPBOX_ANNOTATION_PLUGIN_ID);
@@ -2539,10 +2545,29 @@ public class MapManager {
                                 editando[0] = true;
                                 etNombre.setEnabled(true);
                                 etDescripcion.setEnabled(true);
-                                spinnerColor.setEnabled(true);  // ✅ Habilitar spinner
+                                spinnerColor.setEnabled(true);
                                 btnGuardar.setVisibility(View.VISIBLE);
                                 btnEditar.setText("Cancelar");
                                 Toast.makeText(context, "Modo edición activado", Toast.LENGTH_SHORT).show();
+
+                                // Pedir permisos de cámara y galería al entrar en modo edición
+                                PermissionManager.getInstance().requestCameraAndGalleryPermissions((Activity) context, new PermissionManager.PermissionCallback() {
+                                    @Override
+                                    public void onPermissionGranted(int requestCode) {}
+
+                                    @Override
+                                    public void onPermissionDenied(int requestCode) {}
+
+                                    @Override
+                                    public void onAllPermissionsGranted() {
+                                        Toast.makeText(context, "Permisos listos para editar imágenes", Toast.LENGTH_SHORT).show();
+                                    }
+
+                                    @Override
+                                    public void onSomePermissionsDenied(String[] permissions, int[] grantResults) {
+                                        Toast.makeText(context, "Algunos permisos denegados, puede que no puedas cambiar imágenes", Toast.LENGTH_SHORT).show();
+                                    }
+                                });
                             }
                     );
                 } else {
@@ -3072,27 +3097,27 @@ public class MapManager {
         mostrarBottomSheetCRUD(data, esEspacio, false, null);
     }
 
-    public void mostrarOpcionesImagen(ImageView imageView, int indice, JsonObject data, boolean esEspacio) {
-        // Guardar referencias para usar después
-        this.tempImageView = imageView;
-        this.imagenActual = indice;
-        this.tempData = data;
-        this.tempEsEspacio = esEspacio;
+        public void mostrarOpcionesImagen(ImageView imageView, int indice, JsonObject data, boolean esEspacio) {
+            // Guardar referencias para usar después
+            this.tempImageView = imageView;
+            this.imagenActual = indice;
+            this.tempData = data;
+            this.tempEsEspacio = esEspacio;
 
-        String[] opciones = {"📷 Tomar foto con cámara", "🖼️ Seleccionar de galería"};
+            String[] opciones = {"📷 Tomar foto con cámara", "🖼️ Seleccionar de galería"};
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle("Seleccionar imagen " + (indice + 1));
-        builder.setItems(opciones, (dialog, which) -> {
-            if (which == 0) {
-                tomarFoto();
-            } else {
-                seleccionarDeGaleria();
-            }
-        });
-        builder.setCancelable(true);
-        builder.show();
-    }
+            AlertDialog.Builder builder = new AlertDialog.Builder(context);
+            builder.setTitle("Seleccionar imagen " + (indice + 1));
+            builder.setItems(opciones, (dialog, which) -> {
+                if (which == 0) {
+                    tomarFoto();
+                } else {
+                    seleccionarDeGaleria();
+                }
+            });
+            builder.setCancelable(true);
+            builder.show();
+        }
 
     public void tomarFoto() {
         if (launcherCamara == null) {

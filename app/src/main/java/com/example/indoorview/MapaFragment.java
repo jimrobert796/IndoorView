@@ -130,6 +130,9 @@ public class MapaFragment extends Fragment {
 
 
     private CloudinaryHelper cloudinaryHelper;
+
+
+    private PermissionManager permissionManager;
     private String imagenSubidaUrl = "";
     private boolean imagenSubidaExitosa = false;
 
@@ -224,7 +227,11 @@ public class MapaFragment extends Fragment {
 
         return view;
     }
-
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        permissionManager.handlePermissionsResult(requestCode, permissions, grantResults);
+    }
 
     /**
      * Sincronizar datos desde Firebase a BD local
@@ -304,6 +311,7 @@ public class MapaFragment extends Fragment {
         cloudinaryHelper = new CloudinaryHelper();
         firebaseHelper = new FirebaseHelper();
         detectarInternet = new DetectarInternet(getContext());
+        permissionManager = PermissionManager.getInstance();
 
 
 
