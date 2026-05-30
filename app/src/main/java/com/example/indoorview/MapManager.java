@@ -26,7 +26,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
-import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 
 import com.example.indoorview.models.Detalle;
@@ -35,17 +34,13 @@ import com.example.indoorview.models.Geometria;
 import com.example.indoorview.models.Lugar;
 import com.example.indoorview.models.Pisos;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
-import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.gson.JsonObject;
 import com.mapbox.bindgen.Value;
-import com.mapbox.geojson.Feature;
 import com.mapbox.geojson.Point;
 import com.mapbox.maps.CameraOptions;
 import com.mapbox.maps.MapView;
 import com.mapbox.maps.Style;
-import com.mapbox.maps.extension.style.layers.generated.FillLayer;
 import com.mapbox.maps.extension.style.layers.properties.generated.IconAnchor;
-import com.mapbox.maps.extension.style.sources.generated.GeoJsonSource;
 import com.mapbox.maps.plugin.Plugin;
 import com.mapbox.maps.plugin.animation.CameraAnimationsPlugin;
 import com.mapbox.maps.plugin.animation.MapAnimationOptions;
@@ -66,8 +61,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class MapManager {
 
@@ -126,8 +119,7 @@ public class MapManager {
     private boolean esEspacioSeleccionado = false;
 
 
-    private static final String GEOJSON_UGB_LIMITE = "[ [ [ -88.41874168089034, 13.342901971786262 ], [ -88.41889785945618, 13.341106898005307 ], [ -88.41839524199705, 13.34103443603474 ], [ -88.41831812517535, 13.34178386011384 ], [ -88.41741476994676, 13.341794104340593 ], [ -88.41730671679485, 13.34196510159082 ], [ -88.41720451599281, 13.34209255599397 ], [ -88.41706008360627, 13.342479282053095 ], [ -88.41704985341521, 13.342675370623276 ], [ -88.41796776139901, 13.34270376976529 ], [ -88.41796378795416, 13.342793041275973 ], [ -88.41812265682583, 13.342799003628858 ], [ -88.41811979305093, 13.342972147765815 ], [ -88.41837785201281, 13.342976948895853 ], [ -88.41834732427823, 13.344205429857794 ], [ -88.41803842734053, 13.344204010776519 ], [ -88.4180916851741, 13.344569482157176 ], [ -88.42024086628714, 13.343740562349211 ], [ -88.42023351324613, 13.342921366041821 ], [ -88.41874168089034, 13.342901971786262 ] ] ]";
-
+    private static final String GEOJSON_UGB_LIMITE = "[[[-88.41874340633379,13.34283649558408],[-88.41889582750109,13.341064029751806],[-88.4183981464357,13.340986375017515],[-88.4183198506188,13.341718383911658],[-88.41744672385741,13.341734257387003],[-88.41731438717092,13.341947347355575],[-88.41720029650317,13.34208781680739],[-88.41705536870573,13.342478399080552],[-88.41704762101584,13.342668867260805],[-88.41804339008654,13.342706366841806],[-88.41804335814876,13.342791803217315],[-88.41823868595432,13.342801600680023],[-88.41823288866537,13.342916755999179],[-88.41838883461396,13.342923474685207],[-88.41834904972168,13.344139953655613],[-88.41804015278399,13.344138534574338],[-88.41809341061756,13.344504005954995],[-88.4202425917306,13.34367508614703],[-88.42023523868959,13.34285588983964],[-88.41874340633379,13.34283649558408]]]";
     private FirebaseHelper firebaseHelper;
     private CloudinaryHelper cloudinaryHelper;
     private DetectarInternet detectarInternet;
@@ -3682,7 +3674,7 @@ public class MapManager {
      * @param punto Punto a validar
      * @return true si está dentro, false si está afuera
      */
-    public boolean puntoDentroDelUGB(Point punto) {
+    public boolean puntoDentroDeInstitucion(Point punto) {
         return verificarPuntoEnPoligono(punto, extraerVerticesDelGeoJson(GEOJSON_UGB_LIMITE));
     }
 
@@ -3707,6 +3699,21 @@ public class MapManager {
 
         Log.d("VALIDAR_UGB", "✅ Todos los puntos DENTRO del UGB");
         return true;
+    }
+
+    ///  Encargada de saber si un ususario esta dentro de la institucion
+    ///
+    /// REMEMBER USE LATER
+    ///
+    ///
+
+    public boolean usuarioDentroDeInstitucion(double latitud, double longitud) {
+        if (latitud == 0.0 || longitud == 0.0) {
+            return false;
+        }
+
+        Point puntoUsuario = Point.fromLngLat(longitud, latitud);
+        return puntoDentroDeInstitucion(puntoUsuario);
     }
 
     /**

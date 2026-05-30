@@ -17,6 +17,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.gson.JsonObject;
 import com.mapbox.bindgen.Value;
 import com.mapbox.geojson.Point;
@@ -40,7 +41,8 @@ public class MapaEventoActivity extends AppCompatActivity {
     private MapManager mapManager;
     private Database db;
     private Spinner spinnerPisos;
-    private Button btnFinalizar, btnGiroscopio;
+    private Button btnFinalizar;
+    private FloatingActionButton btnGiroscopio;
     private ActivityResultLauncher<Intent> camaraLauncher;
     private ActivityResultLauncher<Intent> galeriaLauncher;
 
@@ -274,9 +276,6 @@ public class MapaEventoActivity extends AppCompatActivity {
         );
     }
 
-
-
-
     /**
      * Verificar si viene en modo selección o visualización
      */
@@ -450,6 +449,81 @@ public class MapaEventoActivity extends AppCompatActivity {
         }
 
     }
+    ///  SE UTILIZARA DESPUES CUANDO ESTEMOS EN LA INST PARA HACER PRUEBAS DE COORDENADAS
+
+    /*private void configurarBotonGiroscopio() {
+    if (!modoSeleccion){
+        btnGiroscopio.setOnClickListener(v -> {
+
+            // Verificar si el usuario está dentro de la institución
+            if (!mapManager.usuarioDentroDelUGB(latitudUsuario, longitudUsuario)) {
+                Toast.makeText(this,
+                    "La brújula solo funciona dentro de la institución",
+                    Toast.LENGTH_LONG).show();
+
+                // Si estaba activada, desactivarla
+                if (seguimientoDireccion) {
+                    seguimientoDireccion = false;
+                    if (sensorManager != null && rotationListener != null) {
+                        sensorManager.unregisterListener(rotationListener);
+                    }
+                    btnGiroscopio.setBackgroundTintList(
+                        android.content.res.ColorStateList.valueOf(
+                            getResources().getColor(R.color.gris, null)
+                        )
+                    );
+                }
+                return;
+            }
+
+            // Alternar estado de seguimiento
+            seguimientoDireccion = !seguimientoDireccion;
+
+            if (seguimientoDireccion) {
+                // Activar brújula
+                inicializarBrujula();
+
+                if (sensorManager != null && rotationSensor != null && rotationListener != null) {
+                    sensorManager.registerListener(
+                        rotationListener,
+                        rotationSensor,
+                        SensorManager.SENSOR_DELAY_UI
+                    );
+                }
+
+                centrarEnUsuario();
+
+                // Cambiar color del botón para indicar que está activo
+                btnGiroscopio.setBackgroundTintList(
+                    android.content.res.ColorStateList.valueOf(
+                        getResources().getColor(android.R.color.holo_green_light, null)
+                    )
+                );
+
+                Toast.makeText(this,
+                    "Brújula activada - Siguiendo tu orientación",
+                    Toast.LENGTH_SHORT).show();
+            } else {
+                // Desactivar brújula
+                if (sensorManager != null && rotationListener != null) {
+                    sensorManager.unregisterListener(rotationListener);
+                }
+
+                // Restaurar color original
+                btnGiroscopio.setBackgroundTintList(
+                    android.content.res.ColorStateList.valueOf(
+                        getResources().getColor(R.color.azul_original, null)
+                    )
+                );
+
+                Toast.makeText(this,
+                    "Brújula desactivada",
+                    Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+}
+     */
 
     /**
      * Confirmar ubicación seleccionada y volver a AgregarEventoActivity
@@ -461,7 +535,7 @@ public class MapaEventoActivity extends AppCompatActivity {
         }
 
         // VALIDACIÓN ADICIONAL: Double-check que esté dentro del UGB
-        if (!mapManager.puntoDentroDelUGB(puntoSeleccionado)) {
+        if (!mapManager.puntoDentroDeInstitucion(puntoSeleccionado)) {
             Toast.makeText(this,
                     "La ubicación está fuera de los límites permitidos",
                     Toast.LENGTH_LONG).show();
@@ -604,7 +678,7 @@ public class MapaEventoActivity extends AppCompatActivity {
                 OnMapClickListener mapClickListener = point -> {
                     if (modoSeleccion && mapManager != null) {
                         // VALIDACIÓN: Verificar que el punto esté dentro del UGB
-                        if (!mapManager.puntoDentroDelUGB(point)) {
+                        if (!mapManager.puntoDentroDeInstitucion(point)) {
                             Toast.makeText(MapaEventoActivity.this,
                                     "El evento está FUERA de los límites permitidos",
                                     Toast.LENGTH_LONG).show();

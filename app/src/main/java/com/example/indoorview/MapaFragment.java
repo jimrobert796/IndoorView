@@ -6,11 +6,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.drawable.ColorDrawable;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -22,10 +18,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -37,43 +30,31 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.indoorview.models.Espacio;
-import com.example.indoorview.models.Geometria;
-import com.example.indoorview.models.Lugar;
 import com.example.indoorview.models.Pisos;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.mapbox.bindgen.Value;
 import com.mapbox.geojson.Point;
-import com.mapbox.geojson.Polygon;
 import com.mapbox.maps.CameraBoundsOptions;
 import com.mapbox.maps.CameraOptions;
-import com.mapbox.maps.CoordinateBounds;
 import com.mapbox.maps.MapView;
 import com.mapbox.maps.Style;
-import com.mapbox.maps.extension.style.layers.generated.FillLayer;
-import com.mapbox.maps.extension.style.layers.generated.LineLayer;
-import com.mapbox.maps.extension.style.sources.generated.GeoJsonSource;
 import com.mapbox.maps.plugin.Plugin;
 import com.mapbox.maps.plugin.animation.CameraAnimationsPlugin;
 import com.mapbox.maps.plugin.animation.MapAnimationOptions;
 import com.mapbox.maps.plugin.annotation.AnnotationPlugin;
 import com.mapbox.maps.plugin.annotation.AnnotationType;
-import com.mapbox.maps.plugin.annotation.generated.PointAnnotation;
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotationManager;
-import com.mapbox.maps.plugin.annotation.generated.PointAnnotationOptions;
 import com.mapbox.maps.plugin.gestures.GesturesUtils;
-import com.mapbox.maps.extension.style.layers.properties.generated.IconAnchor;
 import com.mapbox.maps.plugin.locationcomponent.LocationComponentPlugin;
 import com.mapbox.maps.plugin.locationcomponent.LocationComponentUtils;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 
 public class MapaFragment extends Fragment {
@@ -91,7 +72,8 @@ public class MapaFragment extends Fragment {
     private DetectarInternet detectarInternet;
 
     // UI Elements
-    private Button btnLugar, btnEspacios, btnCerrar, btnDeshacer, btnFinalizar, btnHabilitar, btnGiroscopio;
+    private Button btnLugar, btnEspacios, btnCerrar, btnDeshacer, btnFinalizar, btnHabilitar;
+    private FloatingActionButton btnGiroscopio;
     private TextView tvModo;
     private Spinner spinnerPisos;
 
@@ -233,6 +215,24 @@ public class MapaFragment extends Fragment {
         }
 
          */
+
+        // Mostrar dialogo de carga
+
+        loadingDialog = new Dialog(getContext());
+        View loadingView = LayoutInflater.from(getContext()).inflate(R.layout.progress_loading, null);
+        loadingDialog.setContentView(loadingView);  // ← ESTO FALTA
+        loadingDialog.setCancelable(false);
+
+        // Cambiar mensaje
+        TextView tvMessage = loadingView.findViewById(R.id.tv_loading_message);
+        tvMessage.setText("Cargando mapa...\nEsto puede tardar unos momentos");
+
+        // Mostrar diálogo de carga
+        loadingDialog.show();
+
+        new android.os.Handler().postDelayed(() -> {
+            loadingDialog.dismiss();
+        }, 2500); // Esperar 2.5s a que cargue la UI
 
         mapManager.verificarConexionBD();
         searchManager = new SearchManager(db);
@@ -1324,7 +1324,7 @@ public class MapaFragment extends Fragment {
         GesturesUtils.getGestures(mapView).addOnMapClickListener(point -> {
             if (modoActual == MODO_LUGAR) {
                 // ✅ VALIDAR que el punto esté dentro del UGB
-                if (!mapManager.puntoDentroDelUGB(point)) {
+                if (!mapManager.puntoDentroDeInstitucion(point)) {
                     Toast.makeText(getContext(),
                             "⚠️ Este punto está FUERA del límite UGB permitido",
                             Toast.LENGTH_SHORT).show();
@@ -1338,7 +1338,7 @@ public class MapaFragment extends Fragment {
 
             } else if (modoActual == MODO_ESPACIO) {
                 // ✅ VALIDAR que el punto esté dentro del UGB
-                if (!mapManager.puntoDentroDelUGB(point)) {
+                if (!mapManager.puntoDentroDeInstitucion(point)) {
                     Toast.makeText(getContext(),
                             "⚠️ Este punto está FUERA del límite UGB permitido",
                             Toast.LENGTH_SHORT).show();

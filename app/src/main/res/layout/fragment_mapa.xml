@@ -166,7 +166,8 @@
         android:id="@+id/btnHabilitar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
+        android:layout_marginRight="16dp"
+        android:layout_marginBottom="90dp"
         android:text="HABILITAR"
         android:backgroundTint="#2196F3"
         android:textColor="@android:color/white"
@@ -177,22 +178,26 @@
         android:id="@+id/tvModo"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
+        android:layout_marginLeft="16dp"
+        android:layout_marginBottom="30dp"
         android:background="#88000000"
         android:padding="8dp"
         android:textColor="#ffffff"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <Button
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/btnGiroscopio"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="80dp"
-        android:layout_marginRight="16dp"
-        android:text="Giroscopio"
-        android:backgroundTint="#2196F3"
-        android:textColor="@android:color/white"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="20dp"
+        android:src="@android:drawable/ic_menu_compass"
+        app:backgroundTint="#2196F3"
+        app:tint="@android:color/white"
+        app:maxImageSize="32dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
