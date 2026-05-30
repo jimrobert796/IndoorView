@@ -722,6 +722,39 @@ public class Database extends SQLiteOpenHelper {
         return evento;
     }
 
+    public List<Eventos> getEventosPorFecha(String fecha) {
+        List<Eventos> lista = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        // Busca eventos cuya fecha_inicio coincida con la fecha dada
+        Cursor c = db.rawQuery(
+                "SELECT * FROM eventos WHERE fecha_inicio = ?",
+                new String[]{fecha}
+        );
+        Eventos evento = null;
+        if (c.moveToFirst()) {
+            do {
+                evento = new Eventos(
+
+                        c.getInt(c.getColumnIndexOrThrow("id_evento")),
+                        c.getString(c.getColumnIndexOrThrow("nombre")),
+                        c.getString(c.getColumnIndexOrThrow("descripcion")),
+                        c.getString(c.getColumnIndexOrThrow("longitud")),
+                        c.getString(c.getColumnIndexOrThrow("latitud")),
+                        c.getString(c.getColumnIndexOrThrow("fecha_inicio")),
+                        c.getString(c.getColumnIndexOrThrow("hora_inicio")),
+                        c.getString(c.getColumnIndexOrThrow("fecha_fin")),
+                        c.getString(c.getColumnIndexOrThrow("hora_fin")),
+                        c.getInt(c.getColumnIndexOrThrow("estado"))
+                );
+                lista.add(evento);
+            } while (c.moveToNext());
+        }
+
+        c.close();
+        return lista;
+    }
+
     // ===== ACTUALIZAR EVENTO (MEJORADO) =====
     public int updateEvento(Eventos evento) {
         SQLiteDatabase db = getWritableDatabase();

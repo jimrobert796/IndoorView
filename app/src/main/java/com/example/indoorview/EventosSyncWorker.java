@@ -150,7 +150,7 @@ public class EventosSyncWorker extends Worker {
                 : "¡Hay " + cantidadNuevos + " nuevos eventos!";
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setSmallIcon(com.mapbox.maps.R.drawable.mapbox_indoor_selector_building)
                 .setContentTitle(titulo)
                 .setContentText("Toca para ver los eventos disponibles")
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
