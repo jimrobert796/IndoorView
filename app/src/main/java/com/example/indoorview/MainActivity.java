@@ -19,7 +19,7 @@ public class MainActivity extends AppCompatActivity {
 
     private BottomNavigationView bottomNavigationView;
 
-    private PermissionManager permissionManager;
+    //private PermissionManager permissionManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,6 +31,9 @@ public class MainActivity extends AppCompatActivity {
         // Obtener los datos de sesion
         obtenerDatosSesion();
 
+
+        // Se deja para pruebas futuras
+        /*
         permissionManager = PermissionManager.getInstance();
 
 
@@ -51,6 +54,8 @@ public class MainActivity extends AppCompatActivity {
                 //Toast.makeText(getActivity(), "Algunos permisos fueron denegados", Toast.LENGTH_SHORT).show();
             }
         });
+
+         */
 
         // Cargar el mapa al iniciar
         if (savedInstanceState == null) {

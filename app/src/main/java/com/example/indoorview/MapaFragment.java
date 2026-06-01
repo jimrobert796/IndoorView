@@ -232,6 +232,7 @@ public class MapaFragment extends Fragment {
 
         new android.os.Handler().postDelayed(() -> {
             loadingDialog.dismiss();
+            activarUbicacionUsuario(); // Activamos la ubicacion en tiempo real solucionado
         }, 2500); // Esperar 2.5s a que cargue la UI
 
         mapManager.verificarConexionBD();
@@ -498,7 +499,6 @@ public class MapaFragment extends Fragment {
         permissionManager = PermissionManager.getInstance();
 
         // Activar la posiscion de usuario
-        activarUbicacionUsuario();;
 
 
 

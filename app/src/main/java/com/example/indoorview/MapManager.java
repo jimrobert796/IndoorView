@@ -505,7 +505,7 @@ public class MapManager {
             SQLiteDatabase testDb = db.getReadableDatabase();
 
             if (testDb != null && testDb.isOpen()) {
-                Toast.makeText(context, "Base de datos conectada correctamente", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(context, "Base de datos conectada correctamente", Toast.LENGTH_SHORT).show();
                 Log.d("BD_CONEXION", "Base de datos abierta correctamente");
                 //contarRegistros();
             } else {

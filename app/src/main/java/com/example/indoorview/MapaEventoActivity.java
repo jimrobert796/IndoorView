@@ -6,6 +6,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.location.Location;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -77,6 +78,9 @@ public class MapaEventoActivity extends AppCompatActivity {
     // ========= Variables para coordenadas de usuario ========
     private double latitudUsuario = 0.0;
     private double longitudUsuario = 0.0;
+
+    private Location ultimaUbicacionValida = null;
+    private long ultimoTiempoUbicacion = 0;
 
 
     ///  RECORDA HACER QUE EL GIRO FUNCIONE ES L0 ULTIMO QUE NECESITO PARA PULIR BIEN ESTA APP
@@ -223,9 +227,42 @@ public class MapaEventoActivity extends AppCompatActivity {
 
                 locationComponent.addOnIndicatorPositionChangedListener(point -> {
 
+                    Location nuevaUbicacion = new Location("Mapbox");
+                    nuevaUbicacion.setLatitude(point.latitude());
+                    nuevaUbicacion.setLongitude(point.longitude());
+
+                    long tiempoActual = System.currentTimeMillis();
+
+                    if (ultimaUbicacionValida != null) {
+
+                        float distancia =
+                                ultimaUbicacionValida.distanceTo(nuevaUbicacion);
+
+                        long diferenciaTiempo =
+                                tiempoActual - ultimoTiempoUbicacion;
+
+                        // Ignorar saltos absurdos
+                        if (distancia > 2 && diferenciaTiempo < 1000) {
+
+                            Log.d(
+                                    "GPS_FILTRO",
+                                    "Salto ignorado: " + distancia + " metros"
+                            );
+
+                            return;
+                        }
+                    }
+
                     latitudUsuario = point.latitude();
                     longitudUsuario = point.longitude();
 
+                    ultimaUbicacionValida = nuevaUbicacion;
+                    ultimoTiempoUbicacion = tiempoActual;
+
+                    Log.d(
+                            "GPS",
+                            latitudUsuario + ", " + longitudUsuario
+                    );
                 });
 
                 Log.d("UBICACION", "✅ Ubicación del usuario activada");
@@ -233,8 +270,10 @@ public class MapaEventoActivity extends AppCompatActivity {
 
         } catch (Exception e) {
 
-            Log.e("UBICACION",
-                    "Error activando ubicación: " + e.getMessage());
+            Log.e(
+                    "UBICACION",
+                    "Error activando ubicación: " + e.getMessage()
+            );
         }
     }
 
@@ -407,7 +446,7 @@ public class MapaEventoActivity extends AppCompatActivity {
             }
         });
     }
-    /*
+
     private void configurarBotonGiroscopio() {
         if (!modoSeleccion){
             btnGiroscopio.setOnClickListener(v -> {
@@ -450,7 +489,9 @@ public class MapaEventoActivity extends AppCompatActivity {
         }
 
     }
-     */
+
+
+    /*
     ///  SE UTILIZARA DESPUES CUANDO ESTEMOS EN LA INST PARA HACER PRUEBAS DE COORDENADAS
 
     private void configurarBotonGiroscopio() {
@@ -525,6 +566,8 @@ public class MapaEventoActivity extends AppCompatActivity {
         });
     }
 }
+
+     */
 
 
     /**
