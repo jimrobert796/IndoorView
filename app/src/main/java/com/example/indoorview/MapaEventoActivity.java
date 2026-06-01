@@ -407,6 +407,7 @@ public class MapaEventoActivity extends AppCompatActivity {
             }
         });
     }
+    /*
     private void configurarBotonGiroscopio() {
         if (!modoSeleccion){
             btnGiroscopio.setOnClickListener(v -> {
@@ -449,14 +450,15 @@ public class MapaEventoActivity extends AppCompatActivity {
         }
 
     }
+     */
     ///  SE UTILIZARA DESPUES CUANDO ESTEMOS EN LA INST PARA HACER PRUEBAS DE COORDENADAS
 
-    /*private void configurarBotonGiroscopio() {
+    private void configurarBotonGiroscopio() {
     if (!modoSeleccion){
         btnGiroscopio.setOnClickListener(v -> {
 
             // Verificar si el usuario está dentro de la institución
-            if (!mapManager.usuarioDentroDelUGB(latitudUsuario, longitudUsuario)) {
+            if (!mapManager.usuarioDentroDeInstitucion(latitudUsuario, longitudUsuario)) {
                 Toast.makeText(this,
                     "La brújula solo funciona dentro de la institución",
                     Toast.LENGTH_LONG).show();
@@ -469,7 +471,7 @@ public class MapaEventoActivity extends AppCompatActivity {
                     }
                     btnGiroscopio.setBackgroundTintList(
                         android.content.res.ColorStateList.valueOf(
-                            getResources().getColor(R.color.gris, null)
+                            getResources().getColor(android.R.color.holo_blue_light, null)
                         )
                     );
                 }
@@ -512,7 +514,7 @@ public class MapaEventoActivity extends AppCompatActivity {
                 // Restaurar color original
                 btnGiroscopio.setBackgroundTintList(
                     android.content.res.ColorStateList.valueOf(
-                        getResources().getColor(R.color.azul_original, null)
+                        getResources().getColor(android.R.color.holo_blue_light, null)
                     )
                 );
 
@@ -523,7 +525,7 @@ public class MapaEventoActivity extends AppCompatActivity {
         });
     }
 }
-     */
+
 
     /**
      * Confirmar ubicación seleccionada y volver a AgregarEventoActivity

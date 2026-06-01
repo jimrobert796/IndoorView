@@ -1377,44 +1377,74 @@ public class MapaFragment extends Fragment {
         configurarBotonGiroscopio();
     }
     private void configurarBotonGiroscopio() {
-            btnGiroscopio.setOnClickListener(v -> {
+        btnGiroscopio.setOnClickListener(v -> {
 
-                seguimientoDireccion = !seguimientoDireccion;
+            // Verificar si el usuario está dentro de la institución
+            if (!mapManager.usuarioDentroDeInstitucion(latitudUsuario, longitudUsuario)) {
+                Toast.makeText(getContext(),
+                        "La brújula solo funciona dentro de la institución",
+                        Toast.LENGTH_LONG).show();
 
+                // Si estaba activada, desactivarla
                 if (seguimientoDireccion) {
-
-                    inicializarBrujula();
-
-                    if (sensorManager != null &&
-                            rotationSensor != null &&
-                            rotationListener != null) {
-
-                        sensorManager.registerListener(
-                                rotationListener,
-                                rotationSensor,
-                                SensorManager.SENSOR_DELAY_UI
-                        );
-                    }
-
-                    centrarEnUsuario();
-
-                    Toast.makeText(getActivity(),
-                            "Brujula activada",
-                            Toast.LENGTH_SHORT).show();
-                } else {
-
-                    if (sensorManager != null &&
-                            rotationListener != null) {
-
+                    seguimientoDireccion = false;
+                    if (sensorManager != null && rotationListener != null) {
                         sensorManager.unregisterListener(rotationListener);
                     }
-
-                    Toast.makeText(getActivity(),
-                            "Brujula desactivada",
-                            Toast.LENGTH_SHORT).show();
+                    btnGiroscopio.setBackgroundTintList(
+                            android.content.res.ColorStateList.valueOf(
+                                    getResources().getColor(android.R.color.holo_blue_light, null)
+                            )
+                    );
                 }
-            });
+                return;
+            }
 
+            // Alternar estado de seguimiento
+            seguimientoDireccion = !seguimientoDireccion;
+
+            if (seguimientoDireccion) {
+                // Activar brújula
+                inicializarBrujula();
+
+                if (sensorManager != null && rotationSensor != null && rotationListener != null) {
+                    sensorManager.registerListener(
+                            rotationListener,
+                            rotationSensor,
+                            SensorManager.SENSOR_DELAY_UI
+                    );
+                }
+
+                centrarEnUsuario();
+
+                // Cambiar color del botón para indicar que está activo
+                btnGiroscopio.setBackgroundTintList(
+                        android.content.res.ColorStateList.valueOf(
+                                getResources().getColor(android.R.color.holo_green_light, null)
+                        )
+                );
+
+                Toast.makeText(getContext(),
+                        "Brújula activada - Siguiendo tu orientación",
+                        Toast.LENGTH_SHORT).show();
+            } else {
+                // Desactivar brújula
+                if (sensorManager != null && rotationListener != null) {
+                    sensorManager.unregisterListener(rotationListener);
+                }
+
+                // Restaurar color original
+                btnGiroscopio.setBackgroundTintList(
+                        android.content.res.ColorStateList.valueOf(
+                                getResources().getColor(android.R.color.holo_blue_light, null)
+                        )
+                );
+
+                Toast.makeText(getContext(),
+                        "Brújula desactivada",
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
 
