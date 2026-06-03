@@ -21,8 +21,6 @@ public class LoginActivity extends AppCompatActivity {
     private Database db;
     private FirebaseHelper firebaseHelper;
     private DetectarInternet detectarInternet;
-    private PermissionManager permissionManager;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,9 +41,6 @@ public class LoginActivity extends AppCompatActivity {
 
         // Verificar si ya hay sesión activa
         verificarSesion();
-
-
-        permissionManager = PermissionManager.getInstance();
 
         btnLogin.setOnClickListener(v -> {
             String carnet = etCarnet.getText().toString().toUpperCase().trim();
@@ -81,25 +76,6 @@ public class LoginActivity extends AppCompatActivity {
             startActivity(intent);
             finish();
         }
-        // Sino seguir correctamente y pedir los permisos
-        permissionManager.requestAllPermissions(this, new PermissionManager.PermissionCallback() {
-            @Override
-            public void onPermissionGranted(int requestCode) {}
-
-            @Override
-            public void onPermissionDenied(int requestCode) {}
-
-            @Override
-            public void onAllPermissionsGranted() {
-                //Toast.makeText(LoginActivity.this, "Todos los permisos concedidos ✓", Toast.LENGTH_SHORT).show();
-            }
-
-            @Override
-            public void onSomePermissionsDenied(String[] permissions, int[] grantResults) {
-                //Toast.makeText(getActivity(), "Algunos permisos fueron denegados", Toast.LENGTH_SHORT).show();
-            }
-        });
-
     }
 
     /**
