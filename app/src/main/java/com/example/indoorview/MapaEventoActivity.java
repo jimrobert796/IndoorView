@@ -224,6 +224,7 @@ public class MapaEventoActivity extends AppCompatActivity {
 
                 locationComponent.setEnabled(true);
                 locationComponent.setPulsingEnabled(true);
+                locationComponent.setPuckBearingEnabled(false);
 
                 locationComponent.addOnIndicatorPositionChangedListener(point -> {
 
@@ -235,6 +236,8 @@ public class MapaEventoActivity extends AppCompatActivity {
 
                     if (ultimaUbicacionValida != null) {
 
+                        ultimaUbicacionValida.getAccuracy();
+
                         float distancia =
                                 ultimaUbicacionValida.distanceTo(nuevaUbicacion);
 
@@ -242,7 +245,7 @@ public class MapaEventoActivity extends AppCompatActivity {
                                 tiempoActual - ultimoTiempoUbicacion;
 
                         // Ignorar saltos absurdos
-                        if (distancia > 2 && diferenciaTiempo < 1000) {
+                        if (distancia > 2.5 ) {
 
                             Log.d(
                                     "GPS_FILTRO",
@@ -447,6 +450,7 @@ public class MapaEventoActivity extends AppCompatActivity {
         });
     }
 
+    /*
     private void configurarBotonGiroscopio() {
         if (!modoSeleccion){
             btnGiroscopio.setOnClickListener(v -> {
@@ -490,13 +494,17 @@ public class MapaEventoActivity extends AppCompatActivity {
 
     }
 
+     */
 
-    /*
+
+
     ///  SE UTILIZARA DESPUES CUANDO ESTEMOS EN LA INST PARA HACER PRUEBAS DE COORDENADAS
 
     private void configurarBotonGiroscopio() {
     if (!modoSeleccion){
         btnGiroscopio.setOnClickListener(v -> {
+
+            activarUbicacionUsuario();
 
             // Verificar si el usuario está dentro de la institución
             if (!mapManager.usuarioDentroDeInstitucion(latitudUsuario, longitudUsuario)) {
@@ -567,7 +575,7 @@ public class MapaEventoActivity extends AppCompatActivity {
     }
 }
 
-     */
+
 
 
     /**
@@ -665,7 +673,7 @@ public class MapaEventoActivity extends AppCompatActivity {
                         Value.valueOf("none")
                 );
 
-                activarUbicacionUsuario();
+                //activarUbicacionUsuario();
 
 
                 // CREAR UNA SOLA INSTANCIA de MapManager

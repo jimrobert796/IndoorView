@@ -120,25 +120,6 @@ public class EventosFragment extends Fragment {
                             Toast.makeText(getContext(), "Eventos sincronizados", Toast.LENGTH_SHORT).show();
 
 
-                            permissionManager.requestNotificationAndLocationPermissions(getActivity(), new PermissionManager.PermissionCallback() {
-                                @Override
-                                public void onPermissionGranted(int requestCode) {}
-
-                                @Override
-                                public void onPermissionDenied(int requestCode) {}
-
-                                @Override
-                                public void onAllPermissionsGranted() {
-                                    //Toast.makeText(LoginActivity.this, "Todos los permisos concedidos ✓", Toast.LENGTH_SHORT).show();
-                                }
-
-                                @Override
-                                public void onSomePermissionsDenied(String[] permissions, int[] grantResults) {
-                                    //Toast.makeText(getActivity(), "Algunos permisos fueron denegados", Toast.LENGTH_SHORT).show();
-                                }
-                            });
-
-
                         });
                     }
 

@@ -11,6 +11,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.location.Location;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -143,6 +144,8 @@ public class MapaFragment extends Fragment {
     // ========= Variables para coordenadas de usuario ========
     private double latitudUsuario = 0.0;
     private double longitudUsuario = 0.0;
+    private Location ultimaUbicacionValida = null;
+    private long ultimoTiempoUbicacion = 0;
 
 
     @Nullable
@@ -232,7 +235,6 @@ public class MapaFragment extends Fragment {
 
         new android.os.Handler().postDelayed(() -> {
             loadingDialog.dismiss();
-            activarUbicacionUsuario(); // Activamos la ubicacion en tiempo real solucionado
         }, 2500); // Esperar 2.5s a que cargue la UI
 
         mapManager.verificarConexionBD();
@@ -345,12 +347,48 @@ public class MapaFragment extends Fragment {
 
                 locationComponent.setEnabled(true);
                 locationComponent.setPulsingEnabled(true);
+                locationComponent.setPuckBearingEnabled(false);
 
                 locationComponent.addOnIndicatorPositionChangedListener(point -> {
+
+                    Location nuevaUbicacion = new Location("Mapbox");
+                    nuevaUbicacion.setLatitude(point.latitude());
+                    nuevaUbicacion.setLongitude(point.longitude());
+
+                    long tiempoActual = System.currentTimeMillis();
+
+                    if (ultimaUbicacionValida != null) {
+
+                        ultimaUbicacionValida.getAccuracy();
+
+                        float distancia =
+                                ultimaUbicacionValida.distanceTo(nuevaUbicacion);
+
+                        long diferenciaTiempo =
+                                tiempoActual - ultimoTiempoUbicacion;
+
+                        // Ignorar saltos absurdos
+                        if (distancia > 2.5 ) {
+
+                            Log.d(
+                                    "GPS_FILTRO",
+                                    "Salto ignorado: " + distancia + " metros"
+                            );
+
+                            return;
+                        }
+                    }
 
                     latitudUsuario = point.latitude();
                     longitudUsuario = point.longitude();
 
+                    ultimaUbicacionValida = nuevaUbicacion;
+                    ultimoTiempoUbicacion = tiempoActual;
+
+                    Log.d(
+                            "GPS",
+                            latitudUsuario + ", " + longitudUsuario
+                    );
                 });
 
                 Log.d("UBICACION", "✅ Ubicación del usuario activada");
@@ -358,8 +396,10 @@ public class MapaFragment extends Fragment {
 
         } catch (Exception e) {
 
-            Log.e("UBICACION",
-                    "Error activando ubicación: " + e.getMessage());
+            Log.e(
+                    "UBICACION",
+                    "Error activando ubicación: " + e.getMessage()
+            );
         }
     }
 
@@ -1378,6 +1418,8 @@ public class MapaFragment extends Fragment {
     }
     private void configurarBotonGiroscopio() {
         btnGiroscopio.setOnClickListener(v -> {
+
+            activarUbicacionUsuario(); // Activamos la ubicacion en tiempo real solucionado
 
             // Verificar si el usuario está dentro de la institución
             if (!mapManager.usuarioDentroDeInstitucion(latitudUsuario, longitudUsuario)) {
