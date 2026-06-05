@@ -188,6 +188,8 @@ public class RegistroActivity extends AppCompatActivity {
         String correo = etCorreo.getText().toString().trim();
         String password = etPassword.getText().toString().trim();
 
+        password = Utilidades.hashPassword(password);
+
 
         if (detectarInternet.hayConexionInternet()) {
 

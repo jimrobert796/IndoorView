@@ -523,6 +523,9 @@ public class MapaEventoActivity extends AppCompatActivity {
     if (!modoSeleccion){
         btnGiroscopio.setOnClickListener(v -> {
 
+            // activamos la ubicacion en real time
+            activarUbicacionUsuario();
+
 
             // Verificar si el usuario está dentro de la institución
             if (!mapManager.usuarioDentroDeInstitucion(latitudUsuario, longitudUsuario)) {
@@ -551,8 +554,7 @@ public class MapaEventoActivity extends AppCompatActivity {
 
             if (seguimientoDireccion) {
 
-                // activamos la ubicacion en real time
-                activarUbicacionUsuario();
+
 
                 if (sensorManager != null && rotationSensor != null && rotationListener != null) {
                     sensorManager.registerListener(
