@@ -81,6 +81,7 @@ public class MapaEventoActivity extends AppCompatActivity {
 
     private Location ultimaUbicacionValida = null;
     private long ultimoTiempoUbicacion = 0;
+    private boolean primeraVezCentrado = false;
 
 
     ///  RECORDA HACER QUE EL GIRO FUNCIONE ES L0 ULTIMO QUE NECESITO PARA PULIR BIEN ESTA APP
@@ -202,12 +203,16 @@ public class MapaEventoActivity extends AppCompatActivity {
                     @Override
                     public void onAllPermissionsGranted() {
                         mostrarUbicacionEnMapa();
+                        // Activar brújula
+                        inicializarBrujula();
                     }
 
                     @Override
                     public void onSomePermissionsDenied(String[] permissions, int[] grantResults) {
                         if (PermissionManager.getInstance().hasLocationPermission(MapaEventoActivity.this)) {
                             mostrarUbicacionEnMapa();
+                            // Activar brújula
+                            inicializarBrujula();
                         }
                     }
                 });
@@ -261,6 +266,12 @@ public class MapaEventoActivity extends AppCompatActivity {
 
                     ultimaUbicacionValida = nuevaUbicacion;
                     ultimoTiempoUbicacion = tiempoActual;
+
+                    // AQUÍ: ya tenemos coordenadas válidas guardadas para primera vez
+                    if (!primeraVezCentrado && seguimientoDireccion) {
+                        primeraVezCentrado = true;
+                        runOnUiThread(() -> centrarEnUsuario());
+                    }
 
                     Log.d(
                             "GPS",
@@ -455,6 +466,8 @@ public class MapaEventoActivity extends AppCompatActivity {
         if (!modoSeleccion){
             btnGiroscopio.setOnClickListener(v -> {
 
+                activarUbicacionUsuario();
+
                 seguimientoDireccion = !seguimientoDireccion;
 
                 if (seguimientoDireccion) {
@@ -472,23 +485,29 @@ public class MapaEventoActivity extends AppCompatActivity {
                         );
                     }
 
-                    centrarEnUsuario();
+                    // QUITAR: centrarEnUsuario();
+                    // El centrado ahora lo maneja el listener cuando llega la primera ubicación
 
-                    Toast.makeText(this,
-                            "Brujula activada",
-                            Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Brujula activada", Toast.LENGTH_SHORT).show();
+
                 } else {
 
-                    if (sensorManager != null &&
-                            rotationListener != null) {
+                    primeraVezCentrado = false; // ← resetear para próxima activación
 
+                    if (sensorManager != null && rotationListener != null) {
                         sensorManager.unregisterListener(rotationListener);
                     }
 
-                    Toast.makeText(this,
-                            "Brujula desactivada",
-                            Toast.LENGTH_SHORT).show();
+                    if (locationComponent != null) {
+                        locationComponent.updateSettings(settings -> {
+                            settings.setEnabled(false);
+                            return null;
+                        });
+                    }
+
+                    Toast.makeText(this, "Brujula desactivada", Toast.LENGTH_SHORT).show();
                 }
+
             });
         }
 
@@ -504,12 +523,12 @@ public class MapaEventoActivity extends AppCompatActivity {
     if (!modoSeleccion){
         btnGiroscopio.setOnClickListener(v -> {
 
-            activarUbicacionUsuario();
 
             // Verificar si el usuario está dentro de la institución
             if (!mapManager.usuarioDentroDeInstitucion(latitudUsuario, longitudUsuario)) {
+            //if (false) {
                 Toast.makeText(this,
-                    "La brújula solo funciona dentro de la institución",
+                    "La Ubicacion solo funciona dentro de la institución",
                     Toast.LENGTH_LONG).show();
 
                 // Si estaba activada, desactivarla
@@ -519,9 +538,9 @@ public class MapaEventoActivity extends AppCompatActivity {
                         sensorManager.unregisterListener(rotationListener);
                     }
                     btnGiroscopio.setBackgroundTintList(
-                        android.content.res.ColorStateList.valueOf(
-                            getResources().getColor(android.R.color.holo_blue_light, null)
-                        )
+                            android.content.res.ColorStateList.valueOf(
+                                    android.graphics.Color.parseColor("#2196F3")
+                            )
                     );
                 }
                 return;
@@ -531,8 +550,9 @@ public class MapaEventoActivity extends AppCompatActivity {
             seguimientoDireccion = !seguimientoDireccion;
 
             if (seguimientoDireccion) {
-                // Activar brújula
-                inicializarBrujula();
+
+                // activamos la ubicacion en real time
+                activarUbicacionUsuario();
 
                 if (sensorManager != null && rotationSensor != null && rotationListener != null) {
                     sensorManager.registerListener(
@@ -540,40 +560,59 @@ public class MapaEventoActivity extends AppCompatActivity {
                         rotationSensor,
                         SensorManager.SENSOR_DELAY_UI
                     );
+
+
+                    // Cambiar color del botón para indicar que está activo
+                    btnGiroscopio.setBackgroundTintList(
+                            android.content.res.ColorStateList.valueOf(
+                                    getResources().getColor(android.R.color.holo_green_light, null)
+                            )
+                    );
+
+                    Toast.makeText(this,
+                            "Ubicacion activada - Siguiendo tu orientación",
+                            Toast.LENGTH_SHORT).show();
+                }else{
+                    seguimientoDireccion = !seguimientoDireccion;
+                    // Desactivar brújula
+                    if (sensorManager != null && rotationListener != null) {
+                        sensorManager.unregisterListener(rotationListener);
+                    }
+
                 }
-
-                centrarEnUsuario();
-
-                // Cambiar color del botón para indicar que está activo
-                btnGiroscopio.setBackgroundTintList(
-                    android.content.res.ColorStateList.valueOf(
-                        getResources().getColor(android.R.color.holo_green_light, null)
-                    )
-                );
-
-                Toast.makeText(this,
-                    "Brújula activada - Siguiendo tu orientación",
-                    Toast.LENGTH_SHORT).show();
             } else {
+
+                primeraVezCentrado = false; // ← resetear para próxima activación
+
                 // Desactivar brújula
                 if (sensorManager != null && rotationListener != null) {
                     sensorManager.unregisterListener(rotationListener);
                 }
 
+                // desactivar el puck de ubicación
+                if (locationComponent != null) {
+                    locationComponent.updateSettings(settings -> {
+                        settings.setEnabled(false);
+                        return null;
+                    });
+                }
+
                 // Restaurar color original
                 btnGiroscopio.setBackgroundTintList(
-                    android.content.res.ColorStateList.valueOf(
-                        getResources().getColor(android.R.color.holo_blue_light, null)
-                    )
+                        android.content.res.ColorStateList.valueOf(
+                                android.graphics.Color.parseColor("#2196F3")
+                        )
                 );
 
                 Toast.makeText(this,
-                    "Brújula desactivada",
+                    "Ubicacion desactivada",
                     Toast.LENGTH_SHORT).show();
             }
         });
     }
 }
+
+
 
 
 

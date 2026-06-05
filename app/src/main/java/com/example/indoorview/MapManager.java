@@ -1010,14 +1010,14 @@ public class MapManager {
         PointAnnotationOptions op = new PointAnnotationOptions()
                 .withPoint(punto)
                 .withIconImage(icono)
-                .withIconSize(1)
+                .withIconSize(1.3)
                 .withTextField(texto)
                 .withTextSize(12.0)
                 .withIconAnchor(IconAnchor.CENTER)
                 .withTextColor("#000000")
                 .withTextHaloColor("#ffffff")
                 .withTextHaloWidth(12.0)
-                .withTextOffset(Arrays.asList(0.0, 2.8))
+                .withTextOffset(Arrays.asList(0.0, 1.9))
                 .withData(data);
         managerEventos.create(op);
     }

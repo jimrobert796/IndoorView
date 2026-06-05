@@ -25,14 +25,14 @@ public class MyApp extends Application {
         programarRecordatorioEventosManana();
     }
 
-    // Se actualiza cada 6 hrs automaticamente
+    // Se actualiza cada 8 hrs automaticamente
     private void programarSyncMapa() {
         Constraints constraints = new Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build();
 
         PeriodicWorkRequest syncRequest =
-                new PeriodicWorkRequest.Builder(MapaSyncWorker.class, 6, TimeUnit.HOURS)
+                new PeriodicWorkRequest.Builder(MapaSyncWorker.class, 8, TimeUnit.HOURS)
                         .setConstraints(constraints)
                         .build();
 
