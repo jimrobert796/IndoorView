@@ -32,7 +32,7 @@ public class MyApp extends Application {
                 .build();
 
         PeriodicWorkRequest syncRequest =
-                new PeriodicWorkRequest.Builder(MapaSyncWorker.class, 8, TimeUnit.HOURS)
+                new PeriodicWorkRequest.Builder(MapaSyncWorker.class, 3, TimeUnit.MINUTES)
                         .setConstraints(constraints)
                         .build();
 

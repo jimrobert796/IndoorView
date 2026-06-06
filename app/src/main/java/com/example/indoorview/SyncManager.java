@@ -55,8 +55,10 @@ public class SyncManager {
 
     public void syncAllMapWithClean() {
         Log.d(TAG, "LIMPIANDO BD LOCAL ANTES DE SINCRONIZAR");
-        db.limpiarTablasMapa();
-        syncAllMap();
+        int res =  db.limpiarTablasMapa();
+        if (res == 1){
+            syncAllMap();
+        }
     }
 
     public void syncAllEventosWithClean(SyncCallback callback) {

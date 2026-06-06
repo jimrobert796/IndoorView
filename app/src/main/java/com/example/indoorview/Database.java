@@ -1708,9 +1708,10 @@ public class Database extends SQLiteOpenHelper {
     }
 
 
-    public void limpiarTablasMapa() {
-        SQLiteDatabase db = getWritableDatabase();
+    public int limpiarTablasMapa() {
+        SQLiteDatabase db = null;
         try {
+            db = getWritableDatabase();
             db.beginTransaction();
 
             db.delete("geometria", null, null);
@@ -1720,11 +1721,16 @@ public class Database extends SQLiteOpenHelper {
 
             db.setTransactionSuccessful();
             Log.d("DB_CLEAN", "Todas las tablas limpiadas correctamente");
+            return 1;
         } catch (Exception e) {
             Log.e("DB_CLEAN", "Error limpiando tablas: " + e.getMessage());
+            throw e; // Re-lanzar para que el llamador sepa del error
         } finally {
-            db.endTransaction();
-            db.close();
+            if (db != null) {
+                db.endTransaction();
+                // NO cerrar db aquí - la BD debe mantenerse abierta
+                // db.close(); <-- ELIMINAR ESTA LÍNEA
+            }
         }
     }
 
