@@ -85,9 +85,7 @@ public class MapManager {
 
     Spinner spinnerPisos;
 
-    // ════════════════════════════════════════════════════════════════
     // VARIABLES PARA MODO EDICIÓN (AGREGAR LUGARES Y ESPACIOS)
-    // ════════════════════════════════════════════════════════════════
     public List<Point> puntosActuales = new ArrayList<>();
     public List<Point> puntosLugarActual = new ArrayList<>();
     public List<Point> puntosEspacioActual = new ArrayList<>();
@@ -130,9 +128,10 @@ public class MapManager {
     // PARA MEJORAR EL RENDIMIENTO DE PINES
     private final HashMap<String, Bitmap> cachePins = new HashMap<>();
 
-    // ════════════════════════════════════════════════════════════════
-    // CONSTRUCTOR
-    // ════════════════════════════════════════════════════════════════
+
+    /// CONSTRUCTOR
+    /// requerimentos:
+    /// mapview, Database, context, spinnerPisos, camaraLauncher, galeriaLauncher
     public MapManager(MapView mapView, Database db, Context context, Spinner spinner,ActivityResultLauncher<Intent> camaraLauncher,
                       ActivityResultLauncher<Intent> galeriaLauncher) {
         this.mapView = mapView;
@@ -148,14 +147,13 @@ public class MapManager {
             Log.d("SPINNER_DEBUG", "✓ Spinner inicializado correctamente");
         }
 
-        // Encargadas de lo que seria el modificar en linea
-        firebaseHelper = new FirebaseHelper();
-        cloudinaryHelper = new CloudinaryHelper();
-        detectarInternet = new DetectarInternet(context);
-        // Inicializar PermissionManager
-        permissionManager = PermissionManager.getInstance();
+        // Inicializar las ayudas
+        firebaseHelper = new FirebaseHelper(); // Subida a firebase
+        cloudinaryHelper = new CloudinaryHelper(); // Subida de imagenes online
+        detectarInternet = new DetectarInternet(context); // Deteccion de internet
+        permissionManager = PermissionManager.getInstance(); // Manejador de permisos
 
-        // Crear managers de anotaciones
+        // Crear managers de anotaciones para poder ubicarlas en el mapa
         AnnotationPlugin plugin = mapView.getPlugin(Plugin.Mapbox.MAPBOX_ANNOTATION_PLUGIN_ID);
 
         managerLugares = (PointAnnotationManager)
@@ -173,15 +171,24 @@ public class MapManager {
         managerEventos = (PointAnnotationManager)
                 plugin.createAnnotationManager(AnnotationType.PointAnnotation, null);
 
-        // ════════════════════════════════════════════════════════════════
-        // EVENTOS DE MAPA - Click en LUGARES
-        // ════════════════════════════════════════════════════════════════
+
+        // ================================================================
+        // Manejador de eventos click y long para lugares y espacios
+        // ================================================================
+
+        /**
+         * Maneja el evento de click sobre un LUGAR en el mapa
+         *
+         * Comportamiento:
+         * - Modo normal: Muestra BottomSheet con información del lugar
+         * - Modo edición: Muestra BottomSheetCRUD con la informacion para editar
+         */
         managerLugares.addClickListener(annotation -> {
             Point punto = annotation.getPoint();
             redireccionPin(punto);
             JsonObject data = (JsonObject) annotation.getData();
             // Limpiamos los espacios por si acaso
-            limpiarEspacios();
+            limpiarPinEspacios();
             restaurarPinesOcultos();
 
 
@@ -198,17 +205,21 @@ public class MapManager {
             } else {
                 mostrarBottomSheetLugar(data);
                 //mostrarInfoLugar(data);
-                limpiarEspacios();
+                limpiarPinEspacios();
                 lugarSeleccionado = -1;
                 //Toast.makeText(context, "Espacios ocultos", Toast.LENGTH_SHORT).show();
             }
             return true;
         });
 
-        // ════════════════════════════════════════════════════════════════
-        // EVENTOS DE MAPA - Long Click en LUGARES (mostrar espacios)
-        // ════════════════════════════════════════════════════════════════
+        /**
+         * Maneja el evento de longPress sobre un LUGAR en el mapa
+         *
+         * Comportamiento:
+         * - Muestra los espacios que contiene el lugar sin importar si es edicion o no
+         */
         managerLugares.addLongClickListener(annotation -> {
+            // obtener la informacion del pin
             Point punto = annotation.getPoint();
             redireccionPin(punto);
             JsonObject data = (JsonObject) annotation.getData();
@@ -216,6 +227,7 @@ public class MapManager {
             if (data != null) {
                 int idLugar = data.get("id_lugar").getAsInt();
 
+                // verificar si el pin oculto es el mismo actual para hacerlo visible
                 if (pinOcultoActual != null) {
                     pinOcultoActual.setIconSize(0.9);
                     pinOcultoActual.setTextOpacity(1.0);
@@ -225,10 +237,11 @@ public class MapManager {
 
                 if (lugarSeleccionado != idLugar) {
 
-                    limpiarEspacios();
+                    limpiarPinEspacios();
                     limpiarEspaciosDeLugar(lugarSeleccionado);
                     cargarPisos(idLugar);
 
+                    // si tiene el lugar tiene espacios ocultar el lugar
                     if(hayEspacios){
                         pinesOcultos.add(annotation);
                         annotation.setIconSize(0.0);
@@ -240,7 +253,7 @@ public class MapManager {
                     lugarSeleccionado = idLugar;
                     Toast.makeText(context, "Mostrando espacios del lugar", Toast.LENGTH_SHORT).show();
                 } else {
-                    limpiarEspacios();
+                    limpiarPinEspacios();
                     lugarSeleccionado = -1;
                     Toast.makeText(context, "Ocultando espacios", Toast.LENGTH_SHORT).show();
                 }
@@ -250,9 +263,13 @@ public class MapManager {
             return true;
         });
 
-        // ════════════════════════════════════════════════════════════════
-        // EVENTOS DE MAPA - Click en ESPACIOS
-        // ════════════════════════════════════════════════════════════════
+        /**
+         * Maneja el evento de click sobre un ESPACIO en el mapa
+         *
+         * Comportamiento:
+         * - Modo normal: Muestra BottomSheet con información del espacio
+         * - Modo edición: Muestra BottomSheetCRUD con la informacion para editar
+         */
         managerEspacios.addClickListener(annotation -> {
             Point punto = annotation.getPoint();
             redireccionPin(punto);
@@ -274,14 +291,10 @@ public class MapManager {
         });
     }
 
-    // ════════════════════════════════════════════════════════════════
-    // MÉTODOS PÚBLICOS GENERALES
-    // ════════════════════════════════════════════════════════════════
 
-
-    // ════════════════════════════════════════════════════════════════
-// MÉTODOS PARA BÚSQUEDA (Agregar estos a MapManager.java)
-// ════════════════════════════════════════════════════════════════
+    // ===============================================================
+    // Metodos para uso de mapa en fragment u otros
+    // ===============================================================
 
     /**
      * Seleccionar un lugar desde la búsqueda
@@ -293,10 +306,10 @@ public class MapManager {
         Log.d("SEARCH_SELECT", "Seleccionando lugar por búsqueda: ID " + idLugar);
 
         // Limpiar espacios anteriores
-        limpiarEspacios();
+        limpiarPinEspacios();
         restaurarPinesOcultos();
 
-        // ✅ GUARDAR ESTADO DE SELECCIÓN
+        // GUARDAR ESTADO DE SELECCIÓN
         elementoSeleccionadoId = idLugar;
         esEspacioSeleccionado = false;
 
@@ -310,7 +323,7 @@ public class MapManager {
         } else {
             // En modo vista: mostrar detalles
             mostrarBottomSheetLugar(data);
-            limpiarEspacios();
+            limpiarPinEspacios();
             lugarSeleccionado = -1;
             //Toast.makeText(context, "Lugar: " + data.get("nombre").getAsString(), Toast.LENGTH_SHORT).show();
         }
@@ -341,21 +354,19 @@ public class MapManager {
         Log.d("SEARCH_SELECT", "  Piso ID: " + idPiso);
         Log.d("SEARCH_SELECT", "=========================================");
 
-        // 1. LIMPIAR SELECCIÓN ANTERIOR
-        limpiarEspacios();
+        // LIMPIAR SELECCIÓN ANTERIOR
+        limpiarPinEspacios();
         restaurarPinesOcultos();
 
-        // 2. OCULTAR EL PIN DEL LUGAR
+        // OCULTAR EL PIN DEL LUGAR
         ocultarPinLugar(idLugar);
 
         // Para que sea segun spinner asi no da problemas a la hora de cargar los pisos
         cargarPisos(idLugar);
 
-        // ✅ GUARDAR ESTADO DE SELECCIÓN
+        // Guardamos el estado de selecion
         elementoSeleccionadoId = idEspacio;
         esEspacioSeleccionado = true;
-
-        // 3. CARGAR Y SELECCIONAR EL PISO CORRECTO EN EL SPINNER
         lugarSeleccionado = idLugar;
 
         // Cargar todos los pisos del lugar
@@ -375,7 +386,7 @@ public class MapManager {
             }
         }
 
-        // 4. SELECCIONAR EL PISO EN EL SPINNER
+        // Selecionar el piso del spinner
         if (pisoIndex != -1 && spinnerPisos != null && pisosDelLugar.size() > 1) {
             // Mostrar y seleccionar el piso en el spinner
             mostrarPisosEnSpinner(pisosDelLugar, pisoIndex, idLugar);
@@ -384,10 +395,10 @@ public class MapManager {
             Log.d("SEARCH_SELECT", "Solo hay un piso o spinner no disponible, mostrando directamente");
         }
 
-        // 5. MOSTRAR LOS ESPACIOS DEL PISO SELECCIONADO
+        // Mostrar los espacios del spinner
         mostrarEspaciosPorPiso(idLugar, idPiso);
 
-        // 6. ANIMAR CÁMARA HACIA EL ESPACIO
+        // Animar la camara hacia el espacio
         if (data.has("vertices")) {
             Point centro = calcularCentroDesdeGeoJson(data.get("vertices").getAsString());
             if (centro != null) {
@@ -397,7 +408,7 @@ public class MapManager {
             }
         }
 
-        // 7. MOSTRAR BOTTOM SHEET SEGÚN MODO
+        // Mostrar el BottomSheet segun el caso
         if (modoEdicion) {
             mostrarBottomSheetCRUD(data, true);
             Toast.makeText(context, "Editando: " + nombreEspacio, Toast.LENGTH_SHORT).show();
@@ -407,7 +418,10 @@ public class MapManager {
         }
     }
 
-    // Metodo auxiliar para mostrar pisos en el spinner y seleccionar uno
+    /**
+     * Metodo axiliar para actualizar el spinner
+     * Muestra los pisos disponibles segun lugar
+     */
     private void mostrarPisosEnSpinner(List<Pisos> pisos, int pisoSeleccionadoIndex, int idLugar) {
         if (spinnerPisos == null) {
             Log.e("SEARCH_SELECT", "Spinner es null");
@@ -441,6 +455,11 @@ public class MapManager {
 
         Log.d("SEARCH_SELECT", "Spinner configurado con " + pisos.size() + " pisos, seleccionado índice " + pisoSeleccionadoIndex);
     }
+
+    /**
+     * Metodo axiliar para ocultar el pin de lugar
+     * Se oculta mientras se hace la busqueda
+     */
     public void ocultarPinLugar(int idLugar) {
         // Buscar el pin del lugar en el manager
         List<PointAnnotation> todosLosPines = managerLugares.getAnnotations();
@@ -466,14 +485,10 @@ public class MapManager {
         }
     }
 
-    public void setModoEdicion(boolean activar) {
-        this.modoEdicion = activar;
-    }
-
-    public boolean isModoEdicion() {
-        return modoEdicion;
-    }
-
+    /**
+     * Metodo axiliar para restaurar pines ocultos
+     * Muestra los pines ocultos a causa de la busqueda
+     */
     private void restaurarPinesOcultos() {
         for (PointAnnotation pin : pinesOcultos) {
             pin.setIconSize(0.9);
@@ -483,6 +498,10 @@ public class MapManager {
         pinesOcultos.clear();
     }
 
+    /**
+     * Metodo encargado de hacer redirecion de camara al pin
+     * Muestra la ubicacion exacta del pin
+     */
     private void redireccionPin(Point punto) {
         CameraAnimationsPlugin animationPlugin =
                 mapView.getPlugin(Plugin.MAPBOX_CAMERA_PLUGIN_ID);
@@ -500,26 +519,60 @@ public class MapManager {
         );
     }
 
+    // ======================================
+    // Metodos para detectar modo edicion
+    // ======================================
+    /**
+     * Metodo para hacer un set si se esta en modo edicion
+     */
+    public void setModoEdicion(boolean activar) {
+        this.modoEdicion = activar;
+    }
+
+    /**
+     * Metodo get para saber que modo de edicion se esta
+     */
+    public boolean isModoEdicion() {
+        return modoEdicion;
+    }
+
+
+    // ===============================================
+    // Metodos debug para test de conexion de bd
+    // ================================================
+
+    /**
+     * Metodo encargado de verificar la conexion con bd local
+     * Muestra mensaje de conexion en logs o eh toast para cada caso
+     */
     public void verificarConexionBD() {
         try {
             SQLiteDatabase testDb = db.getReadableDatabase();
 
+            // probar si la conexion se establecio
             if (testDb != null && testDb.isOpen()) {
                 //Toast.makeText(context, "Base de datos conectada correctamente", Toast.LENGTH_SHORT).show();
                 Log.d("BD_CONEXION", "Base de datos abierta correctamente");
                 //contarRegistros();
             } else {
+                // Mostrar error de conexion
                 Toast.makeText(context, "Error: No se pudo conectar a la BD", Toast.LENGTH_LONG).show();
             }
 
             testDb.close();
 
         } catch (Exception e) {
+            // En caso que trunque
             Toast.makeText(context, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
             Log.e("BD_CONEXION", "Error de conexión: " + e.getMessage());
         }
     }
 
+    /**
+     * Metodo solamente para debugging
+     * Muestra en lista lo cargado desde bd al inciciar
+     * desde un dialog
+     */
     private void contarRegistros() {
         List<Lugar> lugares = db.getLugares();
         StringBuilder mensaje = new StringBuilder();
@@ -540,24 +593,29 @@ public class MapManager {
                 .show();
     }
 
-    // ════════════════════════════════════════════════════════════════
-    // CARGAR Y DIBUJAR POLÍGONOS EXISTENTES (LECTURAS)
-    // ════════════════════════════════════════════════════════════════
+    // ================================================================
+    // Metodos para caragr y dibujar poligonos
+    // ================================================================
 
+    /**
+     * Metodo encargado de cargar poligonos
+     * Muestra cargando desde bd los poligonos de lugares
+     */
     public void cargarPoligonosLugar() {
         limpiarLugares();
         limpiarPinesTemporales();
         limpiarTodoTemporal();
         limpiarPinEvento();
-        limpiarEspacios();
+        limpiarPinEspacios();
 
+        // Obtener la lista objetos ly¿ugares
         List<Lugar> lugares = db.getLugares();
 
         if (lugares.isEmpty()) {
             Log.d("POLIGONOS", "No hay edificios");
             return;
         }
-
+        // dibujamos por cada lugar en la lista en mapa
         for (Lugar lugar : lugares) {
             mapView.getMapboxMap().getStyle(style -> {
                 dibujarPoligonoLugar(style, lugar);
@@ -565,14 +623,20 @@ public class MapManager {
         }
     }
 
+    /**
+     * Metodo encargado de cargar Linestring
+     * Muestra cargando desde bd los Linestring de detalles
+     */
     public void cargarLineStringDetalles() {
+        // Obtenemos en lista los detalles
         List<Detalle> detalles = db.getDetalles();
 
         if (detalles.isEmpty()) {
             Log.d("POLIGONOS", "No hay edificios");
             return;
         }
-
+        
+        // Por cada detalle en lista ahora dibujamos
         for (Detalle detalle : detalles) {
             mapView.getMapboxMap().getStyle(style -> {
                 dibujarDetalle(style, detalle);
@@ -580,6 +644,10 @@ public class MapManager {
         }
     }
 
+    /**
+     * Metodo encargado de dibujar los poligonos de lugar
+     * Muestra la geometria gracias al objeto Lugar
+     */
     public void dibujarPoligonoLugar(Style style, Lugar lugar) {
         String geojson = lugar.getGeojson();
 
@@ -603,11 +671,15 @@ public class MapManager {
         }
 
         try {
+            // Dibujamos el mapa con los respectivos datos del objeto
+
+            // Agregar fuente GeoJSON
             HashMap<String, Value> sourceProps = new HashMap<>();
             sourceProps.put("type", Value.valueOf("geojson"));
             sourceProps.put("data", Value.valueOf(geojsonCompleto));
             style.addStyleSource(sourceId, new Value(sourceProps));
 
+            // Capa de RELLENO
             HashMap<String, Value> fillLayerProps = new HashMap<>();
             fillLayerProps.put("id", Value.valueOf(sourceId + "-fill"));
             fillLayerProps.put("type", Value.valueOf("fill"));
@@ -619,6 +691,7 @@ public class MapManager {
             fillLayerProps.put("paint", new Value(fillPaint));
             style.addStyleLayer(new Value(fillLayerProps), null);
 
+            // Capa de BORDE
             HashMap<String, Value> lineLayerProps = new HashMap<>();
             lineLayerProps.put("id", Value.valueOf(sourceId + "-line"));
             lineLayerProps.put("type", Value.valueOf("line"));
@@ -642,7 +715,10 @@ public class MapManager {
         }
     }
 
-
+    /**
+     * Metodo encargado de dibujar los detalles
+     * Muestra la geometria gracias al objeto Detalle
+     */
     public void dibujarDetalle(Style style, Detalle detalle) {
         if (detalle == null) {
             Log.e("DETALLE", "Detalle es null");
@@ -675,7 +751,7 @@ public class MapManager {
             String sourceId = "detalle-" + id;
 
             if (tipo.equals("LineString")) {
-                // ========== DIBUJAR LINESTRING (solo línea) ==========
+                // DIBUJAR LINESTRING (solo línea)
                 String geojsonCompleto = "{\"type\":\"LineString\",\"coordinates\":" + geojson + "}";
 
                 // Agregar fuente GeoJSON
@@ -700,7 +776,7 @@ public class MapManager {
                 Log.d("DETALLE", "✓ Línea dibujada: " + detalle.getNombre());
 
             } else if (tipo.equals("Polygon") || tipo.equals("polygon")) {
-                // ========== DIBUJAR POLYGON (relleno + borde) ==========
+                //DIBUJAR POLYGON (relleno + borde)
                 String geojsonCompleto = "{\"type\":\"Polygon\",\"coordinates\":" + geojson + "}";
 
                 // Agregar fuente GeoJSON
@@ -744,49 +820,10 @@ public class MapManager {
         }
     }
 
-
-    public void dibujarTodosLosEspacios() {
-        Log.d("ESPACIOS", "========== DIBUJANDO TODOS LOS ESPACIOS ==========");
-
-        List<Lugar> lugares = db.getLugares();
-
-        if (lugares.isEmpty()) {
-            Log.e("ESPACIOS", "No hay edificios en la base de datos");
-            Toast.makeText(context, "No hay edificios", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        int totalEspacios = 0;
-        int dibujados = 0;
-
-        for (Lugar lugar : lugares) {
-            Log.d("ESPACIOS", "Edificio: " + lugar.getNombre() + " (ID: " + lugar.getId_lugar() + ")");
-
-            List<Espacio> espacios = db.getEspaciosByLugar(lugar.getId_lugar());
-            totalEspacios += espacios.size();
-
-            for (Espacio espacio : espacios) {
-                Log.d("ESPACIOS", "   Espacio: " + espacio.getNombre() + " (ID: " + espacio.getId_espacio() + ")");
-
-                Geometria geometria = db.getGeometriaByEspacio(espacio.getId_espacio());
-
-                if (geometria != null && geometria.getVertices() != null && !geometria.getVertices().isEmpty()) {
-                    Log.d("ESPACIOS", "      Tiene geometría");
-                    dibujarPoligonoEspacio(geometria, espacio);
-                    dibujados++;
-                } else {
-                    Log.e("ESPACIOS", "      Sin geometría para: " + espacio.getNombre());
-                }
-            }
-        }
-
-        Log.d("ESPACIOS", "========== RESUMEN ==========");
-        Log.d("ESPACIOS", "Total espacios: " + totalEspacios);
-        Log.d("ESPACIOS", "Dibujados: " + dibujados);
-
-        Toast.makeText(context, "Dibujados " + dibujados + " de " + totalEspacios + " espacios", Toast.LENGTH_LONG).show();
-    }
-
+    /**
+     * Metodo encargado de dibujar los poligonos de espacio
+     * Muestra la geometria gracias al objeto Espacio
+     */
     public void dibujarPoligonoEspacio(Geometria geometria, Espacio espacio) {
 
         String vertices = geometria.getVertices();
@@ -822,6 +859,7 @@ public class MapManager {
                 sourceProps.put("data", Value.valueOf(finalGeojson));
                 style.addStyleSource(finalSourceId, new Value(sourceProps));
 
+                // Capa de RELLENO
                 HashMap<String, Value> fillLayerProps = new HashMap<>();
                 fillLayerProps.put("id", Value.valueOf(finalSourceId + "-fill"));
                 fillLayerProps.put("type", Value.valueOf("fill"));
@@ -833,6 +871,7 @@ public class MapManager {
                 fillLayerProps.put("paint", new Value(fillPaint));
                 style.addStyleLayer(new Value(fillLayerProps), null);
 
+                // Capa de BORDE
                 HashMap<String, Value> lineLayerProps = new HashMap<>();
                 lineLayerProps.put("id", Value.valueOf(finalSourceId + "-line"));
                 lineLayerProps.put("type", Value.valueOf("line"));
@@ -857,40 +896,14 @@ public class MapManager {
         });
     }
 
-    // ════════════════════════════════════════════════════════════════
-    // MÉTODOS DE PINES Y BITMAPS
-    // ════════════════════════════════════════════════════════════════
+    // ===================================================
+    // Metodos para pines y bitmaps
+    // ===================================================
 
-    /*
-
-    private Bitmap crearPinBitmap(String hexColor) {
-        int size = 60;
-        Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmap);
-
-        Paint sombra = new Paint(Paint.ANTI_ALIAS_FLAG);
-        sombra.setColor(Color.parseColor("#44000000"));
-        canvas.drawCircle(size / 2f + 2, size / 2f + 2, size / 2.5f, sombra);
-
-        Paint exterior = new Paint(Paint.ANTI_ALIAS_FLAG);
-        exterior.setColor(Color.parseColor(hexColor));
-        canvas.drawCircle(size / 2f, size / 2f, size / 2.5f, exterior);
-
-        Paint borde = new Paint(Paint.ANTI_ALIAS_FLAG);
-        borde.setColor(Color.WHITE);
-        borde.setStyle(Paint.Style.STROKE);
-        borde.setStrokeWidth(3f);
-        canvas.drawCircle(size / 2f, size / 2f, size / 2.5f, borde);
-
-        Paint interior = new Paint(Paint.ANTI_ALIAS_FLAG);
-        interior.setColor(Color.WHITE);
-        canvas.drawCircle(size / 2f, size / 2f, size / 6f, interior);
-
-        return bitmap;
-    }
-
+    /**
+     * Metodo encargado de dibujar el bitmap
+     * Muestra en mapa el bitmap como pin solo para carga
      */
-
     private Bitmap crearPinBitmap(String hexColor) {
         // Verificar si ya existe en caché
         if (cachePins.containsKey(hexColor)) {
@@ -925,11 +938,18 @@ public class MapManager {
         return bitmap;
     }
 
-    // Seleccionar pin por color (usa caché automáticamente)
+    /**
+     * Metodo encargado de selecionar el pin por color
+     * Devuelve el pin o  bitmap segun en cache o nuevo
+     */
     private Bitmap seleccionarPinPorColor(String hexColor) {
         return crearPinBitmap(hexColor);
     }
 
+    /**
+     * Metodo encargado de dibujar o crear un bitmap
+     * Muestra en mapa el punto solamente para cuando se agrega para demo
+     */
     public Bitmap crearPuntoBitmap(String hexColor) {
         int size = 30;
         Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
@@ -948,8 +968,15 @@ public class MapManager {
         return bitmap;
     }
 
+
+    /**
+     * Metodo encargado de agregar el pin al mapa  con info
+     * Pone en memoria y carga el pin respectivo con su informacion
+     * en este caso para espacios
+     */
     private void agregarPinLugar(Point punto, String texto, String color, Lugar lugar) {
-        Bitmap icono = seleccionarPinPorColor(color);
+        // Se ha omnitido por renidmiento
+        //Bitmap icono = seleccionarPinPorColor(color);
 
         JsonObject data = new JsonObject();
         data.addProperty("id_lugar", lugar.getId_lugar());
@@ -975,6 +1002,11 @@ public class MapManager {
         managerLugares.create(op);
     }
 
+    /**
+     * Metodo encargado de agregar el pin al mapa con info
+     * Pone en memoria y carga el pin respectivo con su informacion
+     * en este caso para espacios
+     */
     private void agregarPinEspacio(Point punto, String texto, String color, Espacio espacio, Geometria geometria) {
         JsonObject data = new JsonObject();
         data.addProperty("id_espacio", espacio.getId_espacio());
@@ -988,7 +1020,8 @@ public class MapManager {
         data.addProperty("vertices", geometria.getVertices());
         data.addProperty("color", geometria.getColor());
 
-        Bitmap icono = seleccionarPinPorColor(color);
+        // Omnitido por rendimiento
+        //Bitmap icono = seleccionarPinPorColor(color);
         PointAnnotationOptions op = new PointAnnotationOptions()
                 .withPoint(punto)
                 //.withIconImage(icono)
@@ -1004,6 +1037,11 @@ public class MapManager {
         managerEspacios.create(op);
     }
 
+    /**
+     * Metodo encargado de agregar el pin al mapa con info
+     * Pone en memoria y carga el pin respectivo con su informacion
+     * en este caso para eventos donde aqui es viable el uso de bitmap
+     */
     public void agregarPinEvento(Point punto, String texto, JsonObject data) {
         Bitmap icono = crearPinBitmap("#FFCC00"); // Color amarillo
 
@@ -1022,6 +1060,11 @@ public class MapManager {
         managerEventos.create(op);
     }
 
+    /**
+     * Metodo encargado de agregar el pin al mapa con info
+     * Pone en memoria y carga el pin respectivo con su informacion
+     * en este caso para evento temporal
+     */
     public void agregarPinEventoTemp(Point punto, String texto) {
         Bitmap icono = crearPinBitmap("#FFCC00"); // Color amarillo
 
@@ -1038,16 +1081,23 @@ public class MapManager {
                 .withTextOffset(Arrays.asList(0.0, 2.8));
         managerEventos.create(op);
     }
+    // ====================================================
+    // Metodos de limpieza
+    // ==================================================
 
+    /**
+     * Metodo que limpia los pines de eventos
+     * Limpia el manager en memoria
+     */
     public void limpiarPinEvento() {
         managerEventos.deleteAll();
     }
 
-    // ════════════════════════════════════════════════════════════════
-    // LIMPIEZA DE ELEMENTOS DEL MAPA
-    // ════════════════════════════════════════════════════════════════
-
-    public void limpiarEspacios() {
+    /**
+     * Metodo que limpia los pines de espacios
+     * Limpia el manager en memoria y en su capa
+     */
+    public void limpiarPinEspacios() {
         managerEspacios.deleteAll();
 
         mapView.getMapboxMap().getStyle(style -> {
@@ -1066,6 +1116,10 @@ public class MapManager {
         });
     }
 
+    /**
+     * Metodo que limpia los lugares
+     * Limpia el manager en memoria y en mapa
+     */
     public void limpiarLugares() {
         managerLugares.deleteAll();
 
@@ -1085,41 +1139,29 @@ public class MapManager {
         });
     }
 
+    /**
+     * Metodo que limpia los pines de eventos
+     * Limpia el manager en memoria
+     */
     public void limpiarTodo() {
         managerEspacios.deleteAll();
         managerLugares.deleteAll();
     }
 
-
+    /**
+     * Metodo que limpia los pines temporales
+     * Limpia el manager en memoria
+     * en el caso de agregar nuevos
+     */
     public void limpiarPinesTemporales(){
         managerPermanente.deleteAll();
     }
 
-
+    /**
+     * Metodo que limpia la gemotria temporal de espacios
+     * Limpia el manager en memoria
+     */
     public void limpiarGeometriaTemporalEspacios() {
-
-        mapView.getMapboxMap().getStyle(style -> {
-        if (style == null) {
-            Log.e("LIMPIAR_GEO", "Style es null, abortando limpieza");
-            return;
-        }
-
-        // 3️⃣ LIMPIAR POLÍGONO TEMPORAL DEL ESPACIO
-        limpiarPoligonoTemporal(style, "espacio");
-
-        Log.d("LIMPIAR_GEO", "════════════════════════════════════════════");
-        Log.d("LIMPIAR_GEO", "✅ GEOMETRÍA TEMPORAL LIMPIADA COMPLETAMENTE");
-        Log.d("LIMPIAR_GEO", "════════════════════════════════════════════");
-    });
-
-
-    };
-
-
-    public void limpiarGeometriaTemporalCompleta() {
-        Log.d("LIMPIAR_GEO", "════════════════════════════════════════════");
-        Log.d("LIMPIAR_GEO", "LIMPIANDO GEOMETRÍA TEMPORAL COMPLETA");
-        Log.d("LIMPIAR_GEO", "════════════════════════════════════════════");
 
         mapView.getMapboxMap().getStyle(style -> {
             if (style == null) {
@@ -1127,22 +1169,43 @@ public class MapManager {
                 return;
             }
 
-            // 1️⃣ LIMPIAR LÍNEA DE PREVISUALIZACIÓN
-            limpiarLineaPrevia(style);
-
-            // 2️⃣ LIMPIAR POLÍGONO TEMPORAL DEL LUGAR
-            limpiarPoligonoTemporal(style, "lugar");
-
-            // 3️⃣ LIMPIAR POLÍGONO TEMPORAL DEL ESPACIO
+            // LIMPIAR POLÍGONO TEMPORAL DEL ESPACIO
             limpiarPoligonoTemporal(style, "espacio");
 
-            // 4️⃣ LIMPIAR TODOS LOS PUNTOS TEMPORALES
+            Log.d("LIMPIAR_GEO", "GEOMETRÍA TEMPORAL LIMPIADA COMPLETAMENTE");
+        });
+    };
+
+
+    /**
+     * Metodo que limpia toda la geometria
+     * Limpia todod en mapa y en meomria de manager
+     */
+    public void limpiarGeometriaTemporalCompleta() {
+        Log.d("LIMPIAR_GEO", "LIMPIANDO GEOMETRÍA TEMPORAL COMPLETA");
+
+        mapView.getMapboxMap().getStyle(style -> {
+            if (style == null) {
+                Log.e("LIMPIAR_GEO", "Style es null, abortando limpieza");
+                return;
+            }
+
+            // LIMPIAR LÍNEA DE PREVISUALIZACIÓN
+            limpiarLineaPrevia(style);
+
+            // LIMPIAR POLÍGONO TEMPORAL DEL LUGAR
+            limpiarPoligonoTemporal(style, "lugar");
+
+            // LIMPIAR POLÍGONO TEMPORAL DEL ESPACIO
+            limpiarPoligonoTemporal(style, "espacio");
+
+            // LIMPIAR TODOS LOS PUNTOS TEMPORALES
             if (managerTemporal != null) {
                 managerTemporal.deleteAll();
                 Log.d("LIMPIAR_GEO", "✓ Puntos temporales eliminados");
             }
 
-            // 5️⃣ LIMPIAR LISTAS DE PUNTOS
+            //LIMPIAR LISTAS DE PUNTOS
             if (puntosActuales != null) {
                 puntosActuales.clear();
                 Log.d("LIMPIAR_GEO", "✓ Lista puntosActuales limpiada");
@@ -1159,13 +1222,14 @@ public class MapManager {
             }
 
             Log.d("LIMPIAR_GEO", "════════════════════════════════════════════");
-            Log.d("LIMPIAR_GEO", "✅ GEOMETRÍA TEMPORAL LIMPIADA COMPLETAMENTE");
+            Log.d("LIMPIAR_GEO", "GEOMETRÍA TEMPORAL LIMPIADA COMPLETAMENTE");
             Log.d("LIMPIAR_GEO", "════════════════════════════════════════════");
         });
     }
 
     /**
-     * 🗑️ AUXILIAR: Limpiar línea de previsualización
+     * Metodo que limpia la linia de previsualizacion
+     * Limpia en memoria las lineas previas
      */
     private void limpiarLineaPrevia(Style style) {
         try {
@@ -1184,7 +1248,8 @@ public class MapManager {
     }
 
     /**
-     * 🗑️ AUXILIAR: Limpiar polígono temporal específico
+     * Metodo que limpia poligonos temporaoles
+     * Limpia el manager en memoria
      */
     private void limpiarPoligonoTemporal(Style style, String tipo) {
         try {
@@ -1214,7 +1279,8 @@ public class MapManager {
     }
 
     /**
-     * 🗑️ AUXILIAR: Eliminar capas y fuentes por ID base
+     * Metodo que limpia las capas
+     * Limpia las caoas en memoria como tambien las fuentes
      */
     private void limpiarCapasYFuentes(Style style, String baseId) {
         try {
@@ -1242,7 +1308,8 @@ public class MapManager {
     }
 
     /**
-     * 🗑️ MEJORADO: Ahora limpia TODO (temporal y persistente) - Para reinicio completo
+     * Metodo que limpia todo lo temporal en cadena
+     * Limpia en cadena desde manager, mapa etc
      */
     public void limpiarTodoTemporal() {
         Log.d("LIMPIAR_TOTAL", "════════════════════════════════════════════");
@@ -1271,11 +1338,12 @@ public class MapManager {
         // 5. Resetear contadores (opcional)
 
         Log.d("LIMPIAR_TOTAL", "════════════════════════════════════════════");
-        Log.d("LIMPIAR_TOTAL", "✅ TODO HA SIDO LIMPIADO");
+        Log.d("LIMPIAR_TOTAL", "TODO HA SIDO LIMPIADO");
         Log.d("LIMPIAR_TOTAL", "════════════════════════════════════════════");
     }
+
     /**
-     * Limpia todos los elementos temporales creados durante el dibujo
+     * Metodo que limpia todos los elementos temporales creados durante el dibujo
      * Incluye: puntos temporales, líneas de previsualización, polígonos temporales
      */
     public void limpiarElementosTemporales() {
@@ -1303,8 +1371,8 @@ public class MapManager {
     }
 
     /**
-     * Limpia elementos temporales y también elimina polígonos específicos por ID
-     * @param idsPoligonos Lista de IDs de polígonos temporales a eliminar
+     * Metodo que limpia elementos temporales y también elimina polígonos específicos por ID
+     * idsPoligonos Lista de IDs de polígonos temporales a eliminar
      */
     public void limpiarPoligonosTemporales(List<String> idsPoligonos) {
         mapView.getMapboxMap().getStyle(style -> {
@@ -1324,7 +1392,10 @@ public class MapManager {
     }
 
 
-
+    /**
+     * Metodo que limpia los espacios de lugar por su id
+     * Limpia cada uno de los espacios que tengan el id de lugar
+     */
     public void limpiarEspaciosDeLugar(int idLugar) {
         mapView.getMapboxMap().getStyle(style -> {
             List<Espacio> espacios = db.getEspaciosByLugar(idLugar);
@@ -1345,358 +1416,15 @@ public class MapManager {
         });
     }
 
-    // ════════════════════════════════════════════════════════════════
-    // INFORMACIÓN DE LUGARES Y ESPACIOS (DIÁLOGOS)
-    // ════════════════════════════════════════════════════════════════
-
-    private void mostrarLugares() {
-        List<Lugar> lugares = db.getLugares();
-
-        if (lugares.isEmpty()) {
-            Toast.makeText(context, "No hay lugares activos", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        int contador = 0;
-        for (Lugar lugar : lugares) {
-            if (lugar.getEstado() == 1) {
-                mapView.getMapboxMap().getStyle(style -> {
-                    dibujarPoligonoLugar(style, lugar);
-                });
-                contador++;
-            }
-        }
-
-        Toast.makeText(context, "Mostrados " + contador + " lugares activos", Toast.LENGTH_SHORT).show();
-    }
-
-    private void mostrarEspacios(int idLugar) {
-        List<Espacio> espacios = db.getEspaciosByLugar(idLugar);
-
-        if (espacios.isEmpty()) {
-            Toast.makeText(context, "No hay espacios", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        for (Espacio espacio : espacios) {
-            Geometria geo = db.getGeometriaByEspacio(espacio.getId_espacio());
-
-            if (geo != null) {
-                dibujarPoligonoEspacio(geo, espacio);
-            }
-        }
-    }
-
-    private void mostrarInfoLugar(JsonObject data) {
-        int idLugar = data.get("id_lugar").getAsInt();
-        String nombre = data.get("nombre").getAsString();
-        String descripcion = data.get("descripcion").getAsString();
-        String url_imagenes = data.get("url_imagenes").getAsString();
-        int estado = data.get("estado").getAsInt();
-        String geojson = data.get("geojson").getAsString();
-        String color = data.get("color").getAsString();
-
-        StringBuilder mensaje = new StringBuilder();
-        mensaje.append("INFORMACIÓN DEL LUGAR\n\n");
-        mensaje.append("Nombre: ").append(nombre).append("\n");
-        mensaje.append("Descripción: ").append(descripcion).append("\n");
-        mensaje.append("Imágenes: ").append(url_imagenes).append("\n");
-        mensaje.append("ID Lugar: ").append(idLugar).append("\n");
-        mensaje.append("Estado: ").append(estado).append("\n");
-        mensaje.append("GeoJSON: ").append(geojson).append("\n");
-        mensaje.append("Color: ").append(color).append("\n");
-
-        new AlertDialog.Builder(context)
-                .setTitle("Información: " + nombre)
-                .setMessage(mensaje.toString())
-                .setPositiveButton("Cerrar", null)
-                .show();
-    }
-
+    // ================================================================
+    // Metodos de gestion de pisos
+    // ================================================================
     /**
-     * NUEVO METODO - Mostrar diálogo para guardar un nuevo lugar
+     * Metodo encargadi de la carga de pisos segun el lugar
+     * Carga y filtra segun en bd
      */
-    public void mostrarDialogoGuardarLugar(String geojson) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle("💾 Guardar Nuevo LUGAR");
-
-        // Crear vista personalizada con campos de entrada
-        android.widget.LinearLayout layout = new android.widget.LinearLayout(context);
-        layout.setOrientation(android.widget.LinearLayout.VERTICAL);
-        layout.setPadding(20, 20, 20, 20);
-
-        // Campo: Nombre
-        android.widget.TextView tvNombre = new android.widget.TextView(context);
-        tvNombre.setText("Nombre del Lugar:");
-        tvNombre.setTextSize(12);
-        tvNombre.setTypeface(null, android.graphics.Typeface.BOLD);
-        layout.addView(tvNombre);
-
-        android.widget.EditText etNombre = new android.widget.EditText(context);
-        etNombre.setHint("Ej: Edificio A");
-        etNombre.setText("Lugar " + (lugarActualId));
-        layout.addView(etNombre);
-
-        // Campo: Descripción
-        android.widget.TextView tvDescripcion = new android.widget.TextView(context);
-        tvDescripcion.setText("Descripción:");
-        tvDescripcion.setTextSize(12);
-        tvDescripcion.setTypeface(null, android.graphics.Typeface.BOLD);
-        tvDescripcion.setPadding(0, 15, 0, 0);
-        layout.addView(tvDescripcion);
-
-        android.widget.EditText etDescripcion = new android.widget.EditText(context);
-        etDescripcion.setHint("Describe este lugar");
-        etDescripcion.setLines(3);
-        layout.addView(etDescripcion);
-
-        // Campo: URL Imágenes
-        android.widget.TextView tvImagenes = new android.widget.TextView(context);
-        tvImagenes.setText("URL de Imágenes:");
-        tvImagenes.setTextSize(12);
-        tvImagenes.setTypeface(null, android.graphics.Typeface.BOLD);
-        tvImagenes.setPadding(0, 15, 0, 0);
-        layout.addView(tvImagenes);
-
-        android.widget.EditText etImagenes = new android.widget.EditText(context);
-        etImagenes.setHint("https://ejemplo.com/imagen.jpg");
-        layout.addView(etImagenes);
-
-        // Campo: Color
-        android.widget.TextView tvColor = new android.widget.TextView(context);
-        tvColor.setText("Color (Hex):");
-        tvColor.setTextSize(12);
-        tvColor.setTypeface(null, android.graphics.Typeface.BOLD);
-        tvColor.setPadding(0, 15, 0, 0);
-        layout.addView(tvColor);
-
-        android.widget.EditText etColor = new android.widget.EditText(context);
-        etColor.setHint("#2196F3");
-        etColor.setText("#2196F3");
-        layout.addView(etColor);
-
-        // Información del GeoJSON
-        android.widget.TextView tvGeoJSON = new android.widget.TextView(context);
-        tvGeoJSON.setText("GeoJSON (Automático):");
-        tvGeoJSON.setTextSize(12);
-        tvGeoJSON.setTypeface(null, android.graphics.Typeface.BOLD);
-        tvGeoJSON.setPadding(0, 15, 0, 0);
-        layout.addView(tvGeoJSON);
-
-        android.widget.TextView tvGeoJSONValue = new android.widget.TextView(context);
-        String geoJsonPreview = geojson.length() > 100
-                ? geojson.substring(0, 100) + "..."
-                : geojson;
-        tvGeoJSONValue.setText(geoJsonPreview);
-        tvGeoJSONValue.setTextSize(10);
-        tvGeoJSONValue.setTextColor(Color.GRAY);
-        layout.addView(tvGeoJSONValue);
-
-        // Agregar scroll si es necesario
-        android.widget.ScrollView scrollView = new android.widget.ScrollView(context);
-        scrollView.addView(layout);
-
-        builder.setView(scrollView);
-
-        // Botones
-        builder.setPositiveButton("💾 Guardar", (dialog, which) -> {
-            String nombre = etNombre.getText().toString().trim();
-            String descripcion = etDescripcion.getText().toString().trim();
-            String imagenes = etImagenes.getText().toString().trim();
-            String color = etColor.getText().toString().trim();
-
-            // Validar que el nombre no esté vacío
-            if (nombre.isEmpty()) {
-                Toast.makeText(context, "El nombre es requerido", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            // Log de datos a guardar
-            Log.d("GUARDAR_LUGAR", "========== DATOS A GUARDAR ==========");
-            Log.d("GUARDAR_LUGAR", "Nombre: " + nombre);
-            Log.d("GUARDAR_LUGAR", "Descripción: " + descripcion);
-            Log.d("GUARDAR_LUGAR", "Imágenes: " + imagenes);
-            Log.d("GUARDAR_LUGAR", "Color: " + color);
-            Log.d("GUARDAR_LUGAR", "GeoJSON: " + geojson);
-            Log.d("GUARDAR_LUGAR", "=====================================");
-
-            Toast.makeText(context, "✓ Lugar guardado: " + nombre, Toast.LENGTH_LONG).show();
-
-            // TODO: Implementar guardado real en BD
-            // db.insertLugar(nombre, descripcion, imagenes, color, geojson, 1);
-        });
-
-        builder.setNegativeButton("Cancelar", (dialog, which) -> {
-            Toast.makeText(context, "Guardado cancelado", Toast.LENGTH_SHORT).show();
-        });
-
-        builder.show();
-    }
-
-    /**
-     * NUEVO METODO CONCEPTO NO FINAL ES PARA DARSE LA IDEA DE COMO SE GAURDARIA EN BD AUNQUE NECESITP MANEJAR LOS PISOS
-     */
-    public void mostrarDialogoGuardarEspacio(String geojson) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle("💾 Guardar Nuevo ESPACIO");
-
-        // Crear vista personalizada con campos de entrada
-        android.widget.LinearLayout layout = new android.widget.LinearLayout(context);
-        layout.setOrientation(android.widget.LinearLayout.VERTICAL);
-        layout.setPadding(20, 20, 20, 20);
-
-        // Campo: Nombre
-        android.widget.TextView tvNombre = new android.widget.TextView(context);
-        tvNombre.setText("Nombre del Espacio:");
-        tvNombre.setTextSize(12);
-        tvNombre.setTypeface(null, android.graphics.Typeface.BOLD);
-        layout.addView(tvNombre);
-
-        android.widget.EditText etNombre = new android.widget.EditText(context);
-        etNombre.setHint("Ej: Aula 101");
-        etNombre.setText("Espacio " + (espacioContador));
-        layout.addView(etNombre);
-
-        // Campo: Descripción
-        android.widget.TextView tvDescripcion = new android.widget.TextView(context);
-        tvDescripcion.setText("Descripción:");
-        tvDescripcion.setTextSize(12);
-        tvDescripcion.setTypeface(null, android.graphics.Typeface.BOLD);
-        tvDescripcion.setPadding(0, 15, 0, 0);
-        layout.addView(tvDescripcion);
-
-        android.widget.EditText etDescripcion = new android.widget.EditText(context);
-        etDescripcion.setHint("Describe este espacio");
-        etDescripcion.setLines(3);
-        layout.addView(etDescripcion);
-
-        // Campo: URL Imágenes
-        android.widget.TextView tvImagenes = new android.widget.TextView(context);
-        tvImagenes.setText("URL de Imágenes:");
-        tvImagenes.setTextSize(12);
-        tvImagenes.setTypeface(null, android.graphics.Typeface.BOLD);
-        tvImagenes.setPadding(0, 15, 0, 0);
-        layout.addView(tvImagenes);
-
-        android.widget.EditText etImagenes = new android.widget.EditText(context);
-        etImagenes.setHint("https://ejemplo.com/imagen.jpg");
-        layout.addView(etImagenes);
-
-        // Campo: ID Piso
-        android.widget.TextView tvPiso = new android.widget.TextView(context);
-        tvPiso.setText("ID del Piso:");
-        tvPiso.setTextSize(12);
-        tvPiso.setTypeface(null, android.graphics.Typeface.BOLD);
-        tvPiso.setPadding(0, 15, 0, 0);
-        layout.addView(tvPiso);
-
-        android.widget.EditText etPiso = new android.widget.EditText(context);
-        etPiso.setHint("1");
-        etPiso.setText("1");
-        etPiso.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
-        layout.addView(etPiso);
-
-        // Información del GeoJSON
-        android.widget.TextView tvGeoJSON = new android.widget.TextView(context);
-        tvGeoJSON.setText("GeoJSON (Automático):");
-        tvGeoJSON.setTextSize(12);
-        tvGeoJSON.setTypeface(null, android.graphics.Typeface.BOLD);
-        tvGeoJSON.setPadding(0, 15, 0, 0);
-        layout.addView(tvGeoJSON);
-
-        android.widget.TextView tvGeoJSONValue = new android.widget.TextView(context);
-        String geoJsonPreview = geojson.length() > 100
-                ? geojson.substring(0, 100) + "..."
-                : geojson;
-        tvGeoJSONValue.setText(geoJsonPreview);
-        tvGeoJSONValue.setTextSize(10);
-        tvGeoJSONValue.setTextColor(Color.GRAY);
-        layout.addView(tvGeoJSONValue);
-
-        // Agregar scroll si es necesario
-        android.widget.ScrollView scrollView = new android.widget.ScrollView(context);
-        scrollView.addView(layout);
-
-        builder.setView(scrollView);
-
-        // Botones
-        builder.setPositiveButton("💾 Guardar", (dialog, which) -> {
-            String nombre = etNombre.getText().toString().trim();
-            String descripcion = etDescripcion.getText().toString().trim();
-            String imagenes = etImagenes.getText().toString().trim();
-            String pisoPeek = etPiso.getText().toString().trim();
-
-            // Validar que el nombre no esté vacío
-            if (nombre.isEmpty()) {
-                Toast.makeText(context, "El nombre es requerido", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            int idPiso = 1;
-            try {
-                idPiso = Integer.parseInt(pisoPeek);
-            } catch (NumberFormatException e) {
-                Toast.makeText(context, "ID Piso inválido", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            // Log de datos a guardar
-            Log.d("GUARDAR_ESPACIO", "========== DATOS A GUARDAR ==========");
-            Log.d("GUARDAR_ESPACIO", "Nombre: " + nombre);
-            Log.d("GUARDAR_ESPACIO", "Descripción: " + descripcion);
-            Log.d("GUARDAR_ESPACIO", "Imágenes: " + imagenes);
-            Log.d("GUARDAR_ESPACIO", "ID Piso: " + idPiso);
-            Log.d("GUARDAR_ESPACIO", "GeoJSON: " + geojson);
-            Log.d("GUARDAR_ESPACIO", "=====================================");
-
-            Toast.makeText(context, "✓ Espacio guardado: " + nombre, Toast.LENGTH_LONG).show();
-
-            // SE IMPLEMENTARA EN LA BASE DE DATOS
-            // db.insertEspacio(lugarSeleccionado, idPiso, nombre, descripcion, url_imaganes, 1, color);
-        });
-
-        builder.setNegativeButton("Cancelar", (dialog, which) -> {
-            Toast.makeText(context, "Guardado cancelado", Toast.LENGTH_SHORT).show();
-        });
-
-        builder.show();
-    }
-
-    private void mostrarInfoEspacio(JsonObject data) {
-        int idEspacio = data.get("id_espacio").getAsInt();
-        int idLugar = data.get("id_lugar").getAsInt();
-        int idPiso = data.get("id_piso").getAsInt();
-
-        String nombre = data.get("nombre").getAsString();
-        String descripcion = data.get("descripcion").getAsString();
-        String url_imagenes = data.get("url_imagenes").getAsString();
-        int estado = data.get("estado").getAsInt();
-        String vertices = data.get("vertices").getAsString();
-
-        StringBuilder mensaje = new StringBuilder();
-        mensaje.append("INFORMACIÓN DEL ESPACIO\n\n");
-        mensaje.append("Nombre: ").append(nombre).append("\n");
-        mensaje.append("Descripción: ").append(descripcion).append("\n");
-        mensaje.append("Imágenes: ").append(url_imagenes).append("\n");
-        mensaje.append("ID: ").append(idEspacio).append("\n");
-        mensaje.append("ID Lugar: ").append(idLugar).append("\n");
-        mensaje.append("ID Piso: ").append(idPiso).append("\n");
-        mensaje.append("Estado: ").append(estado).append("\n");
-        mensaje.append("Vértices: ").append(vertices).append("\n");
-
-        new AlertDialog.Builder(context)
-                .setTitle("Información: " + nombre)
-                .setMessage(mensaje.toString())
-                .setPositiveButton("Cerrar", null)
-                .show();
-    }
-
-    // ════════════════════════════════════════════════════════════════
-    // GESTIÓN DE PISOS
-    // ════════════════════════════════════════════════════════════════
-
     public void cargarPisos(int idLugar) {
-        limpiarEspacios();
+        limpiarPinEspacios();
 
         List<Pisos> pisos = db.getPisosByLugar(idLugar);
         List<Integer> listaPisosId = new ArrayList<>();
@@ -1750,10 +1478,13 @@ public class MapManager {
         }
     }
 
+    /**
+     * Metodo encargado de mostrar los espacios por el id y numero de piso
+     */
     public void mostrarEspaciosPorPiso(int idLugar, int numeroPiso) {
 
         // Limpieza de espacios
-        limpiarEspacios();
+        limpiarPinEspacios();
         List<Espacio> espacios = db.getEspaciosByLugar(idLugar);
 
         Log.d("DEBUG_PISO", "=== DEBUGGING mostrarEspaciosPorPiso ===");
@@ -1802,9 +1533,9 @@ public class MapManager {
         }
     }
 
-    // ════════════════════════════════════════════════════════════════
-    // MODO EDICIÓN - AGREGAR PUNTOS Y CERRAR POLÍGONOS
-    // ════════════════════════════════════════════════════════════════
+    //==============================================
+    // Modo edicion  mas otros metodos
+    //==============================================
 
     /**
      * Agregar un punto al modo de edición
@@ -1828,21 +1559,18 @@ public class MapManager {
     /**
      * Cerrar un lugar (polígono)
      */
-    // Modificar cerrarLugar(): MODIFICADO
-
-    // Modificar cerrarLugar(): MODIFICADO
     public void cerrarLugar(Style style) {
         if (puntosActuales.size() < 3) {
             Toast.makeText(context, "Mínimo 3 puntos", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // ✅ NUEVA VALIDACIÓN: Verificar que TODOS los puntos estén dentro del UGB
+        // NUEVA VALIDACIÓN: Verificar que TODOS los puntos estén dentro del UGB
         if (!lugarDentroDelUGB(puntosActuales)) {
-            Log.e("VALIDAR_LUGAR", "❌ LUGAR FUERA DE LÍMITES UGB");
+            Log.e("VALIDAR_LUGAR", "LUGAR FUERA DE LÍMITES UGB");
 
             Toast.makeText(context,
-                    "❌ ERROR: El lugar está FUERA de los límites permitidos (UGB)\n\n" +
+                    " ERROR: El lugar está FUERA de los límites permitidos (UGB)\n\n" +
                             "Todos los puntos deben estar dentro del polígono UGB",
                     Toast.LENGTH_LONG).show();
 
@@ -1850,11 +1578,9 @@ public class MapManager {
             return;
         }
 
-        Log.d("VALIDAR_LUGAR", "✅ LUGAR VALIDADO - Dentro del UGB");
+        Log.d("VALIDAR_LUGAR", "LUGAR VALIDADO - Dentro del UGB");
 
-        // ════════════════════════════════════════════════════════════════
         // CONTINUAR CON EL PROCESO ORIGINAL
-        // ════════════════════════════════════════════════════════════════
         lugarActualId++;
         puntosActuales.add(puntosActuales.get(0));
         puntosLugarActual = new ArrayList<>(puntosActuales);
@@ -1873,8 +1599,6 @@ public class MapManager {
         puntosActuales.clear();
         managerTemporal.deleteAll();
     }
-
-
 
     /**
      * Cerrar un espacio (polígono)
@@ -1897,11 +1621,9 @@ public class MapManager {
             return;
         }
 
-        Log.d("VALIDAR_ESPACIO", "✅ ESPACIO VALIDADO - Dentro del UGB");
+        Log.d("VALIDAR_ESPACIO", "ESPACIO VALIDADO - Dentro del UGB");
 
-        // ════════════════════════════════════════════════════════════════
         // CONTINUAR CON EL PROCESO ORIGINAL
-        // ════════════════════════════════════════════════════════════════
         espacioContador++;
         puntosActuales.add(puntosActuales.get(0));
         puntosEspacioActual = new ArrayList<>(puntosActuales);
@@ -2162,6 +1884,9 @@ public class MapManager {
     }
 
 
+    /**
+     * Mostrar el BottomSheet con su respeciva informaion de JsonObject
+     */
     private void mostrarBottomSheetLugar(JsonObject data) {
         com.google.android.material.bottomsheet.BottomSheetDialog dialog =
                 new com.google.android.material.bottomsheet.BottomSheetDialog(context);
@@ -2253,25 +1978,11 @@ public class MapManager {
     }
 
 
-    // Método para extraer URLs del JSON
-    private String[] extraerUrlsDeData(JsonObject data) {
-        String[] urls = new String[3]; // Inicializar array para 3 imágenes
-        try {
-            String urlsImagenes = data.has("url_imagenes") ? data.get("url_imagenes").getAsString() : "";
 
-            if (!urlsImagenes.isEmpty()) {
-                String[] urlsArray = urlsImagenes.split(",");
-                for (int i = 0; i < urlsArray.length && i < 3; i++) {
-                    urls[i] = urlsArray[i];
-                }
-            }
-        } catch (Exception e) {
-            Log.e("VISOR", "Error extrayendo URLs: " + e.getMessage());
-        }
-        return urls;
-    }
 
-    // Visor de imágenes estilo Google Maps
+    /**
+     * Mostrar el visor de imagenes similar a google maps
+     */
     private void mostrarVisorImagenes(String[] urls, int posicionInicial) {
         // Filtrar solo URLs válidas
         List<String> urlsValidas = new ArrayList<>();
@@ -2340,24 +2051,19 @@ public class MapManager {
         );
     }
 
+    /**
+     * Metodo auziliar para el contador de posicion de imagen
+     */
     private void actualizarContador(int posicion, int total, TextView tvContador) {
         tvContador.setText((posicion + 1) + " / " + total);
     }
 
-    // Contiene la funcionalidad de crud
-    // ════════════════════════════════════════════════════════════════
-// VERSIÓN MEJORADA: mostrarBottomSheetCRUD() - 4 parámetros
-// ════════════════════════════════════════════════════════════════
 
     /**
-     * Versión MEJORADA que soporta tanto CREACIÓN como EDICIÓN
-     * @param data JsonObject con datos
-     * @param esEspacio true si es espacio, false si es lugar
-     * @param modoCreacion true si estamos creando, false si editando existente
-     * @param geojsonGuardado GeoJSON ya dibujado (para creación)
+     * Mostrar el BottomSheet Crud
+     * encargado de edicion de lugares y espacios para cada caso
      */
-
-    // POSDATA ES UN MOUNSTRO DE FUNCION
+    // Psdata es un mostruo de funcion lo se
     private void mostrarBottomSheetCRUD(JsonObject data, boolean esEspacio,
                                         boolean modoCreacion, String geojsonGuardado) {
 
@@ -2473,7 +2179,7 @@ public class MapManager {
         spinnerColor.setAdapter(adapter);
 
         // ════════════════════════════════════════════════════════════════
-        // ✅ LISTENER DEL SPINNER CON PREVIEW EN TIEMPO REAL
+        // LISTENER DEL SPINNER CON PREVIEW EN TIEMPO REAL
         // ════════════════════════════════════════════════════════════════
         final boolean[] primeraVez = {true};
 
@@ -2487,7 +2193,7 @@ public class MapManager {
 
                 String colorSeleccionado = coloresHex.get(position);
 
-                // 🎨 ✅ PREVIEW EN TIEMPO REAL - ACTUALIZAR POLÍGONO DEL MAPA
+                // PREVIEW EN TIEMPO REAL - ACTUALIZAR POLÍGONO DEL MAPA
                 if (modoCreacion) {
                     // EN CREACIÓN: Actualizar polígono temporal
                     actualizarPoligonoTemporalColor(
@@ -2573,11 +2279,11 @@ public class MapManager {
                                 etDescripcion.setText(descripcionOriginal);
                                 etNombre.setEnabled(false);
                                 etDescripcion.setEnabled(false);
-                                spinnerColor.setEnabled(false);  // ✅ Deshabilitar spinner
+                                spinnerColor.setEnabled(false);  // Deshabilitar spinner
                                 btnGuardar.setVisibility(View.GONE);
                                 btnEditar.setText("Editar");
 
-                                // ✅ RESTAURAR COLOR ORIGINAL EN PREVIEW
+                                // RESTAURAR COLOR ORIGINAL EN PREVIEW
                                 int indexOriginal = coloresHex.indexOf(colorActual);
                                 if (indexOriginal != -1) {
                                     spinnerColor.setSelection(indexOriginal);
@@ -2611,7 +2317,7 @@ public class MapManager {
             String tipo = esEspacio ? "ESPACIO" : "LUGAR";
 
             if (modoCreacion) {
-                // ✅ MODO CREACIÓN: Notificar al Fragment via callback
+                // MODO CREACIÓN: Notificar al Fragment via callback
                 Log.d("CRUD_CREAR", "Guardando " + (esEspacio ? "Espacio" : "Lugar"));
                 Log.d("CRUD_CREAR", "Nombre: " + nuevoNombre);
                 Log.d("CRUD_CREAR", "Color: " + colorSeleccionado);
@@ -2641,7 +2347,7 @@ public class MapManager {
                         db.updateGeometriaColor(data.get("id_geometria").getAsInt(), colorSeleccionado);
                         Toast.makeText(context, "Espacio actualizado", Toast.LENGTH_SHORT).show();
 
-                        limpiarEspacios();
+                        limpiarPinEspacios();
                         mostrarEspaciosPorPiso(data.get("id_lugar").getAsInt(), data.get("id_piso").getAsInt());
 
 
@@ -2735,7 +2441,7 @@ public class MapManager {
                             if (esEspacio) {
                                 int id = data.get("id_espacio").getAsInt();
                                 db.eliminarEspacio(id);
-                                limpiarEspacios();
+                                limpiarPinEspacios();
                                 limpiarLugares();
                                 limpiarTodo();
                                 cargarPoligonosLugar();
@@ -2753,7 +2459,7 @@ public class MapManager {
                             } else {
                                 int id = data.get("id_lugar").getAsInt();
                                 db.eliminarLugar(id);
-                                limpiarEspacios();
+                                limpiarPinEspacios();
                                 limpiarLugares();
                                 limpiarTodo();
                                 cargarPoligonosLugar();
@@ -2778,9 +2484,6 @@ public class MapManager {
 
     /**
      * Sube imágenes a Cloudinary si son nuevas y luego ejecuta el callback
-     * @param urlsOriginal URLs originales (antes de editar)
-     * @param urlsNuevas URLs nuevas (después de editar)
-     * @param callback Callback que se ejecuta con las URLs finales (Cloudinary o locales)
      */
     private void subirImagenesSiCambiaron(String urlsOriginal, String urlsNuevas,
                                           CloudinaryUploadCallback callback) {
@@ -2794,7 +2497,7 @@ public class MapManager {
         if (hayCambiosReales(urlsOriginal, urlsNuevas)) {
             Log.d("CLOUDINARY", "📸 Nuevas imágenes detectadas, subiendo secuencialmente...");
 
-            // ✅ SUBIR SECUENCIALMENTE (manteniendo orden)
+            // SUBIR SECUENCIALMENTE (manteniendo orden)
             subirImagenesSecuencialmente(urlsNuevas, 0, new ArrayList<>(), callback);
 
         } else {
@@ -2828,13 +2531,8 @@ public class MapManager {
     }
 
 
-    // Método para subir imágenes a Cloudinary
     /**
      * Sube imágenes secuencialmente (una tras otra, manteniendo el orden)
-     * @param urlsLocales URLs separadas por coma
-     * @param index Índice actual a subir
-     * @param resultados Lista acumuladora de URLs subidas
-     * @param callback Callback cuando todas terminan
      */
     private void subirImagenesSecuencialmente(String urlsLocales,
                                               int index,
@@ -2878,7 +2576,7 @@ public class MapManager {
         Log.d("CLOUDINARY_SEC", "📤 Subiendo imagen " + (index + 1) + "/" + urls.length);
         Log.d("CLOUDINARY_SEC", "   Archivo: " + imagenFile.getName());
 
-        // ✅ SUBIR UNA IMAGEN y esperar a que termine
+        // SUBIR UNA IMAGEN y esperar a que termine
         final int currentIndex = index;
         cloudinaryHelper.subirImagen(imagenFile, new CloudinaryHelper.UploadCallback() {
             @Override
@@ -2891,20 +2589,24 @@ public class MapManager {
                     resultados.add(rutaLocal); // Fallback a local
                 }
 
-                // ✅ SUBIR SIGUIENTE IMAGEN (secuencial)
+                // SUBIR SIGUIENTE IMAGEN (secuencial)
                 subirImagenesSecuencialmente(urlsLocales, currentIndex + 1, resultados, callback);
             }
         });
     }
 
-    // PARA SABER SI EL CALLBACK SE HACE BIEN
+    /**
+     * Callback nativo para detecion de errores o seguir
+     */
     public interface CloudinaryUploadCallback {
         void onCompletado(String urlsCloudinary);
         void onError(String error);
     }
 
 
-    // Eliminar espacio por nombre
+    /**
+     * Elimina el lugar en firebase garcias a su nombre con callback Async
+     */
     private void eliminarLugarFirebase(String nombreLugar) {
 
         // 2. Actualizar Firebase
@@ -2922,7 +2624,9 @@ public class MapManager {
                 });
     }
 
-
+    /**
+     * Elimina el espacio en firebase garcias a su nombre con callback Async
+     */
     private void eliminarEspacioFirebase (String nombreEspacio) {
 
         // 2. Actualizar Firebase
@@ -2941,10 +2645,9 @@ public class MapManager {
     }
 
 
-
-
-
-    // En tu BD local, agrega un campo para guardar el ID de Firebase
+    /**
+     * Actualiza el lugar en firebase garcias a su nombre con callback Async
+     */
     private void actualizarLugarFirebase(String nombreActual, String nuevoNombre, String nuevaDescripcion,
                                          String urlsImagenes, String colorSeleccionado) {
         firebaseHelper.actualizarLugarPorNombre(
@@ -2968,13 +2671,9 @@ public class MapManager {
                 }
         );
     }
-
     /**
-
+     * actualiza solo el espacio en firebase garcias a su nombre con callback Async
      */
-
-
-    // Método para actualizar SOLO el color en Firebase
     private void actualizarColorEspacioFirebase(String nombreEspacio, String nuevoColor) {
         firebaseHelper.actualizarColorGeometriaPorNombre(
                 nombreEspacio,
@@ -2992,10 +2691,9 @@ public class MapManager {
                 }
         );
     }
-
-
-
-    // ACTUALIZAR LO QUE SERIA LA IFORMACION QUE SE LE DEJA EN PIE
+    /**
+     * Actualizza el espacio en firebase garcias a su nombre con callback Async
+     */
     private void actualizarEspacioFirebase(String nombreActual,
                                            String nuevoNombre,
                                            String nuevaDescripcion,
@@ -3031,15 +2729,8 @@ public class MapManager {
         );
     }
 
-
-    // ════════════════════════════════════════════════════════════════
-    // NUEVO MÉTODO: Actualizar color de polígono TEMPORAL
-    // ════════════════════════════════════════════════════════════════
     /**
      * Actualiza el color de un polígono temporal (durante creación)
-     * @param idPoligono ID del polígono temporal (ej: "lugar-1" o "lugar-1-espacio-1")
-     * @param colorHex Color hexadecimal
-     * @param esEspacio true si es espacio, false si es lugar
      */
     private void actualizarPoligonoTemporalColor(String idPoligono, String colorHex, boolean esEspacio) {
         mapView.getMapboxMap().getStyle(style -> {
@@ -3085,11 +2776,23 @@ public class MapManager {
         });
     }
 
+    /**
+     * Decide que verion de BottomSheet mostrar
+     * si es espacio, modo creacion etc
+     */
     private void mostrarBottomSheetCRUD(JsonObject data, boolean esEspacio) {
         mostrarBottomSheetCRUD(data, esEspacio, false, null);
     }
 
-        public void mostrarOpcionesImagen(ImageView imageView, int indice, JsonObject data, boolean esEspacio) {
+
+    // ==============================================================
+    // Metodos de launcher y opciones de imaganes
+    // ==============================================================
+    /**
+     * Muestra el dialogo de opciones de imagen
+     * Desde tomar foto con camara hasta la galeria nativa
+     */
+    public void mostrarOpcionesImagen(ImageView imageView, int indice, JsonObject data, boolean esEspacio) {
             // Guardar referencias para usar después
             this.tempImageView = imageView;
             this.imagenActual = indice;
@@ -3109,8 +2812,12 @@ public class MapManager {
             });
             builder.setCancelable(true);
             builder.show();
-        }
+    }
 
+    /**
+     * Lanza la camara del sistema operatico android
+     * Espera a que se tome la foto para guardarla en la ruta designada
+     */
     public void tomarFoto() {
         if (launcherCamara == null) {
             mostrarMensaje("Error: Launcher de cámara no inicializado");
@@ -3121,7 +2828,7 @@ public class MapManager {
         File fotoProducto = null;
 
         try {
-            fotoProducto = crearImgProducto();
+            fotoProducto = guardarImagenDesdeCamara();
             if (fotoProducto != null) {
                 Uri uriFoto = FileProvider.getUriForFile(context,
                         "com.example.indoorview.fileprovider", fotoProducto);
@@ -3135,6 +2842,10 @@ public class MapManager {
         }
     }
 
+    /**
+     * Lanza la galeria del sistema operatico android
+     * Espera a que se tome la foto para guardarla en la ruta designada
+     */
     public void seleccionarDeGaleria() {
         if (launcherGaleria == null) {
             mostrarMensaje("Error: Launcher de galería no inicializado");
@@ -3146,6 +2857,9 @@ public class MapManager {
         launcherGaleria.launch(intent);
     }
 
+    /**
+     * Procesa el reusltado de camara para comprimirlo
+     */
     public void procesarResultadoCamara(Intent data) {
         String urlFoto = obtenerUrlFoto(imagenActual);
         if (!urlFoto.isEmpty() && tempImageView != null) {
@@ -3177,8 +2891,7 @@ public class MapManager {
 
     /**
      * Formatear tamaño de bytes a KB o MB automáticamente
-     * @param bytes Tamaño en bytes
-     * @return String formateado (ej: "1.5 MB" o "850 KB")
+     *  String formateado (ej: "1.5 MB" o "850 KB")
      */
     private String formatearTamanio(long bytes) {
         if (bytes <= 0) return "0 KB";
@@ -3193,6 +2906,9 @@ public class MapManager {
         }
     }
 
+    /**
+     * Procesa el reusltado de galeria para comprimirlo
+     */
     public void procesarResultadoGaleria(Intent data) {
         if (data != null && data.getData() != null) {
             Uri selectedImageUri = data.getData();
@@ -3229,7 +2945,10 @@ public class MapManager {
         }
     }
 
-    private File crearImgProducto() throws Exception {
+    /**
+     * Guarda la imagen una vez comprimida, devolviendo la imagen o ruta
+     */
+    private File guardarImagenDesdeCamara() throws Exception {
         String fechaHoraMs = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String fileName = "camara_" + fechaHoraMs + "_img" + imagenActual;
         File dirAlmacenamiento;
@@ -3252,6 +2971,9 @@ public class MapManager {
         return image;
     }
 
+    /**
+     * Guarda la imagen de la galeria una vez comprimida, devolviendo la imagen o ruta
+     */
     private String guardarImagenDesdeGaleria(Uri uri) {
         try {
             String fechaHoraMs = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
@@ -3294,6 +3016,9 @@ public class MapManager {
         }
     }
 
+    /**
+     * Metodo auxiliar para obtener las rutas de imagenes
+     */
     private String obtenerUrlFoto(int index) {
         switch (index) {
             case 0: return urlFoto1;
@@ -3303,6 +3028,9 @@ public class MapManager {
         }
     }
 
+    /**
+     * Guardar la imagen dependiendo su posicion
+     */
     private void guardarUrlFoto(int index, String url) {
         switch (index) {
             case 0: urlFoto1 = url; break;
@@ -3322,7 +3050,9 @@ public class MapManager {
         }
     }
 
-    // Método auxiliar para combinar las URLs de las imágenes
+    /**
+     * Metodo auxiliar para combinar las urls de imagenes en un array o lista
+     */
     private String combinarUrlsImagenes() {
         List<String> urlsValidas = new ArrayList<>();
 
@@ -3342,10 +3072,16 @@ public class MapManager {
         return resultado;
     }
 
+    /**
+     * Metodo auxiliar para mostrar mensajes toast
+     */
     private void mostrarMensaje(String msg) {
         Toast.makeText(context, msg, Toast.LENGTH_LONG).show();
     }
 
+    /**
+     * Metodo encargado de cargar imagenes del objeto
+     */
     private void cargarImagenesExistentes(JsonObject data, ImageView img1, ImageView img2, ImageView img3) {
         try {
             // Limpiar URLs actuales
@@ -3395,7 +3131,9 @@ public class MapManager {
         }
     }
 
-    // Método auxiliar para cargar imagen desde URI
+    /**
+     * Metodo auxiliar para cargar imagen desde URI
+     */
     private void cargarImagenEnImageView(ImageView imageView, String url) {
         try {
             if (url != null && !url.isEmpty()) {
@@ -3411,7 +3149,9 @@ public class MapManager {
         }
     }
 
-
+    /**
+     * Metodo auxiliar para cambio de fillcolor en lugares o espacios
+     */
     public void actualizarColorLugar(int id, String colorHex, boolean esEspacio) {
         mapView.getMapboxMap().getStyle(style -> {
 
@@ -3459,10 +3199,9 @@ public class MapManager {
         });
     }
 
-
-
-
-    // DUNCION PERFECTA PARA CONFIRMACIONES
+    /**
+     * Metodo auxiliar para los dialogos de confirmaciones
+     */
     public void mostrarDialogoConfirmacion(
             String titulo,
             String mensaje,
@@ -3491,21 +3230,20 @@ public class MapManager {
         negativeButton.setTextColor(Color.parseColor("#2196F3"));
     }
 
-    // AHORA VAMOS A MEJORAR LO QUE SERIA AGREGAR SIN PROBLEMA ALGUNO HE?
 
-    // En MapManager, agregar interface y variable:
+
+    /**
+     * Callback para saber si un lugar o espacio es cerrado
+     */
     public interface OnLugarCerradoListener {
         void onLugarCerrado();
         void onEspacioCerrado();
     }
 
-    private OnLugarCerradoListener flujoCerradoListener;
 
-
-    public void setFlujoCerradoListener(OnLugarCerradoListener listener) {
-        this.flujoCerradoListener = listener;
-    }
-
+    /**
+     * Callback para saber si un lugar o espacio guardado
+     */
     public interface OnFlujoCRUDListener {
         void onLugarGuardado(String nombre, String descripcion, String urlImagenes, String color);
         void onEspacioGuardado(String nombre, String descripcion, String urlImagenes, String color);
@@ -3513,12 +3251,16 @@ public class MapManager {
 
     private OnFlujoCRUDListener flujoCRUDListener;
 
+    /**
+     * Listener del callback
+     */
+
     public void setFlujoCRUDListener(OnFlujoCRUDListener listener) {
         this.flujoCRUDListener = listener;
     }
 
     /**
-     * NUEVO: Mostrar CRUD en modo CREACIÓN para Lugar
+     * Mostrar CRUD en modo CREACIÓN para Lugar
      * Reutiliza el XML bottom_sheet_detalle_lugarespacio_crud
      */
     public void mostrarCRUDCrearLugar(String geojson) {
@@ -3532,7 +3274,7 @@ public class MapManager {
         mostrarBottomSheetCRUD(dataTemp, false, true, geojson);
     }
     /**
-     * NUEVO: Mostrar CRUD en modo CREACIÓN para Espacio
+     * Mostrar CRUD en modo CREACIÓN para Espacio
      * Reutiliza el XML bottom_sheet_detalle_lugarespacio_crud
      */
     public void mostrarCRUDCrearEspacio(String geojson) {
@@ -3546,22 +3288,27 @@ public class MapManager {
         mostrarBottomSheetCRUD(dataTemp, true, true, geojson);
     }
 
-    // METODOS PARA MANEJO DE ZOOM
+    // ================================================
+    // Metodos de manejo de zoom
+    // ================================================
 
+    /**
+     * Segun el zoom en pantalla actualizar la visibilidad de pines
+     */
     public void actualizarVisibilidadPinesPorZoom(double zoomActual) {
         // Configurar umbrales de zoom (puedes ajustar estos valores)
         double zoomMinimoLugares = 18.4;  // Mostrar lugares a partir de zoom 17
         double zoomMinimoPines = 18.4;    // Mostrar pines de espacios a partir de zoom 18.5
 
         // Actualizar visibilidad de pines de LUGARES
-        // ✅ ACTUALIZAR LUGARES (respetando elemento seleccionado)
+        // ACTUALIZAR LUGARES (respetando elemento seleccionado)
         if (zoomActual >= zoomMinimoLugares) {
             mostrarPinesLugaresZoom();
         } else {
             ocultarPinesLugaresZoom();
         }
 
-        // ✅ ACTUALIZAR ESPACIOS (respetando elemento seleccionado)
+        // ACTUALIZAR ESPACIOS (respetando elemento seleccionado)
         if (zoomActual >= zoomMinimoPines && managerEspacios.getAnnotations().size() > 0) {
             mostrarPinesEspaciosZoom();
         } else if (zoomActual < zoomMinimoPines) {
@@ -3569,6 +3316,9 @@ public class MapManager {
         }
     }
 
+    /**
+     *  muestra pines de lugares
+     */
     private void mostrarPinesLugaresZoom() {
         try {
             List<PointAnnotation> pines = managerLugares.getAnnotations();
@@ -3592,7 +3342,7 @@ public class MapManager {
         try {
             List<PointAnnotation> pines = managerLugares.getAnnotations();
             for (PointAnnotation pin : pines) {
-                // ✅ Verificar si es el elemento seleccionado
+                // Verificar si es el elemento seleccionado
                 boolean esSeleccionado = false;
                 if (!esEspacioSeleccionado) {
                     JsonObject data = (JsonObject) pin.getData();
@@ -3602,7 +3352,7 @@ public class MapManager {
                     }
                 }
 
-                // ✅ Si es seleccionado, mantener visible
+                // Si es seleccionado, mantener visible
                 if (esSeleccionado) {
                     pin.setIconSize(0.9);
                     pin.setTextOpacity(1.0);
@@ -3640,7 +3390,7 @@ public class MapManager {
         try {
             List<PointAnnotation> pines = managerEspacios.getAnnotations();
             for (PointAnnotation pin : pines) {
-                // ✅ Verificar si es el elemento seleccionado
+                // Verificar si es el elemento seleccionado
                 boolean esSeleccionado = false;
                 if (esEspacioSeleccionado) {
                     JsonObject data = (JsonObject) pin.getData();
@@ -3650,7 +3400,7 @@ public class MapManager {
                     }
                 }
 
-                // ✅ Si es seleccionado, mantener visible
+                // Si es seleccionado, mantener visible
                 if (esSeleccionado && elementoSeleccionadoId != -1) {
                     pin.setIconSize(0.9);
                     pin.setTextOpacity(1.0);
@@ -3665,23 +3415,23 @@ public class MapManager {
         }
     }
 
-    // ════════════════════════════════════════════════════════════════
-// VALIDACIÓN DE LÍMITES UGB
-// ════════════════════════════════════════════════════════════════
+    // ================================================================
+    // Validacion de limites dentro de la institucion
+    // ================================================================
 
     /**
-     * Verificar si un punto está dentro del límite UGB
-     * @param punto Punto a validar
-     * @return true si está dentro, false si está afuera
+     * Verificar si un punto está dentro del límite de la institucion
+     * Punto a validar
+     * true si está dentro, false si está afuera
      */
     public boolean puntoDentroDeInstitucion(Point punto) {
         return verificarPuntoEnPoligono(punto, extraerVerticesDelGeoJson(GEOJSON_UGB_LIMITE));
     }
 
     /**
-     * Verificar si TODOS los puntos de un lugar están dentro del UGB
-     * @param puntos Lista de puntos del lugar
-     * @return true si todos están dentro, false si al menos uno está afuera
+     * Verificar si TODOS los puntos de un lugar están dentro de la institucion
+     *  puntos Lista de puntos del lugar
+     *  true si todos están dentro, false si al menos uno está afuera
      */
     public boolean lugarDentroDelUGB(List<Point> puntos) {
         if (puntos == null || puntos.isEmpty()) {
@@ -3692,21 +3442,19 @@ public class MapManager {
 
         for (Point punto : puntos) {
             if (!verificarPuntoEnPoligono(punto, verticesUGB)) {
-                Log.d("VALIDAR_UGB", "❌ Punto AFUERA: [" + punto.longitude() + ", " + punto.latitude() + "]");
+                Log.d("VALIDAR_INST", "❌ Punto AFUERA: [" + punto.longitude() + ", " + punto.latitude() + "]");
                 return false; // Al menos un punto está afuera
             }
         }
 
-        Log.d("VALIDAR_UGB", "✅ Todos los puntos DENTRO del UGB");
+        Log.d("VALIDAR_INST", "✅ Todos los puntos DENTRO de LA Institucion");
         return true;
     }
 
-    ///  Encargada de saber si un ususario esta dentro de la institucion
-    ///
-    /// REMEMBER USE LATER
-    ///
-    ///
 
+    /**
+     * Verificar si el ususario esta dentro de la institucion
+     */
     public boolean usuarioDentroDeInstitucion(double latitud, double longitud) {
         if (latitud == 0.0 || longitud == 0.0) {
             return false;
@@ -3791,11 +3539,9 @@ public class MapManager {
     }
 
 
-
-
-    // ════════════════════════════════════════════════════════════════
-    // GETTERS PÚBLICOS
-    // ════════════════════════════════════════════════════════════════
+    // ===================================================
+    // Metodos publicos o auxiliares
+    // ==============================================================
 
     public int obtenerCantidadPuntos() {
         return puntosActuales.size();
@@ -3814,6 +3560,9 @@ public class MapManager {
         return espacioContador;
     }
 
+    /**
+     * Resetea todo lo selecionado asi no se deja basura o equivocaciones de datos
+     */
     public void resetearContadores() {
         lugarActualId = 0;
         esEspacioSeleccionado = false;

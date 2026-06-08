@@ -1254,7 +1254,7 @@ public class MapaFragment extends Fragment {
                     int pisoIdReal = pisosId.get(position);
 
                     if (mapManager.lugarSeleccionado != -1) {
-                        mapManager.limpiarEspacios();
+                        mapManager.limpiarPinEspacios();
                         mapManager.mostrarEspaciosPorPiso(mapManager.lugarSeleccionado, pisoIdReal);
                     }
                 }
@@ -2183,7 +2183,7 @@ public class MapaFragment extends Fragment {
         mapManager.limpiarGeometriaTemporalCompleta();
         mapManager.limpiarVérticesTemporales();
         mapManager.limpiarPinesTemporales();
-        mapManager.limpiarEspacios();
+        mapManager.limpiarPinEspacios();
         mapManager.limpiarLugares();
         mapManager.limpiarTodo();
         mapManager.cargarPoligonosLugar();
