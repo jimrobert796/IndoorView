@@ -109,7 +109,7 @@ public class PerfilFragment extends Fragment {
         super.onActivityResult(requestCode, resultCode, data);
 
         if (requestCode == 1 && resultCode == getActivity().RESULT_OK) {
-            // ✅ Se ejecuta cuando EditarPerfilActivity se cierra con RESULT_OK
+            // Se ejecuta cuando EditarPerfilActivity se cierra con RESULT_OK
             Log.d("PERFIL", "Regresando de editar perfil, recargando datos...");
 
             // Recargar datos de sesión
@@ -149,7 +149,7 @@ public class PerfilFragment extends Fragment {
         Log.d("PERFIL", "Nombre: " + usuarioNombre);
         Log.d("PERFIL", "Apellidos: " + usuarioApellidos);
         Log.d("PERFIL", "Carnet: " + usuarioCarnet);
-        Log.d("PERFIL", "Correo: " + usuarioCorreo); // 👈 Verifica qué muestra
+        Log.d("PERFIL", "Correo: " + usuarioCorreo); // Verifica qué muestra
 
         if (tvNombreUsuario != null) {
             tvNombreUsuario.setText(usuarioNombre);
@@ -226,7 +226,7 @@ public class PerfilFragment extends Fragment {
                 Toast.LENGTH_SHORT
         ).show();
 
-        // 🔥 Procesar pendientes
+        // Procesar pendientes
         syncManager.procesarTodosLosPendientes(
                 getContext(),
                 new SyncManager.SyncManagerFinalCallback() {

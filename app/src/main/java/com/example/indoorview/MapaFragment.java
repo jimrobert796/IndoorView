@@ -60,10 +60,7 @@ import java.util.List;
 
 public class MapaFragment extends Fragment {
 
-
-    // ════════════════════════════════════════════════════════════════
     // VARIABLES DE MAPA Y UI
-    // ════════════════════════════════════════════════════════════════
     private MapView mapView;
     private MapManager mapManager;
     private Database db;
@@ -78,9 +75,7 @@ public class MapaFragment extends Fragment {
     private TextView tvModo;
     private Spinner spinnerPisos;
 
-    // ════════════════════════════════════════════════════════════════
     // MODOS DE OPERACIÓN
-    // ════════════════════════════════════════════════════════════════
     private static final int MODO_NINGUNO = 0;
     private static final int MODO_LUGAR = 1;
     private static final int MODO_ESPACIO = 2;
@@ -88,7 +83,7 @@ public class MapaFragment extends Fragment {
 
     private boolean modoEdicionActivo = false;
 
-    // Manager permanente para UGB pin
+    // Manager permanente para pruebas de pin
     private PointAnnotationManager managerPermanente;
 
     private ActivityResultLauncher<Intent> camaraLauncher;
@@ -110,6 +105,7 @@ public class MapaFragment extends Fragment {
 
     // CARGADOR DE DATOS PROCESADOS YA GUARDADOS EN BD PARA SINCRONIZCION AUTOMATICA DE MAPA
     private ObtenerProcesarDatos.OnDatosCargatosListener listener;
+
     // Variables para datos de sesión
     private boolean usuarioLog;
     private int usuarioId;
@@ -121,7 +117,6 @@ public class MapaFragment extends Fragment {
 
 
     private CloudinaryHelper cloudinaryHelper;
-
 
     private PermissionManager permissionManager;
     private String imagenSubidaUrl = "";
@@ -192,12 +187,13 @@ public class MapaFragment extends Fragment {
             // Los demás botones se mostrarán según el flujo normal
         }
 
-
-
         // Inicaliza el mapa e eventos
         inicializarLaunchers();
 
         /*
+
+        // ESTE HACE QUE SINCRONIZE CADA QUE SE INICIA EL FRAGMENT
+
         if (detectarInternet.hayConexionInternet()){
 
 
@@ -222,7 +218,6 @@ public class MapaFragment extends Fragment {
          */
 
         // Mostrar dialogo de carga
-
         loadingDialog = new Dialog(getContext());
         View loadingView = LayoutInflater.from(getContext()).inflate(R.layout.progress_loading, null);
         loadingDialog.setContentView(loadingView);  // ← ESTO FALTA
@@ -246,7 +241,7 @@ public class MapaFragment extends Fragment {
         // Se inicializa la busqueda que es algo que si o si debe estar
         configurarBusqueda();
 
-        /* AHORITA NO USAREMOS ESO
+        /* // se deja en caso de DEBUG
 
         // Cargar datos automáticamente al abrir la app
         new android.os.Handler().postDelayed(() -> {
@@ -312,7 +307,9 @@ public class MapaFragment extends Fragment {
         syncManager.syncAllMapWithClean();
     }
 
-
+    /**
+     * Activar la ubicacion del usuario si es necesario
+     */
     private void activarUbicacionUsuario() {
         PermissionManager.getInstance().requestNotificationAndLocationPermissions(getActivity(),
                 new PermissionManager.PermissionCallback() {
@@ -343,6 +340,10 @@ public class MapaFragment extends Fragment {
                 });
     }
 
+
+    /**
+     * Mostrar la ubicacion del mapa
+     */
     private void mostrarUbicacionEnMapa() {
 
         try {
@@ -415,6 +416,9 @@ public class MapaFragment extends Fragment {
         }
     }
 
+    /**
+     * Inicializar la brujula digital, funciona en conjunto con la ubicacion del usuario
+     */
     private void inicializarBrujula() {
 
         sensorManager = (SensorManager)
@@ -482,6 +486,9 @@ public class MapaFragment extends Fragment {
         };
     }
 
+    /**
+     * Mueve la camara en la ubicacion en la quye se encuentra el usuario
+     */
     private void centrarEnUsuario() {
 
         if (mapView == null) {
@@ -543,6 +550,10 @@ public class MapaFragment extends Fragment {
         }
     }
 
+
+    /**
+     * Instanciar los objetos de ayudas de otras clases como tambien lo necesario
+     */
     private void inicializarLaunchers() {
 
         cloudinaryHelper = new CloudinaryHelper();
@@ -592,7 +603,9 @@ public class MapaFragment extends Fragment {
         mapManager.setFlujoCRUDListener(new MapManager.OnFlujoCRUDListener() {
             // REEMPLAZA onLugarGuardado() en MapaFragment.java
 
-
+            /**
+             * Callback si se guarda un lugar para enviar a firebase
+             */
             @Override
             public void onLugarGuardado(String nombre, String descripcion, String urlImagenes, String color) {
                 // Convertir puntos a GeoJSON
@@ -652,6 +665,9 @@ public class MapaFragment extends Fragment {
                 }
             }
 
+            /**
+             * Callback si se guarda un lugar para enviar a firebase
+             */
             private void guardarLugarFirebase(String nombre, String descripcion, String urlImagenes,
                                                   String color, String geojson) {
 
@@ -706,7 +722,9 @@ public class MapaFragment extends Fragment {
                 }
             }
 
-
+            /**
+             * Guardar el piso en default en firebase
+             */
             private void guardarPisoDeffaultFirebase(String nombre) {
 
                 Log.d("PRUEBA_FIREBASE", "════════════════════════════════════════════");
@@ -802,7 +820,9 @@ public class MapaFragment extends Fragment {
                 }
             }
 
-
+            /**
+             * Guardar espacio en firebase en cadena
+             */
             private void guardarEspacioEnFirebase(String lugarId, String pisoId, String nombre, String descripcion, String urlImagenes,
                                                   String color, String verticesJson) {
 
@@ -834,7 +854,9 @@ public class MapaFragment extends Fragment {
                 );
             }
 
-            // Función para guardar la geometría
+            /**
+             * Guardar la geometria en cadena
+             */
             private void guardarGeometriaEnFirebase(String lugarId ,String pisoId ,String espacioId, String verticesJson,
                                                     String color) {
                 firebaseHelper.guardarGeometriaEspacio(
@@ -857,8 +879,9 @@ public class MapaFragment extends Fragment {
                 );
             }
 
-
-
+            /**
+             * Se encarga de crear el primero piso por defecto en local
+             */
             private void crearPrimerPisoPorDefecto() {
                 String nombrePiso = "Primera Planta";
                 // Asignamos el nombre a la variable para su uso posterior
@@ -871,7 +894,7 @@ public class MapaFragment extends Fragment {
                     Log.d("FLUJO_PISO", "✓ Piso creado: " + nombrePiso + " (ID: " + pisoId + ")");
                     Toast.makeText(getContext(), "✓ Piso creado: " + nombrePiso, Toast.LENGTH_SHORT).show();
 
-                    // ✅ CARGAR LOS PISOS EN EL SPINNER
+                    // CARGAR LOS PISOS EN EL SPINNER
                     mapManager.cargarPisos((int) idLugar);
 
                 } else {
@@ -880,6 +903,9 @@ public class MapaFragment extends Fragment {
                 }
             }
 
+            /**
+             * Metodo de callback para cuando se guarda el espacio
+             */
             @Override
             public void onEspacioGuardado(String nombre, String descripcion, String urlImagenes, String color) {
                 int id_creado = (int) idLugar;
@@ -1007,21 +1033,26 @@ public class MapaFragment extends Fragment {
         configurarListenerZoom(); // Preparar configuraciones de zooom
         configurarBotones(); // Funcionamiento de botones
 
-        ocultarEdicion();
+        ocultarEdicion(); // ocultamos el modo edicion
     }
 
 
     // ════════════════════════════════════════════════════════════════
-    // 🔍 CONFIGURACIÓN DE BÚSQUEDA
+    // Metodos de subida de imagenes a coudinary
     // ════════════════════════════════════════════════════════════════
 
 
-    // Interfaz para callback de Cloudinary
+    /**
+     * Interfaz para subida d cloudinary
+     */
     public interface CloudinaryUploadCallback {
         void onCompletado(String urlsCloudinary);
         void onError(String error);
     }
 
+    /**
+     * Subida de imagenes de espacio secuencial para 0 inconsistencias
+     */
     private void subirImagenesEspacioSecuencial(String urlsLocales,
                                                 String nombreEspacio,
                                                 int index,
@@ -1070,13 +1101,15 @@ public class MapaFragment extends Fragment {
                     Log.e("CLOUDINARY_ESPACIO", "❌ Error imagen " + (index + 1));
                     resultados.add(rutaLocal);
                 }
-                // ✅ Subir SIGUIENTE (secuencial)
+                // Subir SIGUIENTE (secuencial)
                 subirImagenesEspacioSecuencial(urlsLocales, nombreEspacio, index + 1, resultados, callback);
             }
         });
     }
 
-    // Método para subir imágenes a Cloudinary
+    /**
+     * Subida de imagenes de lugares secuencial para 0 inconsistencias
+     */
     private void subirImagenesACloudinarySecuencial(String urlsLocales,
                                                     int index,
                                                     List<String> resultados,
@@ -1125,11 +1158,19 @@ public class MapaFragment extends Fragment {
                     Log.e("CLOUDINARY_UPLOAD", "❌ Error imagen " + (index + 1));
                     resultados.add(rutaLocal);
                 }
-                // ✅ Subir SIGUIENTE (secuencial)
+                // Subir SIGUIENTE (secuencial)
                 subirImagenesACloudinarySecuencial(urlsLocales, index + 1, resultados, callback);
             }
         });
     }
+
+    //=====================================================
+    // Metodos sobre busqueda
+    //=====================================================
+
+    /**
+     * Encargada de configurar la busquda para el usuario
+     */
     private void configurarBusqueda() {
         // Configurar RecyclerView
         rvResultados.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -1242,7 +1283,9 @@ public class MapaFragment extends Fragment {
     }
 
 
-    //Configurar el spinner de pisos
+    /**
+     * Preconfigura el spinnerPisos para sus constanstes actualizaciones
+     */
     private void configurarSpinner() {
         spinnerPisos.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -1265,7 +1308,9 @@ public class MapaFragment extends Fragment {
         });
     }
 
-    // Configurar el mapa
+    /**
+     * Configuracion principal del mapa
+     */
     private void configurarMapa() {
         mapView.getMapboxMap().loadStyleUri(Style.MAPBOX_STREETS, style -> {
 
@@ -1345,7 +1390,9 @@ public class MapaFragment extends Fragment {
     }
 
 
-    // NUEVO METODO: Configurar listener de cambios de zoom
+    /**
+     * Configuracion de listener en cada zoom
+     */
     private void configurarListenerZoom() {
         mapView.getMapboxMap().addOnCameraChangeListener(cameraChangedCallback -> {
             // Obtener nivel de zoom actual
@@ -1359,15 +1406,6 @@ public class MapaFragment extends Fragment {
     }
 
 
-    /**
-     * Agregar pin UGB en el mapa SE utilizo para pruebas
-    private void agregarPinUGB() {
-        mapManager.agregarPinPermanente(
-                Point.fromLngLat(-88.41783453298294, 13.342296805328829),
-                "UGB", "#0080ff"
-        );
-    }
-      */
 
     /**
      * Configurar listener de clicks en el mapa
@@ -1375,7 +1413,7 @@ public class MapaFragment extends Fragment {
     private void configurarClickMapa(Style style) {
         GesturesUtils.getGestures(mapView).addOnMapClickListener(point -> {
             if (modoActual == MODO_LUGAR) {
-                // ✅ VALIDAR que el punto esté dentro del UGB
+                // VALIDAR que el punto esté dentro del UGB
                 if (!mapManager.puntoDentroDeInstitucion(point)) {
                     Toast.makeText(getContext(),
                             "⚠️ Este punto está FUERA del límite UGB permitido",
@@ -1389,7 +1427,7 @@ public class MapaFragment extends Fragment {
                 return true;
 
             } else if (modoActual == MODO_ESPACIO) {
-                // ✅ VALIDAR que el punto esté dentro del UGB
+                // VALIDAR que el punto esté dentro del UGB
                 if (!mapManager.puntoDentroDeInstitucion(point)) {
                     Toast.makeText(getContext(),
                             "⚠️ Este punto está FUERA del límite UGB permitido",
@@ -1412,9 +1450,9 @@ public class MapaFragment extends Fragment {
         });
     }
 
-    // ════════════════════════════════════════════════════════════════
-    // CONFIGURACIÓN DE BOTONES
-    // ════════════════════════════════════════════════════════════════
+    // ==============================================================
+    // Configuracion de botones
+    // ==============================================================
 
     /**
      * Configurar todos los listeners de botones
@@ -1428,6 +1466,10 @@ public class MapaFragment extends Fragment {
         configurarBtnFinalizar();
         configurarBotonGiroscopio();
     }
+
+    /**
+     * BTN Giroscopio --- gyro/ubicacion (activar o desactivar)
+     */
     private void configurarBotonGiroscopio() {
         btnGiroscopio.setOnClickListener(v -> {
 
@@ -1571,6 +1613,10 @@ public class MapaFragment extends Fragment {
             }
         });
     }
+
+    /**
+     * Dialog - conexion requerida para editar
+     */
     private void mostrarDialogoNecesitaConexion(String accion) {
         new AlertDialog.Builder(getContext())
                 .setTitle("Conexión Requerida")
@@ -1752,9 +1798,9 @@ public class MapaFragment extends Fragment {
         });
     }
 
-    // ════════════════════════════════════════════════════════════════
-    // LÓGICA DE MODOS
-    // ════════════════════════════════════════════════════════════════
+    // ===========================================================
+    // Logica de modos
+    // ===========================================================
 
     /**
      * Activar modo edición
@@ -1862,9 +1908,9 @@ public class MapaFragment extends Fragment {
         tvModo.setText("Lugar guardado. Dibuja espacios o finaliza.");
     }
 
-    // ════════════════════════════════════════════════════════════════
+    // ================================================================
     // UTILIDADES DE UI
-    // ════════════════════════════════════════════════════════════════
+    // ================================================================
 
     /**
      * Ocultar todos los botones de edición
@@ -1885,9 +1931,9 @@ public class MapaFragment extends Fragment {
         btnDeshacer.setVisibility(View.GONE);
     }
 
-    // ════════════════════════════════════════════════════════════════
-// FLUJO: AGREGAR LUGAR CON ESPACIOS
-// ════════════════════════════════════════════════════════════════
+    // ================================================================
+    // FLUJO: AGREGAR LUGAR CON ESPACIOS
+    // ================================================================
 
     /**
      * Llamado después de que cerrarLugar() completa
@@ -2058,7 +2104,10 @@ public class MapaFragment extends Fragment {
         neg.setTextColor(Color.parseColor("#2196F3"));
     }
 
-    // Metodo auxiliar para obtener el siguiente número de piso
+    /**
+     * Obtencion del siquiente numero de piso
+     * @return el numero siguiente
+     */
     private int obtenerSiguienteNumeroPiso() {
         List<Pisos> pisosExistentes = db.getPisosByLugar((int) idLugar);
         int maxNumero = 0;
@@ -2101,11 +2150,7 @@ public class MapaFragment extends Fragment {
     }
 
     /**
-     * Manejar la creación del primer piso (para cuando el usuario dice "No" a espacios)
-     */
-
-    /**
-     * Finalizar todo el proceso
+     * Finalizar todo el proceso de agregar nuevos lugares
      */
     private void flujoFinalizar() {
         Log.d("FLUJO_FINALIZAR", "════════════════════════════════════════════");
@@ -2171,14 +2216,10 @@ public class MapaFragment extends Fragment {
         return "[[" + coords.toString() + "]]";
     }
 
-    private int obtenerUltimoEspacioId(int idLugar) {
-        List<Espacio> espacios = db.getEspaciosByLugar(idLugar);
-        if (!espacios.isEmpty()) {
-            return espacios.get(espacios.size() - 1).getId_espacio();
-        }
-        return -1;
-    }
-
+    /**
+     * Mapa limpio en variables como managers
+     * listo para cargar de nuevo desde bd
+     */
     private void reInicarMapa(){
         mapManager.limpiarGeometriaTemporalCompleta();
         mapManager.limpiarVérticesTemporales();
@@ -2190,8 +2231,9 @@ public class MapaFragment extends Fragment {
         mapManager.resetearContadores();
     }
 
-    // Getters y setter de los nombres de ids
-    // String NombLugar
+    //=====================================================
+    // Getters para la subida de informacion a firebase
+    //=====================================================
     public String getNombLugar() {
         return NombLugar;
     }
@@ -2220,7 +2262,10 @@ public class MapaFragment extends Fragment {
 
 
 
-    // Obtener datos de la sesion
+    /**
+     * Obtencion de datos de sesion
+     * Gracias a SharedPreferences prefs  "sesion"
+     */
     private void obtenerDatosSesion() {
         // CORRECCIÓN: Usar requireContext() en lugar de getActivity()
         SharedPreferences prefs = requireContext().getSharedPreferences("sesion", Context.MODE_PRIVATE);

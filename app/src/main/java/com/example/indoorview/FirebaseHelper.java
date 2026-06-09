@@ -1648,18 +1648,6 @@ public class FirebaseHelper {
     /**
      * Obtener TODOS los usuarios de Firebase de una sola vez
      */
-    /**
-     * Obtener TODOS los usuarios de Firebase y guardarlos UNO POR UNO en BD
-     * @param callback Callback que recibe el progreso
-     */
-    /**
-     * Obtener TODOS los usuarios de Firebase y guardarlos en BD (uno por uno)
-     * @param context Contexto de la aplicación (Activity o Application)
-     */
-    /**
-     * Obtener TODOS los usuarios de Firebase y guardarlos correctamente en BD
-     * @param context Contexto de la aplicación
-     */
 
     public void obtenerYGuardarTodosLosUsuarios(Context context) {
 
@@ -2264,13 +2252,6 @@ public class FirebaseHelper {
 
         void onError(String error);
     }
-
-
-
-
-
-
-
 
 
 

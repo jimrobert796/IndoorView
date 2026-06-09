@@ -64,6 +64,13 @@ import java.util.Set;
 
 public class MapManager {
 
+    /**
+     * MapManager se encarga de tener la mayoria de herramientas listas para poder usar el mapa
+     * aqui se incluyen pines, geometria, carga de datos, launchers de camara y galeria, crud, etc.
+     * para poder usarse en cualquier otra pantalla.
+     */
+
+
     private MapView mapView;
     private Database db;
     private Context context;

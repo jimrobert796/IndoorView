@@ -84,9 +84,6 @@ public class MapaEventoActivity extends AppCompatActivity {
     private boolean primeraVezCentrado = false;
 
 
-    ///  RECORDA HACER QUE EL GIRO FUNCIONE ES L0 ULTIMO QUE NECESITO PARA PULIR BIEN ESTA APP
-
-
 
 
     @Override
@@ -118,6 +115,7 @@ public class MapaEventoActivity extends AppCompatActivity {
         // 7. Habilitar boton de girsocopio
         configurarBotonGiroscopio();
     }
+
 
     private void inicializarBrujula() {
 
@@ -185,9 +183,10 @@ public class MapaEventoActivity extends AppCompatActivity {
         };
     }
 
-
-
-
+    /**
+     * Activar la ubiccion en tiempo real
+     * Con uso de permisos
+     */
     private void activarUbicacionUsuario() {
         PermissionManager.getInstance().requestNotificationAndLocationPermissions(this,
                 new PermissionManager.PermissionCallback() {
@@ -219,6 +218,10 @@ public class MapaEventoActivity extends AppCompatActivity {
     }
 
 
+    /**
+     * Mostrar en mapa en tiempo real
+     * Una vez ya permitido el permiso
+     */
     private void mostrarUbicacionEnMapa() {
 
         try {
@@ -292,6 +295,10 @@ public class MapaEventoActivity extends AppCompatActivity {
     }
 
 
+    /**
+     * Centrar la ubicacion en posicion del usuario
+     * Zoom en pantalla al tenr la ubicacion de usuario
+     */
     private void centrarEnUsuario() {
 
         if (mapboxMap == null) {
@@ -461,6 +468,11 @@ public class MapaEventoActivity extends AppCompatActivity {
         });
     }
 
+
+
+    /**
+     * Se deja solo para puebas de usuario
+     */
     /*
     private void configurarBotonGiroscopio() {
         if (!modoSeleccion){
@@ -516,9 +528,9 @@ public class MapaEventoActivity extends AppCompatActivity {
      */
 
 
-
-    ///  SE UTILIZARA DESPUES CUANDO ESTEMOS EN LA INST PARA HACER PRUEBAS DE COORDENADAS
-
+    /**
+     * BOTON Gisorcopio - configuracion (activado y desactivado)
+     */
     private void configurarBotonGiroscopio() {
     if (!modoSeleccion){
         btnGiroscopio.setOnClickListener(v -> {
@@ -614,17 +626,12 @@ public class MapaEventoActivity extends AppCompatActivity {
     }
 }
 
-
-
-
-
-
     /**
      * Confirmar ubicación seleccionada y volver a AgregarEventoActivity
      */
     private void confirmarUbicacion() {
         if (puntoSeleccionado == null) {
-            Toast.makeText(this, "⚠️ Por favor selecciona una ubicación", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Por favor selecciona una ubicación", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -815,9 +822,9 @@ public class MapaEventoActivity extends AppCompatActivity {
         }
     }
 
-    // ════════════════════════════════════════════════════════════════
-    // CICLO DE VIDA
-    // ════════════════════════════════════════════════════════════════
+    //===========================================================
+    // Ciclo de vida
+    //===========================================================
 
     @Override
     protected void onStart() {

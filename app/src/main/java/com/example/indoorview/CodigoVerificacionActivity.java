@@ -14,6 +14,11 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class CodigoVerificacionActivity extends AppCompatActivity {
 
+
+    /**
+     * Encargada visualmente mostrar y tomar el codigo de cambio de contraseña
+     */
+
     private Button btnConfirmarCodigo;
     private ImageView btnRegresar;
     private EditText etCode1, etCode2, etCode3, etCode4;
@@ -135,6 +140,10 @@ public class CodigoVerificacionActivity extends AppCompatActivity {
         });
     }
 
+
+    /**
+     * Verifica si el codigo es correcto al enviado
+     */
     private void verificarCodigo() {
         String codigoIngresado = etCode1.getText().toString() +
                 etCode2.getText().toString() +
@@ -171,6 +180,10 @@ public class CodigoVerificacionActivity extends AppCompatActivity {
         }
     }
 
+
+    /**
+     * Temporizador para re envio
+     */
     private void iniciarTemporizador() {
         // Temporizador de 60 segundos para poder reenviar
         countDownTimer = new CountDownTimer(60000, 1000) {
@@ -190,6 +203,10 @@ public class CodigoVerificacionActivity extends AppCompatActivity {
         countDownTimer.start();
     }
 
+
+    /**
+     * Genera y envia el codigo
+     */
     private void reenviarCodigo() {
         // Generar nuevo código
         String nuevoCodigoVerificacion = generarCodigoAleatorio();
@@ -211,6 +228,10 @@ public class CodigoVerificacionActivity extends AppCompatActivity {
         iniciarTemporizador();
     }
 
+
+    /**
+     * Generador de 4 dijitos random
+     */
     private String generarCodigoAleatorio() {
         return String.format("%04d", (int) (Math.random() * 10000));
     }

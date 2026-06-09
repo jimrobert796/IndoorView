@@ -102,7 +102,7 @@ public class OlvidoContraActivity extends AppCompatActivity {
                 btnConfirmar.setAlpha(1.0f);
             }
 
-            // DESPUÉS (✅ CORRECTO)
+            // DESPUÉS
             @Override
             public void onError(String error) {
                 Toast.makeText(OlvidoContraActivity.this,

@@ -23,9 +23,9 @@ import java.io.InputStream;
 public class ImageCompressionUtil {
 
     /**
-     * ✅ Obtener ángulo de rotación desde EXIF
-     * @param imagePath Ruta de la imagen
-     * @return Ángulo de rotación (0, 90, 180, 270)
+     * Obtener ángulo de rotación desde EXIF
+     *  imagePath Ruta de la imagen
+     *  Ángulo de rotación (0, 90, 180, 270)
      */
     public static int obtenerRotacionExif(String imagePath) {
         try {
@@ -57,10 +57,10 @@ public class ImageCompressionUtil {
     }
 
     /**
-     * ✅ Rotar bitmap según ángulo
-     * @param bitmap Imagen original
-     * @param degrees Ángulos a rotar (90, 180, 270)
-     * @return Bitmap rotado
+     * Rotar bitmap según ángulo
+     *  Imagen original
+     * degrees Ángulos a rotar (90, 180, 270)
+     *  Bitmap rotado
      */
     public static Bitmap rotarBitmap(Bitmap bitmap, int degrees) {
         if (degrees == 0 || bitmap == null) return bitmap;
@@ -92,11 +92,11 @@ public class ImageCompressionUtil {
     }
 
     /**
-     * ✅ Comprimir bitmap y guardar como archivo
-     * @param bitmap Imagen a comprimir
-     * @param outputFile Archivo destino
-     * @param quality Calidad 0-100 (70-80 es ideal)
-     * @return true si se comprimió exitosamente
+     * Comprimir bitmap y guardar como archivo
+     * bitmap Imagen a comprimir
+     *  outputFile Archivo destino
+     *  quality Calidad 0-100 (70-80 es ideal)
+     *  true si se comprimió exitosamente
      */
     public static boolean comprimirBitmap(Bitmap bitmap, File outputFile, int quality) {
         try {
@@ -116,9 +116,9 @@ public class ImageCompressionUtil {
     }
 
     /**
-     * ✅ Cargar imagen de archivo y comprimir
-     * @param filePath Ruta del archivo
-     * @return Bitmap comprimido
+     * Cargar imagen de archivo y comprimir
+     * filePath Ruta del archivo
+     *  Bitmap comprimido
      */
     public static Bitmap cargarYComprimirDesdeArchivo(String filePath) {
         try {
@@ -143,10 +143,10 @@ public class ImageCompressionUtil {
     }
 
     /**
-     * ✅ Cargar desde URI y comprimir
-     * @param context Contexto de la app
-     * @param uri URI de la imagen
-     * @return Bitmap comprimido
+     * Cargar desde URI y comprimir
+     *  context Contexto de la app
+     *  uri URI de la imagen
+     *  Bitmap comprimido
      */
     public static Bitmap cargarYComprimirDesdeUri(Context context, Uri uri) {
         try {
@@ -175,11 +175,11 @@ public class ImageCompressionUtil {
     }
 
     /**
-     * ✅ Escalar bitmap a máximo de dimensiones
-     * @param bitmap Imagen original
-     * @param maxWidth Ancho máximo
-     * @param maxHeight Alto máximo
-     * @return Bitmap escalado
+     * Escalar bitmap a máximo de dimensiones
+     *  bitmap Imagen original
+     *  maxWidth Ancho máximo
+     * maxHeight Alto máximo
+     *  Bitmap escalado
      */
     public static Bitmap escalarBitmap(Bitmap bitmap, int maxWidth, int maxHeight) {
         if (bitmap == null) return null;
@@ -208,13 +208,13 @@ public class ImageCompressionUtil {
     }
 
     /**
-     * ✅ PRINCIPAL: Comprimir + Rotar archivo de imagen completo
+     * PRINCIPAL: Comprimir + Rotar archivo de imagen completo
      * Carga, rota según EXIF, escala, comprime y guarda
      *
-     * @param inputPath Ruta del archivo original
-     * @param outputPath Ruta del archivo comprimido (puede ser igual para sobrescribir)
-     * @param quality Calidad 0-100 (70 es ideal)
-     * @return true si fue exitoso
+     * inputPath Ruta del archivo original
+     * outputPath Ruta del archivo comprimido (puede ser igual para sobrescribir)
+     * quality Calidad 0-100 (70 es ideal)
+     *  true si fue exitoso
      */
     public static boolean comprimirYRotarArchivoImagen(String inputPath, String outputPath, int quality) {
         try {
@@ -283,8 +283,8 @@ public class ImageCompressionUtil {
     }
 
     /**
-     * ⚠️ ANTIGUO: Comprimir sin rotación (mantener para compatibilidad)
-     * @deprecated Usar comprimirYRotarArchivoImagen() en su lugar
+     * ⚠ANTIGUO: Comprimir sin rotación (mantener para compatibilidad)
+     * Usar comprimirYRotarArchivoImagen() en su lugar
      */
     @Deprecated
     public static boolean comprimirArchivoImagen(String inputPath, String outputPath, int quality) {
@@ -293,9 +293,9 @@ public class ImageCompressionUtil {
     }
 
     /**
-     * ✅ Obtener tamaño del archivo en MB
-     * @param file Archivo
-     * @return Tamaño en MB
+     * Obtener tamaño del archivo en MB
+     *  file Archivo
+     *  Tamaño en MB
      */
     public static double obtenerTamanoMB(File file) {
         if (file == null || !file.exists()) return 0;
@@ -303,9 +303,9 @@ public class ImageCompressionUtil {
     }
 
     /**
-     * ✅ Obtener tamaño del archivo en KB
-     * @param file Archivo
-     * @return Tamaño en KB
+     * Obtener tamaño del archivo en KB
+     *  file Archivo
+     *  Tamaño en KB
      */
     public static long obtenerTamanoKB(File file) {
         if (file == null || !file.exists()) return 0;
@@ -313,9 +313,9 @@ public class ImageCompressionUtil {
     }
 
     /**
-     * ✅ Obtener tamaño formateado (ej: "1.2 MB" o "850 KB")
-     * @param file Archivo
-     * @return String con tamaño formateado
+     * Obtener tamaño formateado (ej: "1.2 MB" o "850 KB")
+     *  file Archivo
+     *  String con tamaño formateado
      */
     public static String obtenerTamanoFormato(File file) {
         if (file == null || !file.exists()) return "0 KB";

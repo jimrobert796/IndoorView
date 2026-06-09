@@ -10,6 +10,11 @@ import java.security.MessageDigest;
 
 public class CloudinaryHelper {
 
+
+    /**
+     * Clase encargada de la subida de imagenes a cloudinary
+     */
+
     // Perfecto ya tenemos algo siminar a env files
     public static final String CLOUD_NAME = CloudinaryApi.CLOUD_NAME;
     public static final String UPLOAD_PRESET = CloudinaryApi.UPLOAD_PRESET;

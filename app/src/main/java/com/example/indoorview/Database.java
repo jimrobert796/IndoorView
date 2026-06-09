@@ -107,6 +107,9 @@ public class Database extends SQLiteOpenHelper {
 
     // CRUD - Lugar
 
+    /**
+     * Insertar o actualizar lugar
+     */
     public long insertOrUpdateLugarSync(int idLugar, String nombre, String descripcion, String urlImagenes,
                                         String geojson, String color, int estado) {
         SQLiteDatabase db = getWritableDatabase();
@@ -142,7 +145,9 @@ public class Database extends SQLiteOpenHelper {
         return id;
     }
 
-    // LOCAL USE
+    /**
+     * Insertar un lugar
+     */
     public long insertLugar(String nombre, String descripcion, String urlImagenes,
                             String geojson, String color) {
         SQLiteDatabase db = getWritableDatabase();
@@ -159,6 +164,9 @@ public class Database extends SQLiteOpenHelper {
         return id;
     }
 
+    /**
+     * Get list de lugares
+     */
     public List<Lugar> getLugares() {
         List<Lugar> lista = new ArrayList<>();
         SQLiteDatabase db = getReadableDatabase();
@@ -179,7 +187,9 @@ public class Database extends SQLiteOpenHelper {
         return lista;
     }
 
-    // Actualizar Lugar
+    /**
+     * Actualizar lugar
+     */
     public int updateLugar(int id, String nombre, String descripcion, String color, String url_imagenes) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
@@ -191,6 +201,9 @@ public class Database extends SQLiteOpenHelper {
         return db.update("lugar", cv, "id_lugar = ? AND estado = 1", new String[]{String.valueOf(id)});
     }
 
+    /**
+     * Eliminar lugar soft delete
+     */
     public boolean eliminarLugar(int idLugar) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues values = new ContentValues();
@@ -205,6 +218,10 @@ public class Database extends SQLiteOpenHelper {
     // ─────────────────────────────────────────
     // CRUD - Pisos
     // ─────────────────────────────────────────
+
+    /**
+     * Get pisos por lugar
+     */
     public List<Pisos> getPisosByLugar(int idLugar) {
         List<Pisos> lista = new ArrayList<>();
         SQLiteDatabase db = getReadableDatabase();
@@ -226,7 +243,9 @@ public class Database extends SQLiteOpenHelper {
         return lista;
     }
 
-    // PARA SINCRONIZACION
+    /**
+     * Insertar o actualizar piso en local
+     */
     public long insertOrUpdatePisoSync(int idPiso, int idLugar, int numero, String nombre) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
@@ -259,7 +278,9 @@ public class Database extends SQLiteOpenHelper {
         return id;
     }
 
-    // para guardado local
+    /**
+     * Agregar un nuevo piso
+     */
     public long insertPiso(int idLugar, int numero, String nombre) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
@@ -274,7 +295,9 @@ public class Database extends SQLiteOpenHelper {
         return id;
     }
 
-    // Cuenta los espacios activos por piso en local
+    /**
+     * CONTADOR de espacios activos por piso
+     */
     public int contarEspaciosActivosPorPiso(int idPiso) {
         SQLiteDatabase db = getReadableDatabase();
         Cursor c = db.rawQuery(
@@ -296,6 +319,10 @@ public class Database extends SQLiteOpenHelper {
     // ─────────────────────────────────────────
     // CRUD - Espacio
     // ─────────────────────────────────────────
+
+    /**
+     * Insert o update espacio
+     */
     public long insertOrUpdateEspacio(int idEspacio, int idLugar, int idPiso,
                                       String nombre, String descripcion, String urlImagenes, int estado) {
         SQLiteDatabase db = getWritableDatabase();
@@ -330,6 +357,9 @@ public class Database extends SQLiteOpenHelper {
         return id;
     }
 
+    /**
+     *Insert espacio
+     */
     public long insertEspacio(int idLugar, int idPiso, String nombre, String descripcion, String urlImagenes) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
@@ -361,6 +391,9 @@ public class Database extends SQLiteOpenHelper {
         return espacio;
     }
 
+    /**
+     * Get espacios por lugar
+     */
     public List<Espacio> getEspaciosByLugar(int idLugar) {
         List<Espacio> lista = new ArrayList<>();
         SQLiteDatabase db = getReadableDatabase();
@@ -390,6 +423,9 @@ public class Database extends SQLiteOpenHelper {
         return lista;
     }
 
+    /**
+     * Cursor de espacio
+     */
     private Espacio cursorToEspacio(Cursor c) {
         Espacio e = new Espacio(
                 c.getInt(c.getColumnIndexOrThrow("id_espacio")),
@@ -402,6 +438,9 @@ public class Database extends SQLiteOpenHelper {
         );
         return e;
     }
+    /**
+     * Actualizar el esapcio
+     */
     public int updateEspacio(int idEspacio, String nombre, String descripcion, String url_imagenes) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
@@ -413,23 +452,10 @@ public class Database extends SQLiteOpenHelper {
                 new String[]{String.valueOf(idEspacio)});
     }
 
-    // Versión completa si necesitas actualizar más campos
-    public int updateEspacioCompleto(int idEspacio, int idLugar, int idPiso,
-                                     String nombre, String descripcion,
-                                     String urlImagenes, String color) {
-        SQLiteDatabase db = getWritableDatabase();
-        ContentValues cv = new ContentValues();
-        cv.put("id_lugar", idLugar);
-        cv.put("id_piso", idPiso);
-        cv.put("nombre", nombre);
-        cv.put("descripcion", descripcion);
-        cv.put("url_imagenes", urlImagenes);
-        cv.put("color", color);
 
-        return db.update("espacio", cv, "id_espacio = ? AND estado = 1",
-                new String[]{String.valueOf(idEspacio)});
-    }
-
+    /**
+     * Elimianr espacio via soft delete 0
+     */
     public boolean eliminarEspacio(int idEspacio) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues values = new ContentValues();
@@ -445,6 +471,9 @@ public class Database extends SQLiteOpenHelper {
     // CRUD - Geometria
     // ─────────────────────────────────────────
 
+    /**
+     * Insert o update geometria
+     */
     public long insertOrUpdateGeometria(int idGeometria, int idEspacio, int idLugar, int idPiso,
                                         String vertices, String color) {
         SQLiteDatabase db = getWritableDatabase();
@@ -479,7 +508,9 @@ public class Database extends SQLiteOpenHelper {
         return id;
     }
 
-
+    /**
+     * Insertar geometria
+     */
     public long insertGeometria(int idEspacio, int idLugar, int idPiso,
                                 String vertices, String color) {
         SQLiteDatabase db = getWritableDatabase();
@@ -497,18 +528,11 @@ public class Database extends SQLiteOpenHelper {
     }
 
 
-    public Geometria getGeometriaByLugar(int idLugar) {
-        SQLiteDatabase db = getReadableDatabase();
-        Cursor c = db.rawQuery(
-                "SELECT * FROM geometria WHERE id_lugar = ? AND id_espacio IS NULL",
-                new String[]{String.valueOf(idLugar)}
-        );
-        Geometria geo = null;
-        if (c.moveToFirst()) geo = cursorToGeometria(c);
-        c.close();
-        return geo;
-    }
 
+
+    /**
+     *Obtener geometrías por id espacio
+     */
     public Geometria getGeometriaByEspacio(int idEspacio) {
         SQLiteDatabase db = getReadableDatabase();
         Cursor c = db.rawQuery(
@@ -521,6 +545,9 @@ public class Database extends SQLiteOpenHelper {
         return geo;
     }
 
+    /**
+     * Cursor de geometria
+     */
     private Geometria cursorToGeometria(Cursor c) {
         Geometria g = new Geometria(
                 c.getInt(c.getColumnIndexOrThrow("id_geometria")),
@@ -534,7 +561,9 @@ public class Database extends SQLiteOpenHelper {
         return g;
     }
 
-    // Actualizar color de una geometría
+    /**
+     * Actualizar color d egeometria
+     */
     public int updateGeometriaColor(int idGeometria, String color) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
@@ -544,7 +573,9 @@ public class Database extends SQLiteOpenHelper {
                 new String[]{String.valueOf(idGeometria)});
     }
 
-    // Actualizar geometría completa
+    /**
+     *Actualizar la geometria
+     */
     public int updateGeometria(int idGeometria, String tipo, String vertices, String color) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
@@ -556,7 +587,9 @@ public class Database extends SQLiteOpenHelper {
                 new String[]{String.valueOf(idGeometria)});
     }
 
-    // Obtener geometrías por id_espacio
+    /**
+     *Obtener geometrías por id_espacio
+     */
     public List<Geometria> getGeometriasByEspacio(int idEspacio) {
         List<Geometria> lista = new ArrayList<>();
         SQLiteDatabase db = getReadableDatabase();
@@ -569,7 +602,9 @@ public class Database extends SQLiteOpenHelper {
         return lista;
     }
 
-    // Obtener geometrías por id_lugar
+    /**
+     * Obtener geometrias por id ligar
+     */
     public List<Geometria> getGeometriasByLugar(int idLugar) {
         List<Geometria> lista = new ArrayList<>();
         SQLiteDatabase db = getReadableDatabase();
@@ -583,14 +618,12 @@ public class Database extends SQLiteOpenHelper {
     }
 
     // ==========================================
-// CRUD - EVENTOS
-// ==========================================
+    // CRUD - EVENTOS
+    // ==========================================
 
-    // 1. INSERTAR evento
-    // ===== INSERTAR EVENTO (MEJORADO) =====
-    // AGREGAR ESTOS MÉTODOS A TU CLASE BD_Eventos
-
-    // ===== INSERTAR EVENTO (MEJORADO) =====
+    /**
+     * Insertar o un evento
+     */
     public long insertarEvento(Eventos evento) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
@@ -609,7 +642,9 @@ public class Database extends SQLiteOpenHelper {
         return id;
     }
 
-
+    /**
+     * Conteo de eventos
+     */
     public int contarEventos() {
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM eventos", null);
@@ -621,7 +656,9 @@ public class Database extends SQLiteOpenHelper {
         return count;
     }
 
-    // ===== OBTENER TODOS LOS EVENTOS (MEJORADO) =====
+    /**
+     * Get en lista de todos los eventos incluso los pendientes
+     */
     public List<Eventos> getEventos() {
         List<Eventos> lista = new ArrayList<>();
         SQLiteDatabase db = getReadableDatabase();
@@ -647,6 +684,9 @@ public class Database extends SQLiteOpenHelper {
         return lista;
 
     }
+    /**
+     * Obtener los estados pendientes con estado 3 agregar
+     */
     public List<Eventos> getEventosPendientesAgregar() {
         List<Eventos> lista = new ArrayList<>();
         SQLiteDatabase db = getReadableDatabase();
@@ -671,6 +711,9 @@ public class Database extends SQLiteOpenHelper {
         db.close();
         return lista;
     }
+    /**
+     * Obtener los eventos pendientes con estado 4
+     */
     public List<Eventos> getEventosPendientesEliminar() {
         List<Eventos> lista = new ArrayList<>();
         SQLiteDatabase db = getReadableDatabase();
@@ -696,7 +739,9 @@ public class Database extends SQLiteOpenHelper {
         return lista;
     }
 
-    // ===== OBTENER EVENTO POR ID (MEJORADO) =====
+    /**
+     * Obtener un evento gracias a su id
+     */
     public Eventos getEventoById(int id) {
         SQLiteDatabase db = getReadableDatabase();
         Cursor c = db.rawQuery("SELECT * FROM eventos WHERE id_evento = ?",
@@ -722,6 +767,9 @@ public class Database extends SQLiteOpenHelper {
         return evento;
     }
 
+    /**
+     * Obtener los eventos gracias a la fecha
+     */
     public List<Eventos> getEventosPorFecha(String fecha) {
         List<Eventos> lista = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
@@ -755,7 +803,9 @@ public class Database extends SQLiteOpenHelper {
         return lista;
     }
 
-    // ===== ACTUALIZAR EVENTO (MEJORADO) =====
+    /**
+     * Actualizacion de evento
+     */
     public int updateEvento(Eventos evento) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
@@ -775,94 +825,13 @@ public class Database extends SQLiteOpenHelper {
         return rows;
     }
 
-    // ===== OBTENER EVENTOS POR LUGAR (MEJORADO) =====
-    public List<Eventos> getEventosByLugar(int idLugar) {
-        List<Eventos> lista = new ArrayList<>();
-        SQLiteDatabase db = getReadableDatabase();
-        Cursor c = db.rawQuery("SELECT * FROM eventos WHERE id_lugar = ? AND estado = 1",
-                new String[]{String.valueOf(idLugar)});
-
-        while (c.moveToNext()) {
-            Eventos e = new Eventos(
-                    c.getInt(c.getColumnIndexOrThrow("id_evento")),
-                    c.getString(c.getColumnIndexOrThrow("nombre")),
-                    c.getString(c.getColumnIndexOrThrow("descripcion")),
-                    c.getString(c.getColumnIndexOrThrow("longitud")),
-                    c.getString(c.getColumnIndexOrThrow("latitud")),
-                    c.getString(c.getColumnIndexOrThrow("fecha_inicio")),
-                    c.getString(c.getColumnIndexOrThrow("hora_inicio")),
-                    c.getString(c.getColumnIndexOrThrow("fecha_fin")),
-                    c.getString(c.getColumnIndexOrThrow("hora_fin")),
-                    c.getInt(c.getColumnIndexOrThrow("estado"))
-            );
-            lista.add(e);
-        }
-        c.close();
-        db.close();
-        return lista;
-    }
-
-    // ===== OBTENER EVENTOS POR ESPACIO (MEJORADO) =====
-    public List<Eventos> getEventosByEspacio(int idEspacio) {
-        List<Eventos> lista = new ArrayList<>();
-        SQLiteDatabase db = getReadableDatabase();
-        Cursor c = db.rawQuery("SELECT * FROM eventos WHERE id_espacio = ? AND estado = 1",
-                new String[]{String.valueOf(idEspacio)});
-
-        while (c.moveToNext()) {
-            Eventos e = new Eventos(
-                    c.getInt(c.getColumnIndexOrThrow("id_evento")),
-                    c.getString(c.getColumnIndexOrThrow("nombre")),
-                    c.getString(c.getColumnIndexOrThrow("descripcion")),
-                    c.getString(c.getColumnIndexOrThrow("latitud")),
-                    c.getString(c.getColumnIndexOrThrow("longitud")),
-                    c.getString(c.getColumnIndexOrThrow("fecha_inicio")),
-                    c.getString(c.getColumnIndexOrThrow("hora_inicio")),
-                    c.getString(c.getColumnIndexOrThrow("fecha_fin")),
-                    c.getString(c.getColumnIndexOrThrow("hora_fin")),
-                    c.getInt(c.getColumnIndexOrThrow("estado"))
-            );
-            lista.add(e);
-        }
-        c.close();
-        db.close();
-        return lista;
-    }
-
-    // ===== CAMBIAR ESTADO (ELIMINAR LÓGICAMENTE) =====
-    public int deleteEvento(int idEvento) {
-        SQLiteDatabase db = getWritableDatabase();
-        ContentValues cv = new ContentValues();
-        cv.put("estado", 0);
-
-        int rows = db.update("eventos", cv, "id_evento = ?",
-                new String[]{String.valueOf(idEvento)});
-        db.close();
-        return rows;
-    }
-    // 8. ELIMINAR evento (soft delete - cambiar estado a 0)
-    public void eliminarEvento(int id) {
-        SQLiteDatabase db = getWritableDatabase();
-        ContentValues cv = new ContentValues();
-        cv.put("estado", 0);
-        db.update("eventos", cv, "id_evento = ?", new String[]{String.valueOf(id)});
-        db.close();
-    }
-
-    // 9. RESTAURAR evento (cambiar estado a 1)
-    public void restaurarEvento(int id) {
-        SQLiteDatabase db = getWritableDatabase();
-        ContentValues cv = new ContentValues();
-        cv.put("estado", 1);
-        db.update("eventos", cv, "id_evento = ?", new String[]{String.valueOf(id)});
-        db.close();
-    }
-
     // ==========================================
     // CRUD - USUARIOS
     // ==========================================
 
-    // 1. INSERTAR usuario
+    /**
+     * Insertar usuario
+     */
     public long insertarUsuario(Usuarios usuario) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
@@ -883,8 +852,8 @@ public class Database extends SQLiteOpenHelper {
 
     /**
      * Obtener usuarios paginados
-     * @param pagina Número de página (comienza en 1)
-     * @param usuariosPorPagina Cantidad de usuarios por página (usualmente 20)
+     * pagina Número de página (comienza en 1)
+     * usuariosPorPagina Cantidad de usuarios por página (usualmente 20)
      */
     public List<Usuarios> getUsuariosPaginados(int pagina, int usuariosPorPagina) {
         List<Usuarios> lista = new ArrayList<>();
@@ -1023,7 +992,9 @@ public class Database extends SQLiteOpenHelper {
     }
 
 
-    // 2. OBTENER todos los usuarios activos (estado = 1)
+    /**
+     * Obtener todos los usuarios
+     */
     public List<Usuarios> getUsuarios() {
         List<Usuarios> lista = new ArrayList<>();
         SQLiteDatabase db = getReadableDatabase();
@@ -1047,31 +1018,9 @@ public class Database extends SQLiteOpenHelper {
         return lista;
     }
 
-    // 3. OBTENER todos los usuarios (incluyendo inactivos)
-    public List<Usuarios> getUsuariosTodos() {
-        List<Usuarios> lista = new ArrayList<>();
-        SQLiteDatabase db = getReadableDatabase();
-        Cursor c = db.rawQuery("SELECT * FROM usuarios", null);
-
-        while (c.moveToNext()) {
-            Usuarios u = new Usuarios(
-                    c.getInt(c.getColumnIndexOrThrow("id_usuario")),
-                    c.getInt(c.getColumnIndexOrThrow("id_tipo")),
-                    c.getString(c.getColumnIndexOrThrow("nombres")),
-                    c.getString(c.getColumnIndexOrThrow("apellidos")),
-                    c.getString(c.getColumnIndexOrThrow("correo")),
-                    c.getString(c.getColumnIndexOrThrow("carnet")),
-                    c.getString(c.getColumnIndexOrThrow("contraseña")),
-                    c.getInt(c.getColumnIndexOrThrow("estado"))
-            );
-            lista.add(u);
-        }
-        c.close();
-        db.close();
-        return lista;
-    }
-
-    // 4. OBTENER usuario por ID
+    /**
+     * Usuario por id en local
+     */
     public Usuarios getUsuarioById(int id) {
         SQLiteDatabase db = getReadableDatabase();
         Cursor c = db.rawQuery("SELECT * FROM usuarios WHERE id_usuario = ?",
@@ -1095,7 +1044,7 @@ public class Database extends SQLiteOpenHelper {
         return usuario;
     }
 
-    // 5. OBTENER usuario por email (para login)
+
     public Usuarios getUsuarioByEmail(String email) {
         SQLiteDatabase db = getReadableDatabase();
         Cursor c = db.rawQuery("SELECT * FROM usuarios WHERE correo = ? AND estado = 1",
@@ -1119,9 +1068,9 @@ public class Database extends SQLiteOpenHelper {
         return usuario;
     }
 
-    // 6. OBTENER usuario por carnet
-
-    // 7. OBTENER usuarios por tipo (admin, estudiante, etc.)
+    /**
+     * Get usuarios por tipo
+     */
     public List<Usuarios> getUsuariosByTipo(int idTipo) {
         List<Usuarios> lista = new ArrayList<>();
         SQLiteDatabase db = getReadableDatabase();
@@ -1146,9 +1095,9 @@ public class Database extends SQLiteOpenHelper {
         return lista;
     }
 
-    // ==================== PENDIENTES MODIFICAR ====================
-// ESTADO = 2
-
+    /**
+     * Get pendientes a agregar con con estado 2
+     */
     public List<Usuarios> getUsuariosPendientesModificar() {
 
         List<Usuarios> lista = new ArrayList<>();
@@ -1182,9 +1131,9 @@ public class Database extends SQLiteOpenHelper {
         return lista;
     }
 
-    // ==================== PENDIENTES AGREGAR ====================
-// ESTADO = 3
-
+    /**
+     * Get pendientes a agregar con id 3- Agregar
+     */
     public List<Usuarios> getUsuariosPendientesAgregar() {
 
         List<Usuarios> lista = new ArrayList<>();
@@ -1219,9 +1168,9 @@ public class Database extends SQLiteOpenHelper {
     }
 
 
-    // ==================== PENDIENTES ELIMINAR ====================
-    // ESTADO = 4
-
+    /**
+     * Get lista de usuarios con id 4 pendientes
+     */
     public List<Usuarios> getUsuariosPendientesEliminar() {
 
         List<Usuarios> lista = new ArrayList<>();
@@ -1259,7 +1208,9 @@ public class Database extends SQLiteOpenHelper {
 
 
 
-    // 8. ACTUALIZAR usuario
+    /**
+     * Insertar o actualizar usuario por el objeto
+     */
     public int actualizarUsuario(Usuarios usuario) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
@@ -1277,7 +1228,9 @@ public class Database extends SQLiteOpenHelper {
         return rows;
     }
 
-    // 9. ELIMINAR usuario (soft delete - cambiar estado a 0)
+    /**
+     * Eliminar o actualizar usuario por su carnet soft delete 0
+     */
     public void eliminarUsuario(int id) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
@@ -1286,16 +1239,6 @@ public class Database extends SQLiteOpenHelper {
         db.close();
     }
 
-    // 10. RESTAURAR usuario (cambiar estado a 1)
-    public void restaurarUsuario(int id) {
-        SQLiteDatabase db = getWritableDatabase();
-        ContentValues cv = new ContentValues();
-        cv.put("estado", 1);
-        db.update("usuarios", cv, "id_usuario = ?", new String[]{String.valueOf(id)});
-        db.close();
-    }
-
-    // Agregar este
     public Usuarios getUsuarioByCarnet(String carnet) {
         SQLiteDatabase db = this.getReadableDatabase();
         Usuarios usuario = null;
@@ -1322,7 +1265,7 @@ public class Database extends SQLiteOpenHelper {
         return usuario;
     }
 
-    // 11. VERIFICAR login (email + contraseña) CONCEPTO NO FINAL
+    // 11. VERIFICAR login (email + contraseña) se utilizo en versiones tempranas
     public Usuarios login(String email, String contraseña) {
         SQLiteDatabase db = getReadableDatabase();
         Cursor c = db.rawQuery("SELECT * FROM usuarios WHERE correo = ? AND contraseña = ? AND estado = 1",
@@ -1346,6 +1289,10 @@ public class Database extends SQLiteOpenHelper {
         return usuario;
     }
 
+
+    /**
+     * Insertar o actualizar usuario por su carnet
+     */
     public boolean insertarOActualizarPorCarnet(Usuarios usuario) {
 
         SQLiteDatabase db = this.getWritableDatabase();
@@ -1503,8 +1450,8 @@ public class Database extends SQLiteOpenHelper {
 
 
     // ════════════════════════════════════════════════════════════════
-// MÉTODOS PARA DETALLES
-// ════════════════════════════════════════════════════════════════
+    // MÉTODOS PARA DETALLES
+    // ════════════════════════════════════════════════════════════════
 
     /**
      * Insertar un nuevo detalle
@@ -1708,6 +1655,10 @@ public class Database extends SQLiteOpenHelper {
     }
 
 
+    /**
+     * Limpieza de las tablas relacionadas al mapa
+     */
+
     public int limpiarTablasMapa() {
         SQLiteDatabase db = null;
         try {
@@ -1734,6 +1685,9 @@ public class Database extends SQLiteOpenHelper {
         }
     }
 
+    /**
+     * Limpieza de la tabla eventos
+     */
     public void limpiarTablaEventos() {
         SQLiteDatabase db = getWritableDatabase();
         try {
@@ -1751,6 +1705,10 @@ public class Database extends SQLiteOpenHelper {
         }
     }
 
+
+    /**
+     * Limpieza de la tabla usuarios
+     */
     public void limpiarTablaUsuarios() {
         SQLiteDatabase db = getWritableDatabase();
         try {

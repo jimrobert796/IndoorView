@@ -135,7 +135,7 @@ public class NuevaContraActivity extends AppCompatActivity {
     }
 
     /**
-     * ✅ NUEVO: Mostrar dialog personalizado de éxito
+     * Mostrar dialog personalizado de éxito
      */
     private void mostrarDialogoExito() {
         // Crear el dialog con tu layout personalizado
@@ -150,7 +150,7 @@ public class NuevaContraActivity extends AppCompatActivity {
 
         AlertDialog dialog = builder.create();
 
-        // ✅ HACER EL FONDO TRANSPARENTE
+        // HACER EL FONDO TRANSPARENTE
         if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
         }

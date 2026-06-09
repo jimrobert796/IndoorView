@@ -58,7 +58,7 @@ public class EventosSyncWorker extends Worker {
         CountDownLatch latch = new CountDownLatch(1);
         final boolean[] exito = {false};
 
-        // ✅ Misma lógica que SyncWorker que funciona
+        // Misma lógica que SyncWorker que funciona
         syncManager.setSyncListener(new SyncManager.SyncListener() {
             @Override
             public void onComplete(String message) {
@@ -79,7 +79,7 @@ public class EventosSyncWorker extends Worker {
             }
         });
 
-        // ✅ Lanzar sync de eventos igual que SyncWorker lanza syncAllMapWithClean
+        // Lanzar sync de eventos igual que SyncWorker lanza syncAllMapWithClean
         syncManager.syncAllEventosWithClean(new SyncManager.SyncCallback() {
             @Override
             public void onSyncComplete() {
