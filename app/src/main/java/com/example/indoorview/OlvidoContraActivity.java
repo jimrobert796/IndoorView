@@ -61,6 +61,29 @@ public class OlvidoContraActivity extends AppCompatActivity {
         String correo = etCorreo.getText().toString().trim();
         btnConfirmar.setEnabled(false);
 
+        /// Solamente para uso local siempre envia el correo pero nunca modifica
+        ///  Recuerda esto es para uso debug o ver pantallas
+
+        // El correo existe, generar código
+        String codigoVerificacion = generarCodigoAleatorio();
+
+        // Guardar el código temporalmente (en SharedPreferences o Intent)
+        guardarCodigoTemporal(codigoVerificacion, correo);
+
+        // Enviar correo con el código
+        EmailHelper.enviarCodigoVerificacion(correo, codigoVerificacion);
+
+        Toast.makeText(OlvidoContraActivity.this,
+                "Código enviado a " + correo, Toast.LENGTH_LONG).show();
+
+        // Ir a la siguiente activity
+        Intent intent = new Intent(OlvidoContraActivity.this, CodigoVerificacionActivity.class);
+        intent.putExtra("correo", correo);
+        intent.putExtra("codigo", codigoVerificacion);
+        startActivity(intent);
+        finish();
+
+        /*
         // Buscar el usuario por correo en Firebase
         firebaseHelper.buscarUsuarioPorCorreo(correo, new FirebaseHelper.FirebaseUsuarioCallback() {
             @Override
@@ -113,6 +136,8 @@ public class OlvidoContraActivity extends AppCompatActivity {
                 Log.e("OlvidoContra", "Error al buscar correo: " + error);
             }
         });
+
+         */
     }
 
     private String generarCodigoAleatorio() {

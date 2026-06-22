@@ -102,9 +102,29 @@ public class LoginActivity extends AppCompatActivity {
         try {
 
 
-            if (detectarInternet.hayConexionInternet()){
+            // Obtener por carnet solamente para inicio rapido
+            Usuarios usuario = db.getUsuarioByCarnet(carnet);
 
-                Log.d("LOGIN", "Buscando usuario: " + carnet);
+            // Verificar contraseña usando BCrypt
+            boolean verified = Utilidades.verifyPassword(password, usuario.getContraseña());
+            Log.d("LOGIN", "Verificación: " + verified);
+
+            if (verified) {
+                // Login exitoso
+                guardarSesion(usuario);
+                Toast.makeText(LoginActivity.this, "Bienvenido " + usuario.getNombres(), Toast.LENGTH_SHORT).show();
+
+                Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                startActivity(intent);
+                finish();
+            } else {
+                Toast.makeText(LoginActivity.this, "Contraseña incorrecta", Toast.LENGTH_SHORT).show();
+                etPassword.setText("");
+                etPassword.requestFocus();
+            }
+
+            if (detectarInternet.hayConexionInternet()){
+                /*
 
                 // Buscar usuario por carnet
 
@@ -172,8 +192,9 @@ public class LoginActivity extends AppCompatActivity {
                             }
                         }
                 );
-            }else {
 
+                 */
+            }else {
                 Toast.makeText(this, "Necesita conexion para iniciar sesion" , Toast.LENGTH_LONG).show();
             }
 

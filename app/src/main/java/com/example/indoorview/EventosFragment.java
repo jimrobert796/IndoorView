@@ -95,7 +95,7 @@ public class EventosFragment extends Fragment {
         // Cargar eventos locales primero
         cargarEventos();
 
-
+        /*
         if (detectarInternet.hayConexionInternet()){
             loadingDialog = new Dialog(getContext());
             View loadingView = LayoutInflater.from(getContext()).inflate(R.layout.progress_loading, null);
@@ -136,6 +136,8 @@ public class EventosFragment extends Fragment {
 
             Toast.makeText(getContext(), "Sin conexion a internet ", Toast.LENGTH_LONG).show();
         }
+
+         */
 
 
         // Configurar listeners - SOLO para administrador

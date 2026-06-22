@@ -20,9 +20,9 @@ public class MyApp extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        programarSyncMapa();
-        programarSyncEventos();
-        programarRecordatorioEventosManana();
+        //programarSyncMapa();
+        //programarSyncEventos();
+        //programarRecordatorioEventosManana();
     }
 
     // Se actualiza cada 8 hrs automaticamente
