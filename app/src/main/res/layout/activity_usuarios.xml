@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/fond"
+    android:background="@drawable/fondo_sin_logo"
     android:fitsSystemWindows="true">
 
     <!-- Botón Regresar -->
@@ -15,7 +15,6 @@
         android:padding="8dp"
         android:src="@drawable/ic_regreso"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:tint="@android:color/white"
         android:contentDescription="Regresar"
         android:scaleType="centerInside" />
 

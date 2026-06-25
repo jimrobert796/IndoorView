@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/fond"
+    android:background="@drawable/fondo_sin_logo"
     android:fitsSystemWindows="true">
 
     <ScrollView
@@ -40,35 +40,18 @@
                         android:padding="8dp"
                         android:src="@drawable/ic_regreso"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        android:tint="@android:color/white"
                         android:contentDescription="Regresar"
                         android:scaleType="centerInside" />
 
-                    <!-- Logo de la universidad -->
-                    <ImageView
-                        android:id="@+id/iv_logo_ugb"
-                        android:layout_width="80dp"
-                        android:layout_height="80dp"
-                        android:layout_centerHorizontal="true"
-                        android:layout_marginTop="8dp"
-                        android:src="@drawable/logo_universidad"
-                        android:contentDescription="Logo UGB" />
+                    <!-- aqui puede agregar el logo de su institucion -->
 
-                    <!-- linea divisoria -->
-                    <View
-                        android:id="@+id/divider1"
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:layout_below="@id/iv_logo_ugb"
-                        android:layout_marginTop="20dp"
-                        android:background="#4DFFFFFF" />
 
-                    <!-- titulo: ¿olvidó su contraseña? dale gil di que me amas-->
+
+                    <!-- titulo: ¿olvidó su contraseña? -->
                     <TextView
                         android:id="@+id/tv_pregunta"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_below="@id/divider1"
                         android:layout_marginTop="20dp"
                         android:text="¿Olvidó su contraseña?"
                         android:textColor="#FFCC00"
@@ -107,7 +90,7 @@
                         android:layout_below="@id/label_correo"
                         android:layout_marginTop="8dp"
                         android:background="@drawable/bg_campo_perfil"
-                        android:hint="ejemplo@ugb.edu.sv"
+                        android:hint="ejemplo@gmail.com"
                         android:inputType="textEmailAddress"
                         android:padding="12dp"
                         android:textColor="@android:color/white"

@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/fond"
+    android:background="@drawable/fondo_sin_logo"
     android:fitsSystemWindows="true">
 
     <!-- Botón Regresar -->
@@ -18,7 +18,6 @@
         android:focusable="true"
         android:elevation="10dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:tint="@android:color/white"
         android:contentDescription="Regresar" />
 
     <!-- ScrollView para pantallas pequeñas -->
@@ -83,7 +82,7 @@
                             android:layout_height="76dp"
                             android:layout_marginBottom="16dp"
                             android:background="@drawable/bg_campo_perfil"
-                            android:hint="Ej: Conferencia de Tecnología"
+                            android:hint="Ej: fiesta con disco movil"
                             android:textSize="14dp"
                             android:gravity="top"
                             android:padding="12dp"

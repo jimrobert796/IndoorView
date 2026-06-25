@@ -3,7 +3,7 @@
     android:id="@+id/layout_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#CC000000">  <!-- ✅ Fondo NEGRO para toda la pantalla -->
+    android:background="#CC000000">  <!-- Fondo NEGRO para toda la pantalla -->
 
     <!-- Cuadro centrado con ProgressBar -->
     <LinearLayout

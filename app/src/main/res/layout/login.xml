@@ -10,7 +10,7 @@
         android:id="@+id/fondo_imagen"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:src="@drawable/fondo_login"
+        android:src="@drawable/fondo"
         android:scaleType="centerCrop"
         android:contentDescription="Fondo" />
 
@@ -40,20 +40,12 @@
                     android:background="@drawable/gradiente_card"
                     android:padding="24dp">
 
-                    <ImageView
-                        android:id="@+id/logo_universidad"
-                        android:layout_width="100dp"
-                        android:layout_height="100dp"
-                        android:layout_centerHorizontal="true"
-                        android:layout_marginTop="20dp"
-                        android:src="@drawable/logo_universidad"
-                        android:contentDescription="Logo universidad" />
+
 
                     <TextView
                         android:id="@+id/titulo_app"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_below="@id/logo_universidad"
                         android:layout_centerHorizontal="true"
                         android:layout_marginTop="12dp"
                         android:text="Bienvenidos/as"

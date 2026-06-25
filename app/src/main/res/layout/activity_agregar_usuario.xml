@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/fond"
+    android:background="@drawable/fondo_sin_logo"
     android:fitsSystemWindows="true">
 
 
@@ -27,7 +27,6 @@
                 android:padding="8dp"
                 android:src="@drawable/ic_regreso"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:tint="@android:color/white"
                 android:contentDescription="Regresar"
                 android:scaleType="centerInside" />
 
@@ -138,7 +137,7 @@
                         android:layout_height="56dp"
                         android:layout_marginBottom="16dp"
                         android:background="@drawable/bg_campo_perfil"
-                        android:hint="ejemplo@ugb.edu.sv"
+                        android:hint="ejemplo@gmail.com"
                         android:inputType="textEmailAddress"
                         android:padding="12dp"
                         android:textColor="@android:color/white"

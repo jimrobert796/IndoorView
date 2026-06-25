@@ -27,14 +27,14 @@
                 android:layout_height="180dp"
                 android:background="@drawable/bg_circulo_vacio" />
 
-            <!-- Logo de la universidad centrado dentro del círculo -->
+            <!-- Logo de su institucion centrado dentro del círculo -->
             <ImageView
                 android:id="@+id/iv_logo_circulo"
                 android:layout_width="100dp"
                 android:layout_height="100dp"
+
                 android:layout_gravity="center"
-                android:src="@drawable/logo_universidad"
-                android:contentDescription="Logo universidad" />
+                android:contentDescription="Logo" />
 
         </FrameLayout>
 

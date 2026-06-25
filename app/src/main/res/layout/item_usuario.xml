@@ -35,7 +35,7 @@
             android:layout_below="@id/tv_nombre_usuario"
             android:layout_alignParentStart="true"
             android:layout_marginTop="4dp"
-            android:text="USSS019225"
+            android:text="carnet de la institucion"
             android:textColor="#B3FFFFFF"
             android:textSize="12sp" />
 
