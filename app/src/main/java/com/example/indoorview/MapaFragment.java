@@ -1317,7 +1317,7 @@ public class MapaFragment extends Fragment {
                     // Posicionar cámara
                     mapView.getMapboxMap().setCamera(
                             new CameraOptions.Builder()
-                                    .center(Point.fromLngLat(-88.41783453298294, 13.342296805328829))
+                                    .center(Point.fromLngLat(-88.2922841,  13.3367708)) // Un lugar apartado para pruebas
                                     .zoom(18.0)
                                     .pitch(45.0)
                                     .build()
@@ -1327,7 +1327,7 @@ public class MapaFragment extends Fragment {
                     mapView.getMapboxMap().setBounds(
                             new CameraBoundsOptions.Builder()
                                     .minZoom(16.0)
-                                    .maxZoom(22.0)
+                                    .maxZoom(28.0)
                                     .build()
                     );
 

@@ -124,7 +124,7 @@ public class MapManager {
     private boolean esEspacioSeleccionado = false;
 
 
-    private static final String GEOJSON_UGB_LIMITE = "[[[-88.41874340633379,13.34283649558408],[-88.41889582750109,13.341064029751806],[-88.4183981464357,13.340986375017515],[-88.4183198506188,13.341718383911658],[-88.41744672385741,13.341734257387003],[-88.41731438717092,13.341947347355575],[-88.41720029650317,13.34208781680739],[-88.41705536870573,13.342478399080552],[-88.41704762101584,13.342668867260805],[-88.41804339008654,13.342706366841806],[-88.41804335814876,13.342791803217315],[-88.41823868595432,13.342801600680023],[-88.41823288866537,13.342916755999179],[-88.41838883461396,13.342923474685207],[-88.41834904972168,13.344139953655613],[-88.41804015278399,13.344138534574338],[-88.41809341061756,13.344504005954995],[-88.4202425917306,13.34367508614703],[-88.42023523868959,13.34285588983964],[-88.41874340633379,13.34283649558408]]]";
+    private static final String GEOJSON_INST_LIMITE = "[[[-88.2987583,13.342885],[-88.28203923384137,13.344629745588577],[-88.2825188,13.3332864],[-88.29967154279286,13.331911571852132],[-88.2987583,13.342885]]]";
     private FirebaseHelper firebaseHelper;
     private CloudinaryHelper cloudinaryHelper;
     private DetectarInternet detectarInternet;
@@ -3432,7 +3432,7 @@ public class MapManager {
      * true si está dentro, false si está afuera
      */
     public boolean puntoDentroDeInstitucion(Point punto) {
-        return verificarPuntoEnPoligono(punto, extraerVerticesDelGeoJson(GEOJSON_UGB_LIMITE));
+        return verificarPuntoEnPoligono(punto, extraerVerticesDelGeoJson(GEOJSON_INST_LIMITE));
     }
 
     /**
@@ -3445,7 +3445,7 @@ public class MapManager {
             return false;
         }
 
-        List<Point> verticesUGB = extraerVerticesDelGeoJson(GEOJSON_UGB_LIMITE);
+        List<Point> verticesUGB = extraerVerticesDelGeoJson(GEOJSON_INST_LIMITE);
 
         for (Point punto : puntos) {
             if (!verificarPuntoEnPoligono(punto, verticesUGB)) {
