@@ -1376,13 +1376,13 @@ public class MapaFragment extends Fragment {
             // Hacer que la visibilidad se desabilite por defaul
             mapManager.actualizarVisibilidadPinesPorZoom(0.0);
 
-            // Crear manager permanente para UGB pin
+            // Crear manager permanente pin
             AnnotationPlugin annotationPlugin = mapView.getPlugin(Plugin.Mapbox.MAPBOX_ANNOTATION_PLUGIN_ID);
             managerPermanente = (PointAnnotationManager) annotationPlugin
                     .createAnnotationManager(AnnotationType.PointAnnotation, null);
 
-            // Agregar pin UGB permanente para pruebas
-            //agregarPinUGB();
+            // Agregar pin  permanente para pruebas
+            //agregarPinInst();
 
             // Configurar click listener para agregar puntos
             configurarClickMapa(style);
@@ -1413,10 +1413,10 @@ public class MapaFragment extends Fragment {
     private void configurarClickMapa(Style style) {
         GesturesUtils.getGestures(mapView).addOnMapClickListener(point -> {
             if (modoActual == MODO_LUGAR) {
-                // VALIDAR que el punto esté dentro del UGB
+                // VALIDAR que el punto esté dentro
                 if (!mapManager.puntoDentroDeInstitucion(point)) {
                     Toast.makeText(getContext(),
-                            "⚠️ Este punto está FUERA del límite UGB permitido",
+                            "⚠️ Este punto está FUERA del límite permitido",
                             Toast.LENGTH_SHORT).show();
                     return true;
                 }
@@ -1427,10 +1427,10 @@ public class MapaFragment extends Fragment {
                 return true;
 
             } else if (modoActual == MODO_ESPACIO) {
-                // VALIDAR que el punto esté dentro del UGB
+                // VALIDAR que el punto esté dentro
                 if (!mapManager.puntoDentroDeInstitucion(point)) {
                     Toast.makeText(getContext(),
-                            "⚠️ Este punto está FUERA del límite UGB permitido",
+                            "⚠️ Este punto está FUERA del límite permitido",
                             Toast.LENGTH_SHORT).show();
                     return true;
                 }

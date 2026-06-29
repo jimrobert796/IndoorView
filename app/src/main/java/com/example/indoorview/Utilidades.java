@@ -16,8 +16,9 @@ public class Utilidades {
     static String url_consulta = "";
     static String url_mantenimiento = ""; // CRUD Insertar, Actualizar, Borrar y Buscar
 
-    static String user = "jimbo";
-    static String passwd = "070906";
+    // Solamente para el uso de CouchDB
+    static String user = "";
+    static String passwd = "";
     static String credencialesCodificadas = Base64.getEncoder().encodeToString((user + ":" + passwd).getBytes());
 
     public String generarUnicoId() {

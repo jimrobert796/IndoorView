@@ -50,8 +50,8 @@ public class OlvidoContraActivity extends AppCompatActivity {
         }
 
         // Validar dominio institucional (opcional - solo advertencia)
-        if (!correo.endsWith("@ugb.edu.sv")) {
-            Toast.makeText(this, "Sugerencia: Use correo institucional @ugb.edu.sv", Toast.LENGTH_LONG).show();
+        if (!correo.endsWith("@insti.edu.sv")) {
+            Toast.makeText(this, "Sugerencia: Use correo institucional @insti.edu.sv", Toast.LENGTH_LONG).show();
         }
 
         return true;

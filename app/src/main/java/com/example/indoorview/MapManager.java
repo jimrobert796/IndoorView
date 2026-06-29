@@ -1572,20 +1572,20 @@ public class MapManager {
             return;
         }
 
-        // NUEVA VALIDACIÓN: Verificar que TODOS los puntos estén dentro del UGB
-        if (!lugarDentroDelUGB(puntosActuales)) {
-            Log.e("VALIDAR_LUGAR", "LUGAR FUERA DE LÍMITES UGB");
+        // NUEVA VALIDACIÓN: Verificar que TODOS los puntos estén dentro del Instituto
+        if (!lugarDentroDelInst(puntosActuales)) {
+            Log.e("VALIDAR_LUGAR", "LUGAR FUERA DE LÍMITES");
 
             Toast.makeText(context,
-                    " ERROR: El lugar está FUERA de los límites permitidos (UGB)\n\n" +
-                            "Todos los puntos deben estar dentro del polígono UGB",
+                    " ERROR: El lugar está FUERA de los límites permitidos\n\n" +
+                            "Todos los puntos deben estar dentro del polígono",
                     Toast.LENGTH_LONG).show();
 
             // NO continuar con el proceso
             return;
         }
 
-        Log.d("VALIDAR_LUGAR", "LUGAR VALIDADO - Dentro del UGB");
+        Log.d("VALIDAR_LUGAR", "LUGAR VALIDADO");
 
         // CONTINUAR CON EL PROCESO ORIGINAL
         lugarActualId++;
@@ -1616,19 +1616,19 @@ public class MapManager {
             return;
         }
 
-        //  VALIDACIÓN: Verificar que TODOS los puntos estén dentro del UGB
-        if (!lugarDentroDelUGB(puntosActuales)) {
-            Log.e("VALIDAR_ESPACIO", " ESPACIO FUERA DE LÍMITES UGB");
+        //  VALIDACIÓN: Verificar que TODOS los puntos estén dentro del
+        if (!lugarDentroDelInst(puntosActuales)) {
+            Log.e("VALIDAR_ESPACIO", " ESPACIO FUERA DE LÍMITES");
 
             Toast.makeText(context,
                     " ERROR: El espacio está FUERA de los límites permitidos\n\n" +
-                            "Todos los puntos deben estar dentro del polígono UGB",
+                            "Todos los puntos deben estar dentro del polígono",
                     Toast.LENGTH_LONG).show();
 
             return;
         }
 
-        Log.d("VALIDAR_ESPACIO", "ESPACIO VALIDADO - Dentro del UGB");
+        Log.d("VALIDAR_ESPACIO", "ESPACIO VALIDADO");
 
         // CONTINUAR CON EL PROCESO ORIGINAL
         espacioContador++;
@@ -3440,15 +3440,15 @@ public class MapManager {
      *  puntos Lista de puntos del lugar
      *  true si todos están dentro, false si al menos uno está afuera
      */
-    public boolean lugarDentroDelUGB(List<Point> puntos) {
+    public boolean lugarDentroDelInst(List<Point> puntos) {
         if (puntos == null || puntos.isEmpty()) {
             return false;
         }
 
-        List<Point> verticesUGB = extraerVerticesDelGeoJson(GEOJSON_INST_LIMITE);
+        List<Point> verticesInst = extraerVerticesDelGeoJson(GEOJSON_INST_LIMITE);
 
         for (Point punto : puntos) {
-            if (!verificarPuntoEnPoligono(punto, verticesUGB)) {
+            if (!verificarPuntoEnPoligono(punto, verticesInst)) {
                 Log.d("VALIDAR_INST", "❌ Punto AFUERA: [" + punto.longitude() + ", " + punto.latitude() + "]");
                 return false; // Al menos un punto está afuera
             }
@@ -3505,7 +3505,7 @@ public class MapManager {
                 }
             }
 
-            Log.d("GEOJSON_PARSE", "✓ Vértices UGB extraídos: " + vertices.size());
+            Log.d("GEOJSON_PARSE", "✓ Vértices extraídos: " + vertices.size());
 
         } catch (Exception e) {
             Log.e("GEOJSON_PARSE", "Error en extraerVerticesDelGeoJson: " + e.getMessage());

@@ -635,16 +635,16 @@ public class MapaEventoActivity extends AppCompatActivity {
             return;
         }
 
-        // VALIDACIÓN ADICIONAL: Double-check que esté dentro del UGB
+        // VALIDACIÓN ADICIONAL: Double-check que esté dentro
         if (!mapManager.puntoDentroDeInstitucion(puntoSeleccionado)) {
             Toast.makeText(this,
                     "La ubicación está fuera de los límites permitidos",
                     Toast.LENGTH_LONG).show();
-            Log.e("EVENTO_CONFIRM", "Ubicación confirmada fuera del UGB");
+            Log.e("EVENTO_CONFIRM", "Ubicación confirmada fuera");
             return;
         }
 
-        Log.d("EVENTO_CONFIRM", "✅ Ubicación confirmada dentro del UGB");
+        Log.d("EVENTO_CONFIRM", "✅ Ubicación confirmada dentro");
 
         // Preparar datos para devolver
         Intent resultIntent = new Intent();
@@ -778,16 +778,16 @@ public class MapaEventoActivity extends AppCompatActivity {
             if (gesturesPlugin != null) {
                 OnMapClickListener mapClickListener = point -> {
                     if (modoSeleccion && mapManager != null) {
-                        // VALIDACIÓN: Verificar que el punto esté dentro del UGB
+                        // VALIDACIÓN: Verificar que el punto esté dentro
                         if (!mapManager.puntoDentroDeInstitucion(point)) {
                             Toast.makeText(MapaEventoActivity.this,
                                     "El evento está FUERA de los límites permitidos",
                                     Toast.LENGTH_LONG).show();
-                            Log.e("EVENTO_UGB", "Punto fuera de UGB: [" + point.longitude() + ", " + point.latitude() + "]");
+                            Log.e("EVENTO_INST", "Punto fuera: [" + point.longitude() + ", " + point.latitude() + "]");
                             return true;
                         }
 
-                        Log.d("EVENTO_UGB", "Punto VÁLIDO dentro del UGB");
+                        Log.d("EVENTO_INST", "Punto VÁLIDO dentro");
 
                         // Limpiar pin anterior
                         mapManager.limpiarPinEvento();

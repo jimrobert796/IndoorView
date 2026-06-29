@@ -489,9 +489,9 @@ public class AgregarUsuarioActivity extends AppCompatActivity {
             return false;
         }
         // Validar dominio institucional (opcional)
-        if (!correo.endsWith("@ugb.edu.sv")) {
+        if (!correo.endsWith("@insti.edu.sv")) {
             // Es solo advertencia, no error
-            Toast.makeText(this, "Sugerencia: Use correo institucional @ugb.edu.sv", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Sugerencia: Use correo institucional @insti.edu.sv", Toast.LENGTH_LONG).show();
         }
 
         // 5. Validar Contraseña

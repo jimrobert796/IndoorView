@@ -48,7 +48,7 @@ public class EmailHelper {
                 message.setFrom(new InternetAddress(CORREO_REMITENTE));
                 message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(correoDestino));
 
-                // CAMBIO CLAVE: Asunto plano sin la palabra "UGB" para evitar bloqueos por suplantación
+                // CAMBIO CLAVE: Asunto plano sin la palabra "" para evitar bloqueos por suplantación
                 message.setSubject("Codigo de acceso - IndoorView");
 
                 // CAMBIO CLAVE: Cuerpo directo sin enlaces ni palabras de alerta como "contraseña"
