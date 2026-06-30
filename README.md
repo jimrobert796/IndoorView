@@ -132,6 +132,11 @@ El flujo lógico opera de la siguiente manera:
 4. **Negociación SMTP (JavaMail):** `EmailHelper.java` configura una sesión autenticada con el servidor `smtp.gmail.com` por el puerto `587` usando TLS (`STARTTLS`). Consume las credenciales locales extraídas de la clase `EmailKeys` (`CORREO_REMITENTE` y `CONTRASENA_APP`).
 5. **Evasión de Filtros Anti-Spam:** El correo se estructura deliberadamente como texto plano simple y su asunto ("Codigo de acceso - IndoorView") omite acrónimos institucionales sospechosos y enlaces web para maximizar la tasa de entrega en la bandeja principal del usuario.
 
+<div align="center">
+
+<img src="img/contraseña.png" alt="recuperacion de contraseña" width="950" height="auto" />
+
+</div>
 
 ---
 
@@ -166,6 +171,28 @@ El flujo de usuario (UX) está centralizado y diseñado para permitir accesibili
     * **Imágenes Expandibles y Touch:** Implementación de un `TouchImageView.java` acoplado con `dialog_visor_imagenes.xml` para soporte de gestos de *Pellizco para hacer zoom* (Pinch-to-zoom).
     * **Feedback Inmediato:** Diálogos de éxito asíncronos (`bg_dialog_success.xml`, `dialog_password_reset_success.xml`) y pantallas modales de carga (`progress_loading.xml`, `item_loading.xml`).
 * **Manejo Multi-Rol:** Existen flujos de administrador adaptables que derivan en `AgregarEventoActivity`, `AgregarUsuarioActivity` y `ListarUsuariosActivity` (controlados vía clase `Tipo_usuario`).
+
+<div align="center">
+
+### Inicio de sesión
+
+<img src="img/login.png" alt="Inicio de sesion" width="950" height="auto" />
+
+### Navegacion en el panel de mapas
+
+<img src="img/mapa.png" alt="Navegacion en el panel de mapas" width="950" height="auto" />
+
+### Navegacion en el panel de eventos
+
+<img src="img/eventos.png" alt="Navegacion en el panel de eventos" width="950" height="auto" />
+
+### Navegacion en el panel de perfil
+
+<img src="img/perfil.png" alt="Navegacion en el panel de perfl" width="950" height="auto" />
+
+
+
+</div>
 
 ---
 
